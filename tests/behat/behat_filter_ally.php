@@ -167,6 +167,43 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
+     * @Given /^I create file resources using fixtures "(?P<fixtures_string>[^"]*)"/
+     * @param string $fixtures
+     */
+    public function i_create_file_resources_using_fixtures($fixtures) {
+        global $CFG;
+
+        $gen = testing_util::get_data_generator();
+
+        $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
+        $files = explode(',', $fixtures);
+
+        $course = $this->get_current_course();
+
+        foreach ($files as $file) {
+            $file = trim($file);
+            $fixturepath = $fixturedir.$file;
+            if (!file_exists($fixturepath)) {
+                throw new coding_exception('Fixture file does not exist '.$fixturepath);
+            }
+
+            $data = (object) [
+                'course' => $course->id,
+                'name' => $file
+            ];
+
+            $resource = $gen->create_module('resource', $data);
+
+            // Add actual file there.
+            $filerecord = ['component' => 'mod_label', 'filearea' => 'intro',
+                'contextid' => context_module::instance($resource->cmid)->id, 'itemid' => 0,
+                'filename' => $file, 'filepath' => '/'];
+            $fs = get_file_storage();
+            $fs->create_file_from_pathname($filerecord, $fixturepath);
+        }
+    }
+
+    /**
      * @Given /^I should see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" image$/
      * @param string $imagex
      */

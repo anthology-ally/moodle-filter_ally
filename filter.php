@@ -35,6 +35,42 @@ use filter_ally\renderables\wrapper;
 class filter_ally extends moodle_text_filter {
 
     /**
+     * Map moduleid to pathname hash.
+     * @param $course
+     * @return array
+     * @throws coding_exception
+     * @throws dml_exception
+     */
+    protected function map_moduleid_to_pathhash($course) {
+        global $DB;
+
+        $modinfo = get_fast_modinfo($course);
+        $modules = $modinfo->get_instances_of('resource');
+        if (empty($modules)) {
+            return [];
+        }
+        $contextsbymoduleid = [];
+        $moduleidsbycontext = [];
+        foreach ($modules as $modid => $module) {
+            $contextsbymoduleid[$module->id] = $module->context->id;
+            $moduleidsbycontext[$module->context->id] = $module->id;
+        }
+
+        list($insql, $params) = $DB->get_in_or_equal($contextsbymoduleid);
+
+        $sql = "contextid $insql AND component = 'mod_resource' AND mimetype IS NOT NULL AND filename != '.'";
+
+        $files = $DB->get_records_select('files', $sql, $params);
+        $pathhashbymoduleid = [];
+        foreach ($files as $id => $file) {
+            $moduleid = $moduleidsbycontext[$file->contextid];
+            $pathhashbymoduleid[$moduleid] = $file->pathnamehash;
+        }
+
+        return $pathhashbymoduleid;
+    }
+
+    /**
      * Set up the filter using settings provided in the admin settings page.
      * Also, get the file resource course module id -> file id mappings.
      *
@@ -47,12 +83,34 @@ class filter_ally extends moodle_text_filter {
         // This only requires execution once per request.
         static $jsinitialised = false;
         if (!$jsinitialised) {
-
             require_once($CFG->libdir.'/filelib.php');
 
-            $modulefileidmapping = [];
+            $modulefilemapping = $this->map_moduleid_to_pathhash($COURSE);
             $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
-            $page->requires->js_call_amd('filter_ally/main', 'init', [$modulefileidmapping, $jwt]);
+            $coursecontext = context_course::instance($COURSE->id);
+            $canviewfeedback = has_capability('filter/ally:viewfeedback', $coursecontext);
+            $candownload = isloggedin() && !is_guest($coursecontext);
+
+            $modulemaps = [
+                'file_resources' => $modulefilemapping
+            ];
+            $json = json_encode($modulemaps);
+
+            $script = <<<EOF
+            <script>
+                var ally_module_maps = $json;
+            </script>
+EOF;
+
+            if (!isset($CFG->additionalhtmlfooter)) {
+                $CFG->additionalhtmlfooter = '';
+            }
+            // Note, we have to put the module maps into the footer instead of passing them into the amd module as an
+            // argument. If you pass large amounts of data into the amd arguments then it throws a debug error.
+            $CFG->additionalhtmlfooter .= $script;
+
+            $amdargs = [$jwt, $canviewfeedback, $candownload];
+            $page->requires->js_call_amd('filter_ally/main', 'init', $amdargs);
             $jsinitialised = true;
         }
     }
