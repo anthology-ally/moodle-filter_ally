@@ -36,15 +36,19 @@ class filter_ally extends moodle_text_filter {
 
     /**
      * Set up the filter using settings provided in the admin settings page.
+     * Also, get the file resource course module id -> file id mappings.
      *
      * @param $page
      * @param $context
      */
     public function setup($page, $context) {
+        global $COURSE;
+
         // This only requires execution once per request.
         static $jsinitialised = false;
         if (!$jsinitialised) {
-            // Add code to include AMD module here.
+            $modulefileidmapping = [];
+            $page->requires->js_call_amd('filter_ally/main', 'init', [$modulefileidmapping, $COURSE->id]);
             $jsinitialised = true;
         }
     }
