@@ -24,8 +24,9 @@
 
 define(['jquery'], function($) {
     return new function() {
-        this.init = function(courseId) {
+        this.init = function(courseId, jwt) {
             // Initialising function for Ally AX library
+            console.log("token: " + jwt);
         };
     };
 });

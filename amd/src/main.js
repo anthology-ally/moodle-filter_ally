@@ -34,9 +34,9 @@ define(['jquery', 'filter_ally/ally'], function($, Ally) {
         };
 
         // At the moment the courseId argument is just to show
-        this.init = function(moduleFileIdMapping, courseId) {
+        this.init = function(moduleFileIdMapping, courseId, jwt) {
             addModuleFileIds(moduleFileIdMapping);
-            Ally.init(courseId);
+            Ally.init(courseId, jwt);
         };
     };
 });

@@ -42,13 +42,14 @@ class filter_ally extends moodle_text_filter {
      * @param $context
      */
     public function setup($page, $context) {
-        global $COURSE;
+        global $USER, $COURSE;
 
         // This only requires execution once per request.
         static $jsinitialised = false;
         if (!$jsinitialised) {
             $modulefileidmapping = [];
-            $page->requires->js_call_amd('filter_ally/main', 'init', [$modulefileidmapping, $COURSE->id]);
+            $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
+            $page->requires->js_call_amd('filter_ally/main', 'init', [$modulefileidmapping, $COURSE->id, $jwt]);
             $jsinitialised = true;
         }
     }
@@ -62,6 +63,6 @@ class filter_ally extends moodle_text_filter {
      * @return string String containing processed HTML.
      */
     public function filter($text, array $options = array()) {
-       return $text;
+        return $text;
     }
 }
