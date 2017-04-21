@@ -34,6 +34,35 @@ use filter_ally\renderables\wrapper;
  */
 class filter_ally extends moodle_text_filter {
 
+    protected function map_moduleid_to_fileid($course) {
+        global $DB;
+
+        $modinfo = get_fast_modinfo($course);
+        $modules = $modinfo->get_instances_of('resource');
+        if (empty($modules)) {
+            return [];
+        }
+        $contextsbymoduleid = [];
+        $moduleidsbycontext = [];
+        foreach ($modules as $modid => $module) {
+            $contextsbymoduleid[$module->id] = $module->context->id;
+            $moduleidsbycontext[$module->context->id] = $module->id;
+        }
+
+        list($insql, $params) = $DB->get_in_or_equal($contextsbymoduleid);
+
+        $sql = "contextid $insql AND component = 'mod_resource' AND mimetype IS NOT NULL AND filename != '.'";
+
+        $files = $DB->get_records_select('files', $sql, $params);
+        $fileidsbymoduleid = [];
+        foreach ($files as $id => $file) {
+            $moduleid = $moduleidsbycontext[$file->contextid];
+            $fileidsbymoduleid[$moduleid] = $file->id;
+        }
+
+        return $fileidsbymoduleid;
+    }
+
     /**
      * Map moduleid to pathname hash.
      * @param $course
