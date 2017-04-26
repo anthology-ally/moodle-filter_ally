@@ -1,0 +1,31 @@
+.filter-ally-wrapper .ally-actions {
+    display: inline-block;
+}
+
+.filter-ally-wrapper .ally-actions .ally-download,
+.filter-ally-wrapper .ally-actions .ally-feedback {
+    display: inline-block;
+    border: 1px solid #bbb;
+    min-width: 1em;
+    min-height: 1em;
+}
+
+.filter-ally-wrapper .ally-image-cover {
+    background-color: rgba(0,0,0,.8);
+    position: absolute;
+    display: block;
+}
+
+.filter-ally-wrapper .ally-image-cover .ally-actions {
+    position: absolute;
+    bottom: 0;
+    display: block;
+}
+
+.filter-ally-wrapper .ally-image-cover .ally-actions .ally-feedback {
+    border: 1px solid white;
+    color: white;
+    display: block;
+    min-width: 1em;
+    min-height: 1em;
+}

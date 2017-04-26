@@ -14,19 +14,16 @@
  * You should have received a copy of the GNU General Public License
  * along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
  *
- * Ally AX library.
+ * Necessary to allow .eslintignore to work.
  *
  * @package   filter_ally
  * @author    Guy Thomas <gthomas@moodlerooms.com>
- * @copyright Copyright (c) 2016 Blackboard Inc.
+ * @copyright Copyright (c) 2017 Blackboard Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery'], function($) {
-    return new function() {
-        this.init = function(jwt) {
-            // Initialising function for Ally AX library.
-            console.log("token: " + jwt);
-        };
-    };
-});
+module.exports = function(grunt) {
+    require("grunt-load-gruntfile")(grunt);
+    grunt.loadGruntfile("../../Gruntfile.js");
+    grunt.mergeConfig = grunt.config.merge;
+};

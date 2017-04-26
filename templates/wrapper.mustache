@@ -1,0 +1,19 @@
+<span class="filter-ally-wrapper{{#isimage}} ally-image-wrapper{{/isimage}}{{^isimage}} ally-anchor-wrapper{{/isimage}}">{{{html}}}
+    {{#isimage}}
+    <span class="ally-image-cover">
+        <span class="ally-actions">
+            {{#canviewfeedback}}
+            <span class="ally-feedback" data-file-id="{{fileid}}" data-file-url="{{url}}">FEEDBACK</span>
+            {{/canviewfeedback}}
+        </span>
+    </span>
+    {{/isimage}}
+    {{^isimage}}
+    <span class="ally-actions">
+        {{#canviewfeedback}}
+        <span class="ally-feedback" data-file-id="{{fileid}}" data-file-url="{{url}}">FEEDBACK</span>
+        {{/canviewfeedback}}
+        <span class="ally-download" data-file-id="{{fileid}}" data-file-url="{{url}}">DOWNLOAD</span>
+    </span>
+    {{/isimage}}
+</span>

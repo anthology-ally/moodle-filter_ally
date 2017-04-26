@@ -15,17 +15,20 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
- *
- * @package     filter_ally
- * @copyright   Blackboard Inc 2017
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * Renderable for ally wrapper.
+ * @author    Guy Thomas <gthomas@moodlerooms.com>
+ * @copyright Copyright (c) 2017 Blackboard Inc.
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+namespace filter_ally\renderables;
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'filter_ally';
-$plugin->release = '3.2';
-$plugin->version = 2017042002;
-$plugin->requires = 2016052300;
-$plugin->maturity = MATURITY_ALPHA;
+class wrapper implements \renderable {
+    public $html;
+    public $fileid;
+    public $url;
+    public $canviewfeedback;
+    public $isimage;
+}

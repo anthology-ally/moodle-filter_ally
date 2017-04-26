@@ -22,7 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'filter_ally/ally'], function($, Ally) {
+define(['jquery', 'filter_ally/ally', 'filter_ally/imagecover'], function($, Ally, ImageCover) {
     return new function() {
 
         /**
@@ -33,10 +33,10 @@ define(['jquery', 'filter_ally/ally'], function($, Ally) {
 
         };
 
-        // At the moment the courseId argument is just to show
-        this.init = function(moduleFileIdMapping, courseId, jwt) {
+        this.init = function(moduleFileIdMapping, jwt) {
             addModuleFileIds(moduleFileIdMapping);
-            Ally.init(courseId, jwt);
+            Ally.init(jwt);
+            ImageCover.init();
         };
     };
 });
