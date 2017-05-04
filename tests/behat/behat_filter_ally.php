@@ -39,13 +39,13 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
-     * @Given /^I create a label with fixture images "(?P<images_string>[^"]*)"$/
-     * @param string $images (csv)
+     * Get current course;
+     * @return stdClass | false
+     * @throws \Behat\Mink\Exception\ExpectationException
+     * @throws coding_exception
      */
-    public function i_create_label_with_sample_images($images) {
-        global $CFG, $DB;
-
-        $gen = testing_util::get_data_generator();
+    protected function get_current_course() {
+        global $DB;
 
         $bodynode = $this->find('xpath', 'body');
         $bodyclass = $bodynode->getAttribute('class');
@@ -59,14 +59,26 @@ class behat_filter_ally extends behat_base {
         if (!$course) {
             throw new coding_exception('Failed to get course by id '.$courseid. ' '.$bodyclass);
         }
+        return ($course);
+    }
+
+    /**
+     * @Given /^I create a label with fixture images "(?P<images_string>[^"]*)"$/
+     * @param string $images (csv)
+     */
+    public function i_create_label_with_sample_images($images) {
+        global $CFG, $DB;
+
+        $gen = testing_util::get_data_generator();
 
         $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
         $images = explode(',', $images);
 
         $labeltext = '<h2>A test label</h2>';
 
-        $i = 0;
         $voidtype = '/>';
+
+        $course = $this->get_current_course();
 
         $data = (object) [
             'course' => $course->id,
@@ -77,6 +89,7 @@ class behat_filter_ally extends behat_base {
 
         $label = $gen->create_module('label', $data);
 
+        $i = 0;
         foreach ($images as $image) {
             $image = trim($image);
             $i ++;
@@ -84,7 +97,7 @@ class behat_filter_ally extends behat_base {
             $voidtype = $voidtype === '/>' ? '>' : '/>';
             $fixturepath = $fixturedir.$image;
             if (!file_exists($fixturepath)) {
-                throw coding_exception('Fixture image does not exist '.$fixturepath);
+                throw new coding_exception('Fixture image does not exist '.$fixturepath);
             }
 
             // Add actual file there.
@@ -113,25 +126,12 @@ class behat_filter_ally extends behat_base {
 
         $gen = testing_util::get_data_generator();
 
-        $bodynode = $this->find('xpath', 'body');
-        $bodyclass = $bodynode->getAttribute('class');
-        $matches = [];
-        if (preg_match('/(?<=^course-|\scourse-)(?:\d*)/', $bodyclass, $matches) && !empty($matches)) {
-            $courseid = intval($matches[0]);
-        } else {
-            $courseid = SITEID;
-        }
-        $course = $DB->get_record('course', ['id' => $courseid]);
-        if (!$course) {
-            throw new coding_exception('Failed to get course by id '.$courseid. ' '.$bodyclass);
-        }
-
         $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
         $files = explode(',', $files);
 
         $labeltext = '<h2>A test label</h2>';
 
-        $i = 0;
+        $course = $this->get_current_course();
 
         $data = (object) [
             'course' => $course->id,
@@ -142,6 +142,7 @@ class behat_filter_ally extends behat_base {
 
         $label = $gen->create_module('label', $data);
 
+        $i = 0;
         foreach ($files as $file) {
             $file = trim($file);
             $i ++;
@@ -199,35 +200,79 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
-     * @Given /^I should see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" anchor$/
+     * Get xpath for specific anchor and type.
      * @param string $anchorx
+     * @param string $phclass place hodler class.
+     * @param string $type
+     * @return string
+     * @throws coding_exception
      */
-    public function i_should_see_feedback_for_anchor_x($anchorx) {
+    protected function get_anchor_resource_xpath($anchorx, $phclass, $type) {
         $anchorx = intval($anchorx);
-        $path = "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')][$anchorx]";
-        $path .= "//span[contains(concat(' ', @class, ' '), ' ally-feedback ')]";
+        if ($type === 'anchor') {
+            $path = "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')][$anchorx]";
+        } else if ($type === 'file resource') {
+            $path = "//li[contains(concat(' ', @class, ' '), ' modtype_resource ')][$anchorx]";
+            $path .= "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
+        } else {
+            throw new coding_exception('Unknown feedback container type: '.$type);
+        }
+        $path .= "//span[contains(concat(' ', @class, ' '), ' $phclass ')]";
+        return $path;
+    }
+
+    /**
+     * @Given /^I should see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource)$/
+     * @param string $anchorx
+     * @param string $type
+     */
+    public function i_should_see_feedback_for_anchor_x($anchorx, $type) {
+        $path = $this->get_anchor_resource_xpath($anchorx, 'ally-feedback', $type);
         $this->execute('behat_general::assert_element_contains_text', ['FEEDBACK', $path, 'xpath_element']);
     }
 
     /**
-     * @Given /^I should not see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" anchor$/
+     * @Given /^I should not see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource)$/
      * @param string $anchorx
      */
-    public function i_should_not_see_feedback_for_anchor_x($anchorx) {
-        $anchorx = intval($anchorx);
-        $path = "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')][$anchorx]";
-        $path .= "//span[contains(concat(' ', @class, ' '), ' ally-feedback ')]";
+    public function i_should_not_see_feedback_for_anchor_x($anchorx, $type) {
+        $path = $this->get_anchor_resource_xpath($anchorx, 'ally-feedback', $type);
         $this->execute('behat_general::should_not_exist', [$path, 'xpath_element']);
     }
 
     /**
-     * @Given /^I should see the download place holder for the "(\d*)(?:st|nd|rd|th)" anchor$/
+     * @Given /^I should see the download place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource)$/
      * @param string $anchorx
      */
-    public function i_should_see_download_for_anchor_x($anchorx) {
-        $anchorx = intval($anchorx);
-        $path = "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')][$anchorx]";
-        $path .= "//span[contains(concat(' ', @class, ' '), ' ally-download ')]";
+    public function i_should_see_download_for_anchor_x($anchorx, $type) {
+        $path = $this->get_anchor_resource_xpath($anchorx, 'ally-download', $type);
         $this->execute('behat_general::assert_element_contains_text', ['DOWNLOAD', $path, 'xpath_element']);
+    }
+
+    /**
+     * @Given /^I should not see the download place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource)$/
+     * @param string $anchorx
+     */
+    public function i_should_not_see_download_for_anchor_x($anchorx, $type) {
+        $path = $this->get_anchor_resource_xpath($anchorx, 'ally-download', $type);
+        $this->execute('behat_general::should_not_exist', [$path, 'xpath_element']);
+    }
+
+    /**
+     * @Given /^I allow guest access for current course$/
+     */
+    public function i_allow_guest_access_for_current_course() {
+        $course = $this->get_current_course();
+
+        $instances = enrol_get_instances($course->id, false);
+        $plugins   = enrol_get_plugins(false);
+        foreach ($instances as $instance) {
+            $plugin = $plugins[$instance->enrol];
+            if ($plugin instanceof enrol_guest_plugin) {
+                if ($instance->status != ENROL_INSTANCE_ENABLED) {
+                    $plugin->update_status($instance, ENROL_INSTANCE_ENABLED);
+                }
+            }
+        }
     }
 }

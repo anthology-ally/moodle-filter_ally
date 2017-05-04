@@ -75,6 +75,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | teacher1 | C1     | teacher        |
     And I log in as "teacher1"
     And I follow "Course 1"
+    And I allow guest access for current course
     And I create a label with random text files "test1.txt, test2.txt, test3.txt"
     When I reload the page
     Then I should see the feedback place holder for the "1st" anchor
@@ -92,3 +93,12 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should see the download place holder for the "1st" anchor
     And I should see the download place holder for the "2nd" anchor
     And I should see the download place holder for the "3rd" anchor
+    And I log out
+    And I log in as "guest"
+    And I follow "Course 1"
+    Then I should not see the feedback place holder for the "1st" anchor
+    And I should not see the feedback place holder for the "2nd" anchor
+    And I should not see the feedback place holder for the "3rd" anchor
+    And I should not see the download place holder for the "1st" anchor
+    And I should not see the download place holder for the "2nd" anchor
+    And I should not see the download place holder for the "3rd" anchor

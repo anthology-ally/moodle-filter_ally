@@ -13,7 +13,9 @@
         {{#canviewfeedback}}
         <span class="ally-feedback" data-file-id="{{fileid}}" data-file-url="{{url}}">FEEDBACK</span>
         {{/canviewfeedback}}
+        {{#candownload}}
         <span class="ally-download" data-file-id="{{fileid}}" data-file-url="{{url}}">DOWNLOAD</span>
+        {{/candownload}}
     </span>
     {{/isimage}}
 </span>

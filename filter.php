@@ -73,6 +73,10 @@ class filter_ally extends moodle_text_filter {
             return $text;
         }
 
+        if (!isloggedin()) {
+            return $text;
+        }
+
         $fs = get_file_storage();
         $filesbyareakey = [];
 
@@ -112,6 +116,11 @@ class filter_ally extends moodle_text_filter {
                 $matches = [];
                 preg_match($regex, $url, $matches);
                 $contextid = $matches[1];
+                $context = context::instance_by_id($contextid);
+                $coursecontext = $context->get_course_context();
+                if (is_guest($coursecontext)) {
+                    continue;
+                }
                 $arr = explode('/', $matches[2]);
                 if (count($arr) === 3) {
                     $component = $arr[0];
@@ -162,7 +171,8 @@ class filter_ally extends moodle_text_filter {
                 // Flag html as processed with #P# so that it doesn't get hit again with multiples of the same link or image.
                 $wrapper->html = str_replace('<'.$type, '<'.$type.'#P#', $html);
                 $wrapper->url = $url;
-                $wrapper->canviewfeedback = has_capability('filter/ally:viewfeedback', context::instance_by_id($contextid));
+                $wrapper->candownload = true; // If they got this far then they can download!
+                $wrapper->canviewfeedback = has_capability('filter/ally:viewfeedback', $context);
                 $wrapper->isimage = $type === 'img';
                 $wrapped = $renderer->render_wrapper($wrapper);
 
