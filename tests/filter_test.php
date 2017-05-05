@@ -28,15 +28,139 @@ class filter_ally_testcase extends advanced_testcase {
 
     public function setUp() {
         require_once(__DIR__.'/../filter.php');
-        global $PAGE;
+        global $PAGE, $CFG;
+
+        $PAGE->set_url($CFG->wwwroot.'/course/view.php');
         $context = context_system::instance();
         $this->filter = new filter_ally($context, []);
         $this->filter->setup($PAGE, $context);
     }
 
-    public function test_filter_img() {
-        global $CFG;
+    public function test_is_course_page() {
+        global $PAGE, $CFG;
+
         $this->resetAfterTest();
+
+        $PAGE->set_url($CFG->wwwroot.'/course/view.php');
+        $iscoursepage = phpunit_util::call_internal_method($this->filter, 'is_course_page', [], 'filter_ally');
+        $this->assertTrue($iscoursepage);
+        $PAGE->set_url($CFG->wwwroot.'/user/view.php');
+        $iscoursepage = phpunit_util::call_internal_method($this->filter, 'is_course_page', [], 'filter_ally');
+        $this->assertFalse($iscoursepage);
+    }
+
+    public function test_map_assignment_file_paths_to_pathhash() {
+        global $PAGE, $CFG;
+
+        $this->resetAfterTest();
+
+        $gen = $this->getDataGenerator();
+
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_assignment_file_paths_to_pathhash', [], 'filter_ally'
+        );
+        $this->assertEmpty($map);
+
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_assignment_file_paths_to_pathhash', [], 'filter_ally'
+        );
+        $this->assertEmpty($map);
+
+        $course = $gen->create_course();
+        $data = (object) [
+            'course' => $course->id
+        ];
+        $assign = $gen->create_module('assign', $data);
+
+        $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
+        $files = scandir($fixturedir);
+
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+            $file = trim($file);
+            $fixturepath = $fixturedir.$file;
+
+            // Add actual file there.
+            $filerecord = ['component' => 'mod_assign', 'filearea' => 'introattachment',
+                'contextid' => context_module::instance($assign->cmid)->id, 'itemid' => 0,
+                'filename' => $file, 'filepath' => '/'];
+            $fs = get_file_storage();
+            $fs->create_file_from_pathname($filerecord, $fixturepath);
+        }
+
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_assignment_file_paths_to_pathhash', [], 'filter_ally'
+        );
+        $this->assertEmpty($map);
+
+        $PAGE->set_pagetype('mod-assign-view');
+        $_GET['id'] = $assign->cmid;
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_assignment_file_paths_to_pathhash', [], 'filter_ally'
+        );
+        $this->assertNotEmpty($map);
+    }
+
+    public function test_map_moduleid_to_pathhash() {
+        global $PAGE, $CFG;
+
+        $this->resetAfterTest();
+
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_moduleid_to_pathhash', [$course], 'filter_ally'
+        );
+        $this->assertEmpty($map);
+
+        $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
+        $files = scandir($fixturedir);
+
+        $this->setAdminUser();
+
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+            $file = trim($file);
+            $fixturepath = $fixturedir.$file;
+
+            $data = (object) [
+                'course' => $course->id,
+                'name' => $file
+            ];
+
+            $resource = $gen->create_module('resource', $data);
+
+            // Add actual file there.
+            $filerecord = ['component' => 'mod_assign', 'filearea' => 'introattachment',
+                'contextid' => context_module::instance($resource->cmid)->id, 'itemid' => 0,
+                'filename' => $file, 'filepath' => '/'];
+            $fs = get_file_storage();
+            $fs->create_file_from_pathname($filerecord, $fixturepath);
+        }
+
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_moduleid_to_pathhash', [$course], 'filter_ally'
+        );
+        $this->assertNotEmpty($map);
+
+        $PAGE->set_url($CFG->wwwroot.'/user/view.php');
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_moduleid_to_pathhash', [$course], 'filter_ally'
+        );
+
+        $this->assertEmpty($map);
+    }
+
+    public function test_filter_img() {
+        global $PAGE, $CFG;
+        $this->resetAfterTest();
+
+        $PAGE->set_url($CFG->wwwroot.'/course/view.php');
 
         $gen = $this->getDataGenerator();
 

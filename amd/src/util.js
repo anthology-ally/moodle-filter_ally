@@ -17,7 +17,7 @@
  * Utility lib.
  *
  * @package   filter_ally
- * @author    Branden Visser
+ * @author    Guy Thomas / Branden Visser
  * @copyright Copyright (c) 2017 Blackboard Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -25,8 +25,35 @@ define(['jquery'], function($) {
     return new function() {
 
         /**
+         * When evaluateFunction returns true.
+         * @author Guy Thomas
+         * @param evaluateFunction
+         * @param maxIterations
+         * @returns {promise} jQuery promise
+         */
+        this.whenTrue = function(evaluateFunction, maxIterations) {
+
+            maxIterations = !maxIterations ? 10 : maxIterations;
+
+            var dfd = $.Deferred();
+            var i = 0;
+
+            setInterval(function() {
+                i = !i ? 0 : i + 1;
+                if (i > maxIterations) {
+                    dfd.reject();
+                }
+                if (evaluateFunction()) {
+                    dfd.resolve();
+                }
+            }, 200);
+
+            return dfd.promise();
+        };
+
+        /**
          * Listen for the offset/size of a given element to change. Whenever it changes, invoke the given function.
-         *
+         * @author Branden Visser
          * @param  {jQuery}     $el                     The element to watch
          * @param  {Function}   callback                The function that is invoked when the coords change
          * @param  {Object}     callback.coords         The new set of coords

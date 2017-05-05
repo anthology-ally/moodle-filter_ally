@@ -22,13 +22,68 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'core/templates', 'filter_ally/ally', 'filter_ally/imagecover'], function($, Templates, Ally, ImageCover) {
+define(['jquery', 'core/templates', 'filter_ally/ally', 'filter_ally/imagecover', 'filter_ally/util'],
+function($, Templates, Ally, ImageCover, Util) {
     return new function() {
 
         var self = this;
 
         self.canViewFeedback = false;
         self.canDownload = false;
+
+        /**
+         * Render template and insert result in appropriate place.
+         */
+        var renderTemplate = function(data, pathHash, targetEl) {
+            // Too expensive to do at module level - this is a course level capability.
+            data.canviewfeedback = self.canViewFeedback;
+            data.candownload = self.canDownload;
+            data.html = '<span id="content-target-' + pathHash + '"></span>';
+
+            Templates.render('filter_ally/wrapper', data)
+                .done(function(result) {
+                    $(targetEl).after(result);
+                    // We are inserting the module element next to the target as opposed to replacing the
+                    // target as we want to ensure any listeners attributed to the module element persist.
+                    $('#content-target-' + pathHash).after(targetEl);
+                    $('#content-target-' + pathHash).remove();
+                });
+        };
+
+        /**
+         * Add place holders for assign module additional files.
+         * @param assignFileMapping
+         */
+        var placeHoldAssignModule = function(assignFileMapping) {
+            $(document).ready(function() {
+                Util.whenTrue(function() {
+                    return $('div[id*="assign_files_tree"] .ygtvitem').length > 0;
+                }, 10)
+                    .done(function() {
+                        $('div[id*="assign_files_tree"] a[href*="pluginfile.php"]').each(function() {
+                            var href = $(this).attr('href');
+                            var regex;
+                            if (href.indexOf('?') > -1) {
+                                regex = /pluginfile.php\/(\d*)\/(.*)(\?)/;
+                            } else {
+                                regex = /pluginfile.php\/(\d*)\/(.*)/;
+                            }
+                            var match = href.match(regex);
+                            var path = match[1] + '/' + match[2];
+                            path = decodeURIComponent(path);
+                            var pathHash = assignFileMapping[path];
+
+                            var data = {
+                                isimage: false,
+                                fileid: pathHash,
+                                url: href
+                            };
+
+                            renderTemplate(data, pathHash, $(this));
+                        });
+                    });
+            });
+        };
 
         /**
          * Add place holders for resource module.
@@ -40,32 +95,13 @@ define(['jquery', 'core/templates', 'filter_ally/ally', 'filter_ally/imagecover'
                     var pathHash = moduleFileMapping[moduleId];
                     var moduleEl = $('#module-' + moduleId + ' .activityinstance');
                     var data = {
-                        isimage : false,
+                        isimage: false,
                         fileid: pathHash,
-                        url: $(moduleEl).attr('href'),
-                        // Too expensive to do at module level - this is a course level capability.
-                        canviewfeedback : self.canViewFeedback,
-                        candownload : self.canDownload,
-                        html: '<span id="content-target-'+pathHash+'"></span>'
+                        url: $(moduleEl).attr('href')
                     };
-                    renderTemplate(data, pathHash, moduleId);
+                    renderTemplate(data, pathHash, moduleEl);
                 }
             });
-        };
-
-        /**
-         * Render template and insert result in appropriate place for modules.
-         */
-        var renderTemplate = function(data, pathHash, moduleId) {
-            Templates.render('filter_ally/wrapper', data)
-                .done(function(result) {
-                    var moduleEl = $('#module-' + moduleId + ' .activityinstance');
-                    $(moduleEl).after(result);
-                    // We are inserting the module element next to the target as opposed to replacing the
-                    // target as we want to ensure any listeners attributed to the module element persist.
-                    $('#content-target-' + pathHash).after(moduleEl);
-                    $('#content-target-' + pathHash).remove();
-                });
         };
 
         /**
@@ -78,8 +114,13 @@ define(['jquery', 'core/templates', 'filter_ally/ally', 'filter_ally/imagecover'
         this.init = function(jwt, canViewFeedback, canDownload) {
             self.canViewFeedback = canViewFeedback;
             self.canDownload = canDownload;
-            if (Object.keys(ally_module_maps.file_resources).length > 0 && (canViewFeedback || canDownload)) {
-                placeHoldResourceModule(ally_module_maps.file_resources);
+            if (canViewFeedback || canDownload) {
+                if (Object.keys(ally_module_maps.file_resources).length > 0) {
+                    placeHoldResourceModule(ally_module_maps.file_resources);
+                }
+                if (Object.keys(ally_module_maps.assignment_files).length > 0) {
+                    placeHoldAssignModule(ally_module_maps.assignment_files);
+                }
             }
             Ally.init(jwt);
             ImageCover.init();

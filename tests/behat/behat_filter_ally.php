@@ -204,6 +204,41 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
+     * @Given /^I create assignment "(?P<name_string>[^"]*)" with additional file fixtures "(?P<fixtures_string>[^"]*)"/
+     * @param $assignname
+     * @param $fixtures
+     */
+    public function i_create_assign_with_additional_files($assignname, $fixtures) {
+        global $CFG;
+
+        $gen = testing_util::get_data_generator();
+
+        $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
+        $files = explode(',', $fixtures);
+
+        $course = $this->get_current_course();
+
+        $data = (object) [
+            'course' => $course->id,
+            'name' => $assignname
+        ];
+
+        $assign = $gen->create_module('assign', $data);
+
+        foreach ($files as $file) {
+            $file = trim($file);
+            $fixturepath = $fixturedir.$file;
+
+            // Add actual file there.
+            $filerecord = ['component' => 'mod_assign', 'filearea' => 'introattachment',
+                'contextid' => context_module::instance($assign->cmid)->id, 'itemid' => 0,
+                'filename' => $file, 'filepath' => '/'];
+            $fs = get_file_storage();
+            $fs->create_file_from_pathname($filerecord, $fixturepath);
+        }
+    }
+
+    /**
      * @Given /^I should see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" image$/
      * @param string $imagex
      */
@@ -244,12 +279,16 @@ class behat_filter_ally extends behat_base {
      * @return string
      * @throws coding_exception
      */
-    protected function get_anchor_resource_xpath($anchorx, $phclass, $type) {
+    protected function get_placeholder_xpath($anchorx, $phclass, $type) {
         $anchorx = intval($anchorx);
         if ($type === 'anchor') {
             $path = "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')][$anchorx]";
         } else if ($type === 'file resource') {
             $path = "//li[contains(concat(' ', @class, ' '), ' modtype_resource ')][$anchorx]";
+            $path .= "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
+        } else if ($type === 'assignment file') {
+            $path = "//div[contains(@id, 'assign_files_tree')]//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
+            $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')][$anchorx]";
             $path .= "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
         } else {
             throw new coding_exception('Unknown feedback container type: '.$type);
@@ -259,39 +298,39 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
-     * @Given /^I should see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource)$/
+     * @Given /^I should see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource|assignment file)$/
      * @param string $anchorx
      * @param string $type
      */
     public function i_should_see_feedback_for_anchor_x($anchorx, $type) {
-        $path = $this->get_anchor_resource_xpath($anchorx, 'ally-feedback', $type);
+        $path = $this->get_placeholder_xpath($anchorx, 'ally-feedback', $type);
         $this->execute('behat_general::assert_element_contains_text', ['FEEDBACK', $path, 'xpath_element']);
     }
 
     /**
-     * @Given /^I should not see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource)$/
+     * @Given /^I should not see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource|assignment file)$/
      * @param string $anchorx
      */
     public function i_should_not_see_feedback_for_anchor_x($anchorx, $type) {
-        $path = $this->get_anchor_resource_xpath($anchorx, 'ally-feedback', $type);
+        $path = $this->get_placeholder_xpath($anchorx, 'ally-feedback', $type);
         $this->execute('behat_general::should_not_exist', [$path, 'xpath_element']);
     }
 
     /**
-     * @Given /^I should see the download place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource)$/
+     * @Given /^I should see the download place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource|assignment file)$/
      * @param string $anchorx
      */
     public function i_should_see_download_for_anchor_x($anchorx, $type) {
-        $path = $this->get_anchor_resource_xpath($anchorx, 'ally-download', $type);
+        $path = $this->get_placeholder_xpath($anchorx, 'ally-download', $type);
         $this->execute('behat_general::assert_element_contains_text', ['DOWNLOAD', $path, 'xpath_element']);
     }
 
     /**
-     * @Given /^I should not see the download place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource)$/
+     * @Given /^I should not see the download place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource|assignment file)$/
      * @param string $anchorx
      */
     public function i_should_not_see_download_for_anchor_x($anchorx, $type) {
-        $path = $this->get_anchor_resource_xpath($anchorx, 'ally-download', $type);
+        $path = $this->get_placeholder_xpath($anchorx, 'ally-download', $type);
         $this->execute('behat_general::should_not_exist', [$path, 'xpath_element']);
     }
 

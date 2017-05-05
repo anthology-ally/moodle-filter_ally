@@ -34,33 +34,51 @@ use filter_ally\renderables\wrapper;
  */
 class filter_ally extends moodle_text_filter {
 
-    protected function map_moduleid_to_fileid($course) {
-        global $DB;
+    /**
+     * Are we on a course page ? (not course settings, etc. The actual course page).
+     * @return bool
+     * @throws coding_exception
+     */
+    protected function is_course_page() {
+        $path = parse_url(qualified_me())['path'];
+        return (bool) preg_match('~/course/view.php$~', $path);
+    }
 
-        $modinfo = get_fast_modinfo($course);
-        $modules = $modinfo->get_instances_of('resource');
-        if (empty($modules)) {
-            return [];
+    /**
+     * Map file paths to pathname hash.
+     * @return array
+     * @throws coding_exception
+     * @throws moodle_exception
+     */
+    protected function map_assignment_file_paths_to_pathhash() {
+        global $PAGE;
+        $map = [];
+
+        if ($PAGE->pagetype === 'mod-assign-view') {
+            $cmid = optional_param('id', false, PARAM_INT);
+            if ($cmid === false) {
+                return $map;
+            }
+            list($course, $cm) = get_course_and_cm_from_cmid($cmid);
+            unset($course);
+            /** @var cm_info $cm */
+            $cm;
+            $fs = get_file_storage();
+            $files = $fs->get_area_files($cm->context->id, 'mod_assign', 'introattachment');
+            foreach ($files as $file) {
+                if ($file->is_directory()) {
+                    continue;
+                }
+                $fullpath = $cm->context->id.'/mod_assign/introattachment/'.
+                    $file->get_itemid().'/'.
+                    $file->get_filepath().'/'.
+                    $file->get_filename();
+                $fullpath = str_replace('///', '/', $fullpath);
+                $map[$fullpath] = $file->get_pathnamehash();
+            }
         }
-        $contextsbymoduleid = [];
-        $moduleidsbycontext = [];
-        foreach ($modules as $modid => $module) {
-            $contextsbymoduleid[$module->id] = $module->context->id;
-            $moduleidsbycontext[$module->context->id] = $module->id;
-        }
 
-        list($insql, $params) = $DB->get_in_or_equal($contextsbymoduleid);
-
-        $sql = "contextid $insql AND component = 'mod_resource' AND mimetype IS NOT NULL AND filename != '.'";
-
-        $files = $DB->get_records_select('files', $sql, $params);
-        $fileidsbymoduleid = [];
-        foreach ($files as $id => $file) {
-            $moduleid = $moduleidsbycontext[$file->contextid];
-            $fileidsbymoduleid[$moduleid] = $file->id;
-        }
-
-        return $fileidsbymoduleid;
+        return $map;
     }
 
     /**
@@ -72,6 +90,10 @@ class filter_ally extends moodle_text_filter {
      */
     protected function map_moduleid_to_pathhash($course) {
         global $DB;
+
+        if (!$this->is_course_page()) {
+            return [];
+        }
 
         $modinfo = get_fast_modinfo($course);
         $modules = $modinfo->get_instances_of('resource');
@@ -115,13 +137,15 @@ class filter_ally extends moodle_text_filter {
             require_once($CFG->libdir.'/filelib.php');
 
             $modulefilemapping = $this->map_moduleid_to_pathhash($COURSE);
+            $assignmentmap = $this->map_assignment_file_paths_to_pathhash();
             $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
             $coursecontext = context_course::instance($COURSE->id);
             $canviewfeedback = has_capability('filter/ally:viewfeedback', $coursecontext);
             $candownload = isloggedin() && !is_guest($coursecontext);
 
             $modulemaps = [
-                'file_resources' => $modulefilemapping
+                'file_resources' => $modulefilemapping,
+                'assignment_files' => $assignmentmap
             ];
             $json = json_encode($modulemaps);
 
