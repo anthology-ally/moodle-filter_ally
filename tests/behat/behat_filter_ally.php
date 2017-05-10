@@ -298,6 +298,10 @@ class behat_filter_ally extends behat_base {
             $path = "//div[contains(@id, 'assign_files_tree')]//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
             $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')][$anchorx]";
             $path .= "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
+        } else if ($type === 'file in folder') {
+            $path = "//div[contains(@id, 'folder_tree0')]//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
+            $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')][$anchorx]";
+            $path .= "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
         } else {
             throw new coding_exception('Unknown feedback container type: '.$type);
         }
@@ -329,7 +333,7 @@ class behat_filter_ally extends behat_base {
 
     /**
      * @Given /^I should see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" \
-     * (anchor|file resource|assignment file)$/
+     * (anchor|file resource|assignment file|file in folder)$/
      * @param string $anchorx
      * @param string $type
      */
@@ -340,7 +344,7 @@ class behat_filter_ally extends behat_base {
 
     /**
      * @Given /^I should not see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" \
-     * (anchor|file resource|assignment file)$/
+     * (anchor|file resource|assignment file|file in folder)$/
      * @param string $anchorx
      */
     public function i_should_not_see_feedback_for_anchor_x($anchorx, $type) {
@@ -350,7 +354,7 @@ class behat_filter_ally extends behat_base {
 
     /**
      * @Given /^I should see the download place holder for the "(\d*)(?:st|nd|rd|th)" \
-     * (anchor|file resource|assignment file)$/
+     * (anchor|file resource|assignment file|file in folder)$/
      * @param string $anchorx
      */
     public function i_should_see_download_for_anchor_x($anchorx, $type) {
@@ -360,7 +364,7 @@ class behat_filter_ally extends behat_base {
 
     /**
      * @Given /^I should not see the download place holder for the "(\d*)(?:st|nd|rd|th)" \
-     * (anchor|file resource|assignment file)$/
+     * (anchor|file resource|assignment file|file in folder)$/
      * @param string $anchorx
      */
     public function i_should_not_see_download_for_anchor_x($anchorx, $type) {

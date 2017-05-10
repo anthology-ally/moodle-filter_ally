@@ -162,6 +162,43 @@ class filter_ally extends moodle_text_filter {
     }
 
     /**
+     * Map folder file paths to pathname hash.
+     * @return array
+     * @throws coding_exception
+     * @throws moodle_exception
+     */
+    protected function map_folder_file_paths_to_pathhash() {
+        global $PAGE;
+        $map = [];
+
+        if ($PAGE->pagetype === 'mod-folder-view') {
+            $cmid = optional_param('id', false, PARAM_INT);
+            if ($cmid === false) {
+                return $map;
+            }
+            list($course, $cm) = get_course_and_cm_from_cmid($cmid);
+            unset($course);
+            /** @var cm_info $cm */
+            $cm;
+            $fs = get_file_storage();
+            $files = $fs->get_area_files($cm->context->id, 'mod_folder', 'content');
+            foreach ($files as $file) {
+                if ($file->is_directory()) {
+                    continue;
+                }
+                $fullpath = $cm->context->id.'/mod_folder/content/'.
+                    $file->get_itemid().'/'.
+                    $file->get_filepath().
+                    $file->get_filename();
+                $fullpath = str_replace('//', '/', $fullpath);
+                $map[$fullpath] = $file->get_pathnamehash();
+            }
+        }
+
+        return $map;
+    }
+
+    /**
      * Map moduleid to pathname hash.
      * @param $course
      * @return array
@@ -230,6 +267,7 @@ class filter_ally extends moodle_text_filter {
             $modulefilemapping = $this->map_moduleid_to_pathhash($COURSE);
             $assignmentmap = $this->map_assignment_file_paths_to_pathhash();
             $forummap = $this->map_forum_attachment_file_paths_to_pathhash();
+            $foldermap = $this->map_folder_file_paths_to_pathhash();
             $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
             $coursecontext = context_course::instance($COURSE->id);
             $canviewfeedback = has_capability('filter/ally:viewfeedback', $coursecontext);
@@ -238,7 +276,8 @@ class filter_ally extends moodle_text_filter {
             $modulemaps = [
                 'file_resources' => $modulefilemapping,
                 'assignment_files' => $assignmentmap,
-                'forum_files' => $forummap
+                'forum_files' => $forummap,
+                'folder_files' => $foldermap,
             ];
             $json = json_encode($modulemaps);
 
@@ -351,11 +390,17 @@ EOF;
                     $itemid = $arr[2];
                     $filename = $arr[3];
                 } else {
-                    // Not supported.
-                    debugging("url not supported - $url");
-                    continue;
+                    $component = array_shift($arr);
+                    $filearea = array_shift($arr);
+                    $itemid = array_shift($arr);
+                    $filename = implode($arr, '/');
                 }
                 $component = urldecode($component);
+                // Strip params from end of the url .e.g. file.pdf?forcedownload=1.
+                $query = strpos($filename, '?');
+                if ($query) {
+                    $filename = substr($filename, 0, $query);
+                }
                 $filename = urldecode($filename);
                 $filearea = urldecode($filearea);
 
@@ -372,8 +417,8 @@ EOF;
                     $files = $files->with_itemid($itemid);
                     $filekeys = [];
                     foreach ($files as $file) {
-                        $pathhash = $file->get_pathnamehash();
-                        $filekeys[$pathhash] = $pathhash;
+                        $key = $file->get_pathnamehash();
+                        $filekeys[$key] = true;
                     }
                     unset($files);
                     $filesbyareakey[$areakey] = $filekeys;
@@ -408,6 +453,10 @@ EOF;
                 }
 
                 $replaceregex = '~'.preg_quote($stripclosingtag, '~').'(?:\s*|)(?:>|/>)~m';
+
+                if ($component == 'mod_folder') {
+                    $replaceregex = '/<a href="' . preg_quote($url, '/') . '">.*?<\/a>/';
+                }
 
                 $text = preg_replace($replaceregex, $wrapped, $text);
             }
