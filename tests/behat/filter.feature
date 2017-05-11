@@ -22,7 +22,7 @@
 
 
 @filter @filter_ally
-Feature: When the ally filter is enabled ally place holders are inserted when appropriate.
+Feature: When the ally filter is enabled ally place holders are inserted when appropriate into user generated content.
 
   Background:
     Given the ally filter is enabled

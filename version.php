@@ -29,3 +29,6 @@ $plugin->release = '3.2';
 $plugin->version = 2017042004;
 $plugin->requires = 2016052300;
 $plugin->maturity = MATURITY_ALPHA;
+$plugin->dependencies = array(
+    'tool_ally' => 2016121905,
+);

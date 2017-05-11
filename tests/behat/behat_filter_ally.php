@@ -298,7 +298,8 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
-     * @Given /^I should see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource|assignment file)$/
+     * @Given /^I should see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" \
+     * (anchor|file resource|assignment file)$/
      * @param string $anchorx
      * @param string $type
      */
@@ -308,7 +309,8 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
-     * @Given /^I should not see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource|assignment file)$/
+     * @Given /^I should not see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" \
+     * (anchor|file resource|assignment file)$/
      * @param string $anchorx
      */
     public function i_should_not_see_feedback_for_anchor_x($anchorx, $type) {
@@ -317,7 +319,8 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
-     * @Given /^I should see the download place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource|assignment file)$/
+     * @Given /^I should see the download place holder for the "(\d*)(?:st|nd|rd|th)" \
+     * (anchor|file resource|assignment file)$/
      * @param string $anchorx
      */
     public function i_should_see_download_for_anchor_x($anchorx, $type) {
@@ -326,11 +329,75 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
-     * @Given /^I should not see the download place holder for the "(\d*)(?:st|nd|rd|th)" (anchor|file resource|assignment file)$/
+     * @Given /^I should not see the download place holder for the "(\d*)(?:st|nd|rd|th)" \
+     * (anchor|file resource|assignment file)$/
      * @param string $anchorx
      */
     public function i_should_not_see_download_for_anchor_x($anchorx, $type) {
         $path = $this->get_placeholder_xpath($anchorx, 'ally-download', $type);
+        $this->execute('behat_general::should_not_exist', [$path, 'xpath_element']);
+    }
+
+    /**
+     * Forum post xpath
+     * @param string $posttitle
+     * @param string $postauthor
+     * @param string $type - feedback or download
+     * @return string
+     */
+    protected function forum_post_xpath($posttitle, $postauthor, $type) {
+        $placeholderpath = '//span[@class="ally-'.$type.'"]';
+        $pathforum = '//div[@aria-label="'.$posttitle.' by '.$postauthor.'"]'.$placeholderpath;
+        $pathadvancedforum = '//h4[contains(text(), "'.$posttitle.'")]/'.
+            'ancestor::article[@data-author="'.$postauthor.'"]'.$placeholderpath;
+        $pathadvancedforum .= '|//div[@class="hsuforum-post-title"][contains(text(), "'.$posttitle.'")]/'.
+            'ancestor::div[@data-author="'.$postauthor.'"]'.$placeholderpath;
+
+        $path = $pathforum.'|'.$pathadvancedforum;
+        return $path;
+    }
+
+    /**
+     * @Given /^I should see the feedback place holder for the post entitled "(?P<post_string>[^"]*)" \
+     * by "(?P<post_author>[^"]*)"$/
+     * @param string $posttitle
+     * @param string $postauthor
+     */
+    public function i_should_see_feedback_for_forum_post($posttitle, $postauthor) {
+        $path = $this->forum_post_xpath($posttitle, $postauthor, 'feedback');
+        $this->execute('behat_general::assert_element_contains_text', ['FEEDBACK', $path, 'xpath_element']);
+    }
+
+    /**
+     * @Given /^I should not see the feedback place holder for the post entitled "(?P<post_string>[^"]*)" \
+     * by "(?P<post_author>[^"]*)"$/
+     * @param string $posttitle
+     * @param string $postauthor
+     */
+    public function i_should_not_see_feedback_for_forum_post($posttitle, $postauthor) {
+        $path = $this->forum_post_xpath($posttitle, $postauthor, 'feedback');
+        $this->execute('behat_general::should_not_exist', [$path, 'xpath_element']);
+    }
+
+    /**
+     * @Given /^I should see the download place holder for the post entitled "(?P<post_string>[^"]*)" \
+     * by "(?P<post_author>[^"]*)"$/
+     * @param string $posttitle
+     * @param string $postauthor
+     */
+    public function i_should_see_download_for_forum_post($posttitle, $postauthor) {
+        $path = $this->forum_post_xpath($posttitle, $postauthor, 'download');
+        $this->execute('behat_general::assert_element_contains_text', ['DOWNLOAD', $path, 'xpath_element']);
+    }
+
+    /**
+     * @Given /^I should not see the download place holder for the post entitled "(?P<post_string>[^"]*)" \
+     * by "(?P<post_author>[^"]*)"$/
+     * @param string $posttitle
+     * @param string $postauthor
+     */
+    public function i_should_not_see_download_for_forum_post($posttitle, $postauthor) {
+        $path = $this->forum_post_xpath($posttitle, $postauthor, 'download');
         $this->execute('behat_general::should_not_exist', [$path, 'xpath_element']);
     }
 

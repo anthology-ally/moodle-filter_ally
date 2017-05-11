@@ -22,13 +22,15 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
+use tool_ally\local_file;
+
 class filter_ally_testcase extends advanced_testcase {
 
     public $filter;
 
     public function setUp() {
-        require_once(__DIR__.'/../filter.php');
         global $PAGE, $CFG;
+        require_once(__DIR__.'/../filter.php');
 
         $PAGE->set_url($CFG->wwwroot.'/course/view.php');
         $context = context_system::instance();
@@ -156,6 +158,23 @@ class filter_ally_testcase extends advanced_testcase {
         $this->assertEmpty($map);
     }
 
+
+    /**
+     * Get mock html for testing images.
+     * @param string $url
+     * @return string
+     */
+    protected function img_mock_html($url) {
+        $text = <<<EOF
+        <p>
+            <span>text</span>
+            写埋ルがンい未50要スぱ指6<img src="$url"/>more more text
+        </p>
+        <img src="$url">Here's that image again but void without closing tag.
+EOF;
+        return $text;
+    }
+
     public function test_filter_img() {
         global $PAGE, $CFG;
         $this->resetAfterTest();
@@ -168,7 +187,9 @@ class filter_ally_testcase extends advanced_testcase {
         $student = $gen->create_user();
         $teacher = $gen->create_user();
         $gen->enrol_user($student->id, $course->id, 'student');
-        $gen->enrol_user($teacher->id, $course->id, 'teacher');
+        $gen->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        $this->setUser($teacher);
 
         $fs = get_file_storage();
         $filerecord = array(
@@ -180,18 +201,12 @@ class filter_ally_testcase extends advanced_testcase {
             'filename' => 'test.png'
         );
         $teststring = 'moodletest';
-        $fs->create_file_from_string($filerecord, $teststring);
-        $path = str_replace('//', '', implode('/', $filerecord));
+        $file = $fs->create_file_from_string($filerecord, $teststring);
+        $url = local_file::url($file);
 
         $this->setUser($student);
 
-        $text = <<<EOF
-        <p>
-            <span>text</span>
-            写埋ルがンい未50要スぱ指6<img src="$CFG->wwwroot/pluginfile.php/$path"/>more more text
-        </p>
-        <img src="$CFG->wwwroot/pluginfile.php/$path">Here's that image again but void without closing tag.
-EOF;
+        $text = $this->img_mock_html($url);
         $filteredtext = $this->filter->filter($text);
         // Make sure seizure guard image cover exists.
         $this->assertContains('<span class="ally-image-cover"', $filteredtext);
@@ -199,7 +214,7 @@ EOF;
         $this->assertNotContains('<span class="ally-feedback"', $filteredtext);
         // Make sure both images were processed.
         $substr = '<span class="filter-ally-wrapper ally-image-wrapper">'.
-            '<img src="'.$CFG->wwwroot.'/pluginfile.php/'.$path.'"';
+            '<img src="'.$url.'"';
         $count = substr_count($filteredtext, $substr);
         $this->assertEquals(2, $count);
         $substr = '<span class="ally-image-cover"';
@@ -214,7 +229,7 @@ EOF;
         $this->assertContains('<span class="ally-feedback"', $filteredtext);
         // Make sure both images were processed.
         $substr = '<span class="filter-ally-wrapper ally-image-wrapper">'.
-            '<img src="'.$CFG->wwwroot.'/pluginfile.php/'.$path.'"';
+            '<img src="'.$url.'"';
         $count = substr_count($filteredtext, $substr);
         $this->assertEquals(2, $count);
         $substr = '<span class="ally-image-cover"';
@@ -223,6 +238,38 @@ EOF;
         $substr = '<span class="ally-feedback"';
         $count = substr_count($filteredtext, $substr);
         $this->assertEquals(2, $count);
+
+        // Make sure that files created by students are not processed.
+        $this->setUser($student);
+        $fs = get_file_storage();
+        $label = $gen->create_module('label', ['course' => $course->id]);
+        $modinfo = get_fast_modinfo($course);
+        $cm = $modinfo->get_cm($label->cmid);
+        $filerecord = array(
+            'contextid' => $cm->context->id,
+            'component' => 'mod_label',
+            'filearea' => 'intro',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'test-student-file.png',
+            'userid' => $student->id
+        );
+        $teststring = 'moodletest';
+        $file = $fs->create_file_from_string($filerecord, $teststring);
+        $url = local_file::url($file);
+        $text = $this->img_mock_html($url);
+        // Make sure neither student created images were processed when logged in as a student.
+        $filteredtext = $this->filter->filter($text);
+        $this->assertNotContains('<span class="filter-ally-wrapper ally-image-wrapper">', $filteredtext);
+        $this->assertNotContains('<span class="ally-image-cover"', $filteredtext);
+        $this->assertNotContains('<span class="ally-feedback"', $filteredtext);
+
+        // Make sure neither student created images were processed when logged in as a teacher.
+        $this->setUser($teacher);
+        $filteredtext = $this->filter->filter($text);
+        $this->assertNotContains('<span class="filter-ally-wrapper ally-image-wrapper">', $filteredtext);
+        $this->assertNotContains('<span class="ally-image-cover"', $filteredtext);
+        $this->assertNotContains('<span class="ally-feedback"', $filteredtext);
     }
 
     public function test_filter_img_blacklistedcontexts() {
@@ -332,8 +379,24 @@ EOF;
         }
     }
 
+    /**
+     * Create mock html for anchors.
+     * @param string $url
+     * @return string
+     */
+    protected function anchor_mock_html($url) {
+        $text = <<<EOF
+        <p>
+            <span>text</span>
+            写埋ルがンい未50要スぱ指6<a href="$url">HI THERE</a>more more text
+        </p>
+        <a href="$url">Here's that anchor again.</a>Boo!
+EOF;
+        return $text;
+    }
+
     public function test_filter_anchor() {
-        global $CFG;
+
         $this->resetAfterTest();
 
         $gen = $this->getDataGenerator();
@@ -354,18 +417,12 @@ EOF;
             'filename' => 'test.txt'
         );
         $teststring = 'moodletest';
-        $fs->create_file_from_string($filerecord, $teststring);
-        $path = str_replace('//', '', implode('/', $filerecord));
+        $file = $fs->create_file_from_string($filerecord, $teststring);
+        $url = local_file::url($file);
 
         $this->setUser($student);
 
-        $text = <<<EOF
-        <p>
-            <span>text</span>
-            写埋ルがンい未50要スぱ指6<a href="$CFG->wwwroot/pluginfile.php/$path">HI THERE</a>more more text
-        </p>
-        <a href="$CFG->wwwroot/pluginfile.php/$path">Here's that anchor again.</a>Boo!
-EOF;
+        $text = $this->anchor_mock_html($url);
         $filteredtext = $this->filter->filter($text);
         // Make sure student gets download palceholder.
         $this->assertContains('<span class="ally-download"', $filteredtext);
@@ -373,7 +430,7 @@ EOF;
         $this->assertNotContains('<span class="ally-feedback"', $filteredtext);
         // Make sure both anchors were processed.
         $substr = '<span class="filter-ally-wrapper ally-anchor-wrapper">'.
-            '<a href="'.$CFG->wwwroot.'/pluginfile.php/'.$path.'"';
+            '<a href="'.$url.'"';
         $count = substr_count($filteredtext, $substr);
         $this->assertEquals(2, $count);
 
@@ -385,9 +442,41 @@ EOF;
         $this->assertContains('<span class="ally-feedback"', $filteredtext);
         // Make sure both anchors were processed.
         $substr = '<span class="filter-ally-wrapper ally-anchor-wrapper">'.
-            '<a href="'.$CFG->wwwroot.'/pluginfile.php/'.$path.'"';
+            '<a href="'.$url.'"';
         $count = substr_count($filteredtext, $substr);
         $this->assertEquals(2, $count);
+
+        // Make sure that files created by students are not processed.
+        $this->setUser($student);
+        $fs = get_file_storage();
+        $label = $gen->create_module('label', ['course' => $course->id]);
+        $modinfo = get_fast_modinfo($course);
+        $cm = $modinfo->get_cm($label->cmid);
+        $filerecord = array(
+            'contextid' => $cm->context->id,
+            'component' => 'mod_label',
+            'filearea' => 'intro',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'test-student-file.txt',
+            'userid' => $student->id
+        );
+        $teststring = 'moodletest';
+        $file = $fs->create_file_from_string($filerecord, $teststring);
+        $url = local_file::url($file);
+        $text = $this->anchor_mock_html($url);
+        // Make sure neither student created files were processed when logged in as a student.
+        $filteredtext = $this->filter->filter($text);
+        $this->assertNotContains('<span class="filter-ally-wrapper ally-image-wrapper">', $filteredtext);
+        $this->assertNotContains('<span class="ally-download"', $filteredtext);
+        $this->assertNotContains('<span class="ally-feedback"', $filteredtext);
+
+        // Make sure neither student created files were processed when logged in as a teacher.
+        $this->setUser($teacher);
+        $filteredtext = $this->filter->filter($text);
+        $this->assertNotContains('<span class="filter-ally-wrapper ally-image-wrapper">', $filteredtext);
+        $this->assertNotContains('<span class="ally-download"', $filteredtext);
+        $this->assertNotContains('<span class="ally-feedback"', $filteredtext);
     }
 
     public function test_filter_anchor_blacklistedcontexts() {
@@ -491,5 +580,68 @@ EOF;
             $count = substr_count($filteredtext, $substr);
             $this->assertEquals(1, $count);
         }
+    }
+
+    public function test_map_forum_attachment_file_paths_to_pathhash() {
+        global $PAGE, $CFG, $DB, $COURSE;
+
+        $this->resetAfterTest();
+
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+        $student = $gen->create_user();
+        $teacher = $gen->create_user();
+        $gen->enrol_user($student->id, $course->id, 'student');
+        $gen->enrol_user($teacher->id, $course->id, 'editingteacher');
+        $this->setUser($teacher);
+
+        $PAGE->set_pagetype('mod-forum');
+        $COURSE = $course;
+
+        // Should be empty when nothing added.
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], 'filter_ally'
+        );
+        $this->assertEmpty($map);
+
+        $record = new stdClass();
+        $record->course = $course->id;
+        $forum = self::getDataGenerator()->create_module('forum', $record);
+        $_GET['id'] = $forum->cmid;
+        $record = array();
+        $record['course'] = $course->id;
+        $record['forum'] = $forum->id;
+        $record['userid'] = $teacher->id;
+        $discussion = self::getDataGenerator()->get_plugin_generator('mod_forum')->create_discussion($record);
+        $post = $DB->get_record('forum_posts', ['discussion' => $discussion->id, 'parent' => 0]);
+
+        // Add a text file.
+        $filerecord = ['component' => 'mod_forum', 'filearea' => 'attachment',
+            'contextid' => context_module::instance($forum->cmid)->id, 'itemid' => $post->id,
+            'filename' => 'test file.txt', 'filepath' => '/'];
+        $fs = get_file_storage();
+        $fs->create_file_from_string($filerecord, 'Test content');
+
+        // Should still be empty when a non image file has been added (only image files are mapped).
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], 'filter_ally'
+        );
+        $this->assertEmpty($map);
+
+        // Add an image file.
+        $testfile = 'testpng_small.png';
+        $filerecord = ['component' => 'mod_forum', 'filearea' => 'attachment',
+            'contextid' => context_module::instance($forum->cmid)->id, 'itemid' => $post->id,
+            'filename' => $testfile, 'filepath' => '/'];
+        $fs = get_file_storage();
+        $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
+        $fixturepath = $fixturedir.'/'.$testfile;
+        $fs->create_file_from_pathname($filerecord, $fixturepath);
+
+        // Shouldn't be be empty when an image file has been added (only image files are mapped).
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], 'filter_ally'
+        );
+        $this->assertNotEmpty($map);
     }
 }

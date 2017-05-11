@@ -23,7 +23,10 @@
  */
 defined('MOODLE_INTERNAL') || die();
 
+require_once(__DIR__.'/../../mod/forum/lib.php');
+
 use filter_ally\renderables\wrapper;
+use tool_ally\local_file;
 
 /**
  * Filter for processing file links for Ally accessibility enhancements.
@@ -45,6 +48,97 @@ class filter_ally extends moodle_text_filter {
     }
 
     /**
+     * Get file map for specific course module, component and file area.
+     * @param cm_info $cm
+     * @param string $component
+     * @param string $filearea
+     * @param string $mimetype
+     * @return array
+     * @throws coding_exception
+     */
+    protected function get_cm_file_map(cm_info $cm, $component, $filearea, $mimetype = null) {
+        $map = [];
+
+        $files = local_file::iterator();
+        /** @var stored_file[] $files */
+        $files = $files->in_context($cm->context)->with_component($component)->with_filearea($filearea);
+
+        if (!empty($mimetype)) {
+            $files = $files->with_mimetype($mimetype);
+        }
+
+        foreach ($files as $file) {
+            if ($file->is_directory()) {
+                continue;
+            }
+            $fullpath = $cm->context->id.'/'.$component.'/'.$filearea.'/'.
+                $file->get_itemid().'/'.
+                $file->get_filepath().'/'.
+                $file->get_filename();
+            $fullpath = str_replace('///', '/', $fullpath);
+            $map[$fullpath] = $file->get_pathnamehash();
+        }
+        return $map;
+    }
+
+    /**
+     * Get course module for specific forum in current course.
+     * @param int $forumid
+     * @return cm_info
+     */
+    protected function get_forum_cm($forumid) {
+        global $COURSE;
+        $modinfo = get_fast_modinfo($COURSE);
+        $instances = $modinfo->get_instances_of('forum');
+        $cm = $instances[$forumid];
+        return $cm;
+    }
+
+    /**
+     * Return file map for forum.
+     * @return array
+     * @throws coding_exception
+     * @throws moodle_exception
+     */
+    protected function map_forum_attachment_file_paths_to_pathhash() {
+        global $PAGE, $COURSE, $DB;
+        $map = [];
+        $cm = false;
+
+        if ($COURSE->format === 'social') {
+            if ($forum = forum_get_course_forum($COURSE->id, 'social')) {
+                $cm = $this->get_forum_cm($forum->id);
+            }
+        } else if (strpos($PAGE->pagetype, 'mod-forum') === 0) {
+            $cmid = optional_param('id', false, PARAM_INT);
+            if ($cmid) {
+                list($course, $cm) = get_course_and_cm_from_cmid($cmid);
+                unset($course);
+            } else {
+                $forumid = optional_param('forum', false, PARAM_INT);
+                if (!$forumid) {
+                    $forumid = optional_param('f', false, PARAM_INT);
+                }
+                if (!$forumid) {
+                    $discussionid = optional_param('d', false, PARAM_INT);
+                    if ($discussionid) {
+                        $forumid = $DB->get_field('forum_discussions', 'forum', ['id' => $discussionid]);
+                    }
+                }
+                if ($forumid) {
+                    $cm = $this->get_forum_cm($forumid);
+                }
+            }
+        }
+
+        if (!empty($cm)) {
+            $map = $this->get_cm_file_map($cm, 'mod_forum', 'attachment', 'image%');
+        }
+
+        return $map;
+    }
+
+    /**
      * Map file paths to pathname hash.
      * @return array
      * @throws coding_exception
@@ -61,21 +155,7 @@ class filter_ally extends moodle_text_filter {
             }
             list($course, $cm) = get_course_and_cm_from_cmid($cmid);
             unset($course);
-            /** @var cm_info $cm */
-            $cm;
-            $fs = get_file_storage();
-            $files = $fs->get_area_files($cm->context->id, 'mod_assign', 'introattachment');
-            foreach ($files as $file) {
-                if ($file->is_directory()) {
-                    continue;
-                }
-                $fullpath = $cm->context->id.'/mod_assign/introattachment/'.
-                    $file->get_itemid().'/'.
-                    $file->get_filepath().'/'.
-                    $file->get_filename();
-                $fullpath = str_replace('///', '/', $fullpath);
-                $map[$fullpath] = $file->get_pathnamehash();
-            }
+            $map = $this->get_cm_file_map($cm, 'mod_assign', 'introattachment');
         }
 
         return $map;
@@ -138,6 +218,7 @@ class filter_ally extends moodle_text_filter {
 
             $modulefilemapping = $this->map_moduleid_to_pathhash($COURSE);
             $assignmentmap = $this->map_assignment_file_paths_to_pathhash();
+            $forummap = $this->map_forum_attachment_file_paths_to_pathhash();
             $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
             $coursecontext = context_course::instance($COURSE->id);
             $canviewfeedback = has_capability('filter/ally:viewfeedback', $coursecontext);
@@ -145,7 +226,8 @@ class filter_ally extends moodle_text_filter {
 
             $modulemaps = [
                 'file_resources' => $modulefilemapping,
-                'assignment_files' => $assignmentmap
+                'assignment_files' => $assignmentmap,
+                'forum_files' => $forummap
             ];
             $json = json_encode($modulemaps);
 
@@ -188,7 +270,6 @@ EOF;
             return $text;
         }
 
-        $fs = get_file_storage();
         $filesbyareakey = [];
 
         $doc = new \DOMDocument();
@@ -267,16 +348,22 @@ EOF;
                 $pathhash = sha1($filepath);
 
                 if (!isset($filesbyareakey[$areakey])) {
-                    $files = $fs->get_area_files($contextid, $component, $filearea, $itemid);
-                    $filekeys = array_keys($files);
+                    $files = local_file::iterator();
+                    /** @var stored_file[] $files */
+                    $files = $files->in_context($context)->with_component($component)->with_filearea($filearea);
+                    $files = $files->with_itemid($itemid);
+                    $filekeys = [];
+                    foreach ($files as $file) {
+                        $pathhash = $file->get_pathnamehash();
+                        $filekeys[$pathhash] = $pathhash;
+                    }
                     unset($files);
-                    $filekeys = array_combine($filekeys, $filekeys);
                     $filesbyareakey[$areakey] = $filekeys;
                 }
 
                 $filesbypathhash = $filesbyareakey[$areakey];
                 if (!isset($filesbypathhash[$pathhash])) {
-                    debugging('Failed to get the file '.$filepath);
+                    // Assume that this file should not be processed - i.e. not authored by a teacher / manager, etc.
                     continue;
                 }
 
