@@ -141,7 +141,7 @@ class filter_ally extends moodle_text_filter {
             $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
             $coursecontext = context_course::instance($COURSE->id);
             $canviewfeedback = has_capability('filter/ally:viewfeedback', $coursecontext);
-            $candownload = isloggedin() && !is_guest($coursecontext);
+            $candownload = has_capability('filter/ally:viewdownload', $coursecontext);
 
             $modulemaps = [
                 'file_resources' => $modulefilemapping,
@@ -282,7 +282,7 @@ EOF;
                 // Flag html as processed with #P# so that it doesn't get hit again with multiples of the same link or image.
                 $wrapper->html = str_replace('<'.$type, '<'.$type.'#P#', $html);
                 $wrapper->url = $url;
-                $wrapper->candownload = true; // If they got this far then they can download!
+                $wrapper->candownload = has_capability('filter/ally:viewdownload', $context);
                 $wrapper->canviewfeedback = has_capability('filter/ally:viewfeedback', $context);
                 $wrapper->isimage = $type === 'img';
                 $wrapped = $renderer->render_wrapper($wrapper);
