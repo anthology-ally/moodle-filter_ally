@@ -279,6 +279,59 @@ EOF;
         }
     }
 
+    /**
+     * Make sure that regex chars are handled correctly when present in img src file names.
+     */
+    public function test_filter_img_regexchars() {
+        $this->resetAfterTest();
+
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+        $teacher = $gen->create_user();
+        $gen->enrol_user($teacher->id, $course->id, 'teacher');
+        $this->setUser($teacher);
+        $fs = get_file_storage();
+
+        // Test regex chars in file name.
+        $regextestfilenames = [
+            'test (2).png',
+            'test (3:?).png',
+            'test (~4).png'
+        ];
+        $urls = [];
+        $text = '';
+        foreach ($regextestfilenames as $filename) {
+            $filerecord = array(
+                'contextid' => context_course::instance($course->id)->id,
+                'component' => 'test',
+                'filearea' => 'intro',
+                'itemid' => 0,
+                'filepath' => '/',
+                'filename' => $filename
+            );
+            $teststring = 'moodletest';
+            $file = $fs->create_file_from_string($filerecord, $teststring);
+            $url = tool_ally\local_file::url($file);
+            $urls[] = $url;
+            $text .= '<img src="'.$url.'"/>test';
+        }
+        $text = '<p>'.$text.'</p>';
+        $filteredtext = $this->filter->filter($text);
+        // Make sure all images were processed.
+        $substr = '<span class="ally-image-cover"';
+        $count = substr_count($filteredtext, $substr);
+        $this->assertEquals(count($regextestfilenames), $count);
+        $substr = '<span class="ally-feedback"';
+        $count = substr_count($filteredtext, $substr);
+        $this->assertEquals(count($regextestfilenames), $count);
+        foreach ($urls as $url) {
+            $substr = '<span class="filter-ally-wrapper ally-image-wrapper">' .
+                '<img src="' . $url . '"';
+            $count = substr_count($filteredtext, $substr);
+            $this->assertEquals(1, $count);
+        }
+    }
+
     public function test_filter_anchor() {
         global $CFG;
         $this->resetAfterTest();
@@ -384,6 +437,59 @@ EOF;
             $substr = '<span class="filter-ally-wrapper ally-anchor-wrapper">'.
                 '<a href="'.$CFG->wwwroot.'/pluginfile.php/'.$path.'"';
             $this->assertNotContains($substr, $filteredtext);
+        }
+    }
+
+    /**
+     * Make sure that regex chars are handled correctly when present in anchor href file names.
+     */
+    public function test_filter_anchor_regexchars() {
+        $this->resetAfterTest();
+
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+        $teacher = $gen->create_user();
+        $gen->enrol_user($teacher->id, $course->id, 'teacher');
+        $this->setUser($teacher);
+        $fs = get_file_storage();
+
+        // Test regex chars in file name.
+        $regextestfilenames = [
+            'test (2).txt',
+            'test (3:?).txt',
+            'test (~4).txt'
+        ];
+        $urls = [];
+        $text = '';
+        foreach ($regextestfilenames as $filename) {
+            $filerecord = array(
+                'contextid' => context_course::instance($course->id)->id,
+                'component' => 'test',
+                'filearea' => 'intro',
+                'itemid' => 0,
+                'filepath' => '/',
+                'filename' => $filename
+            );
+            $teststring = 'moodletest';
+            $file = $fs->create_file_from_string($filerecord, $teststring);
+            $url = tool_ally\local_file::url($file);
+            $urls[] = $url;
+            $text .= '<a href="'.$url.'">test</a>';
+        }
+        $text = '<p>'.$text.'</p>';
+        $filteredtext = $this->filter->filter($text);
+        // Make sure all images were processed.
+        $substr = '<span class="ally-download"';
+        $count = substr_count($filteredtext, $substr);
+        $this->assertEquals(count($regextestfilenames), $count);
+        $substr = '<span class="ally-feedback"';
+        $count = substr_count($filteredtext, $substr);
+        $this->assertEquals(count($regextestfilenames), $count);
+        foreach ($urls as $url) {
+            $substr = '<span class="filter-ally-wrapper ally-anchor-wrapper">' .
+                '<a href="' . $url . '"';
+            $count = substr_count($filteredtext, $substr);
+            $this->assertEquals(1, $count);
         }
     }
 }

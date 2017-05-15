@@ -222,7 +222,6 @@ EOF;
             $url = $element->url;
 
             if (strpos($url, 'pluginfile.php') !== false) {
-
                 $regex = '/(?:.*)pluginfile\.php\/(\d*?)\/(.*)$/';
                 $matches = [];
                 preg_match($regex, $url, $matches);
@@ -303,7 +302,7 @@ EOF;
                     $stripclosingtag = substr($html, 0, strlen($html) - 1);
                 }
 
-                $replaceregex = '~'.$stripclosingtag.'(?:\s*|)(?:>|/>)~m';
+                $replaceregex = '~'.preg_quote($stripclosingtag, '~').'(?:\s*|)(?:>|/>)~m';
 
                 $text = preg_replace($replaceregex, $wrapped, $text);
             }
