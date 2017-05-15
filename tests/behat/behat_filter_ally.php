@@ -254,7 +254,8 @@ class behat_filter_ally extends behat_base {
         $imagex = intval($imagex);
         $path = "//span[contains(concat(' ', @class, ' '), ' ally-image-wrapper ')][$imagex]";
         $path .= "//span[contains(concat(' ', @class, ' '), ' ally-feedback ')]";
-        $this->execute('behat_general::assert_element_contains_text', ['FEEDBACK', $path, 'xpath_element']);
+        $node = $this->get_selected_node('xpath_element', $path);
+        $this->ensure_node_is_visible($node);
     }
 
     /**
@@ -290,22 +291,22 @@ class behat_filter_ally extends behat_base {
     protected function get_placeholder_xpath($anchorx, $phclass, $type) {
         $anchorx = intval($anchorx);
         if ($type === 'anchor') {
-            $path = "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')][$anchorx]";
+            $path = "//*[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')][$anchorx]";
         } else if ($type === 'file resource') {
             $path = "//li[contains(concat(' ', @class, ' '), ' modtype_resource ')][$anchorx]";
-            $path .= "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
+            $path .= "//*[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
         } else if ($type === 'assignment file') {
             $path = "//div[contains(@id, 'assign_files_tree')]//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
             $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')][$anchorx]";
-            $path .= "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
+            $path .= "//*[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
         } else if ($type === 'file in folder') {
             $path = "//div[contains(@id, 'folder_tree0')]//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
             $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')][$anchorx]";
-            $path .= "//span[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
+            $path .= "//*[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
         } else {
             throw new coding_exception('Unknown feedback container type: '.$type);
         }
-        $path .= "//span[contains(concat(' ', @class, ' '), ' $phclass ')]";
+        $path .= "//*[contains(concat(' ', @class, ' '), ' $phclass ')]";
         return $path;
     }
 
@@ -314,8 +315,8 @@ class behat_filter_ally extends behat_base {
      */
     public function i_should_not_see_any_placeholders_in_the_submissions_area() {
         $xpathbase = "//div[contains(@class, 'summary_assignsubmission_file')]";
-        $xpathdownload = "$xpathbase//span[contains(concat(' ', @class, ' '), ' ally-download ')]";
-        $xpathfeedback = "$xpathbase//span[contains(concat(' ', @class, ' '), ' ally-feedback ')]";
+        $xpathdownload = "$xpathbase//*[contains(concat(' ', @class, ' '), ' ally-download ')]";
+        $xpathfeedback = "$xpathbase//*[contains(concat(' ', @class, ' '), ' ally-feedback ')]";
         $xpath = $xpathdownload.'|'.$xpathfeedback;
         $this->execute('behat_general::should_not_exist', [$xpath, 'xpath_element']);
     }
@@ -325,8 +326,8 @@ class behat_filter_ally extends behat_base {
      */
     public function i_should_not_see_any_placeholders_in_the_grading_submissions_column() {
         $xpathbase = "//div[contains(@id, 'assign_files_tree')]";
-        $xpathdownload = "$xpathbase//span[contains(concat(' ', @class, ' '), ' ally-download ')]";
-        $xpathfeedback = "$xpathbase//span[contains(concat(' ', @class, ' '), ' ally-feedback ')]";
+        $xpathdownload = "$xpathbase//*[contains(concat(' ', @class, ' '), ' ally-download ')]";
+        $xpathfeedback = "$xpathbase//*[contains(concat(' ', @class, ' '), ' ally-feedback ')]";
         $xpath = $xpathdownload.'|'.$xpathfeedback;
         $this->execute('behat_general::should_not_exist', [$xpath, 'xpath_element']);
     }
@@ -339,7 +340,8 @@ class behat_filter_ally extends behat_base {
      */
     public function i_should_see_feedback_for_anchor_x($anchorx, $type) {
         $path = $this->get_placeholder_xpath($anchorx, 'ally-feedback', $type);
-        $this->execute('behat_general::assert_element_contains_text', ['FEEDBACK', $path, 'xpath_element']);
+        $node = $this->get_selected_node('xpath_element', $path);
+        $this->ensure_node_is_visible($node);
     }
 
     /**
@@ -359,7 +361,8 @@ class behat_filter_ally extends behat_base {
      */
     public function i_should_see_download_for_anchor_x($anchorx, $type) {
         $path = $this->get_placeholder_xpath($anchorx, 'ally-download', $type);
-        $this->execute('behat_general::assert_element_contains_text', ['DOWNLOAD', $path, 'xpath_element']);
+        $node = $this->get_selected_node('xpath_element', $path);
+        $this->ensure_node_is_visible($node);
     }
 
     /**
@@ -380,7 +383,7 @@ class behat_filter_ally extends behat_base {
      * @return string
      */
     protected function forum_post_xpath($posttitle, $postauthor, $type) {
-        $placeholderpath = '//span[@class="ally-'.$type.'"]';
+        $placeholderpath = "//*[contains(concat(' ', @class, ' '), ' ally-{$type} ')]";
         $pathforum = '//div[@aria-label="'.$posttitle.' by '.$postauthor.'"]'.$placeholderpath;
         $pathadvancedforum = '//h4[contains(text(), "'.$posttitle.'")]/'.
             'ancestor::article[@data-author="'.$postauthor.'"]'.$placeholderpath;
@@ -399,7 +402,8 @@ class behat_filter_ally extends behat_base {
      */
     public function i_should_see_feedback_for_forum_post($posttitle, $postauthor) {
         $path = $this->forum_post_xpath($posttitle, $postauthor, 'feedback');
-        $this->execute('behat_general::assert_element_contains_text', ['FEEDBACK', $path, 'xpath_element']);
+        $node = $this->get_selected_node('xpath_element', $path);
+        $this->ensure_node_is_visible($node);
     }
 
     /**
@@ -421,7 +425,8 @@ class behat_filter_ally extends behat_base {
      */
     public function i_should_see_download_for_forum_post($posttitle, $postauthor) {
         $path = $this->forum_post_xpath($posttitle, $postauthor, 'download');
-        $this->execute('behat_general::assert_element_contains_text', ['DOWNLOAD', $path, 'xpath_element']);
+        $node = $this->get_selected_node('xpath_element', $path);
+        $this->ensure_node_is_visible($node);
     }
 
     /**
