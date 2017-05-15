@@ -225,6 +225,60 @@ EOF;
         $this->assertEquals(2, $count);
     }
 
+    public function test_filter_img_blacklistedcontexts() {
+        global $PAGE, $CFG, $USER;
+        $this->resetAfterTest();
+
+        $this->setAdminUser();
+
+        $PAGE->set_url($CFG->wwwroot.'/course/view.php');
+
+        $gen = $this->getDataGenerator();
+
+        $category = $gen->create_category();
+
+        $blacklistedcontexts = [
+            context_coursecat::instance($category->id),
+            context_system::instance(),
+            context_user::instance($USER->id)
+        ];
+
+        foreach ($blacklistedcontexts as $context) {
+            $fs = get_file_storage();
+            $filerecord = array(
+                'contextid' => $context->id,
+                'component' => 'test',
+                'filearea' => 'intro',
+                'itemid' => 0,
+                'filepath' => '/',
+                'filename' => 'test.png'
+            );
+            $teststring = 'moodletest';
+            $fs->create_file_from_string($filerecord, $teststring);
+            $path = str_replace('//', '', implode('/', $filerecord));
+
+            $text = <<<EOF
+            <p>
+                <span>text</span>
+                写埋ルがンい未50要スぱ指6<img src="$CFG->wwwroot/pluginfile.php/$path"/>more more text
+            </p>
+            <img src="$CFG->wwwroot/pluginfile.php/$path">Here's that image again but void without closing tag.
+EOF;
+
+            // We shouldn't get anything when the contexts are blacklisted.
+            $filteredtext = $this->filter->filter($text);
+            $this->assertNotContains('<span class="ally-image-cover"', $filteredtext);
+            $this->assertNotContains('<span class="ally-feedback"', $filteredtext);
+            $substr = '<span class="filter-ally-wrapper ally-image-wrapper">' .
+                '<img src="' . $CFG->wwwroot . '/pluginfile.php/' . $path . '"';
+            $this->assertNotContains($substr, $filteredtext);
+            $substr = '<span class="ally-image-cover"';
+            $this->assertNotContains($substr, $filteredtext);
+            $substr = '<span class="ally-feedback"';
+            $this->assertNotContains($substr, $filteredtext);
+        }
+    }
+
     public function test_filter_anchor() {
         global $CFG;
         $this->resetAfterTest();
@@ -281,5 +335,55 @@ EOF;
             '<a href="'.$CFG->wwwroot.'/pluginfile.php/'.$path.'"';
         $count = substr_count($filteredtext, $substr);
         $this->assertEquals(2, $count);
+    }
+
+    public function test_filter_anchor_blacklistedcontexts() {
+        global $PAGE, $CFG, $USER;
+        $this->resetAfterTest();
+
+        $this->setAdminUser();
+
+        $PAGE->set_url($CFG->wwwroot.'/course/view.php');
+
+        $gen = $this->getDataGenerator();
+
+        $category = $gen->create_category();
+
+        $blacklistedcontexts = [
+            context_coursecat::instance($category->id),
+            context_system::instance(),
+            context_user::instance($USER->id)
+        ];
+
+        foreach ($blacklistedcontexts as $context) {
+            $fs = get_file_storage();
+            $filerecord = array(
+                'contextid' => $context->id,
+                'component' => 'test',
+                'filearea' => 'intro',
+                'itemid' => 0,
+                'filepath' => '/',
+                'filename' => 'test.txt'
+            );
+            $teststring = 'moodletest';
+            $fs->create_file_from_string($filerecord, $teststring);
+            $path = str_replace('//', '', implode('/', $filerecord));
+
+            $text = <<<EOF
+            <p>
+                <span>text</span>
+                写埋ルがンい未50要スぱ指6<a href="$CFG->wwwroot/pluginfile.php/$path">HI THERE</a>more more text
+            </p>
+            <a href="$CFG->wwwroot/pluginfile.php/$path">Here's that anchor again.</a>Boo!
+EOF;
+            // We shouldn't get anything when contexts were blacklisted.
+            $filteredtext = $this->filter->filter($text);
+            $this->assertNotContains('<span class="ally-download"', $filteredtext);
+            $this->assertNotContains('<span class="ally-feedback"', $filteredtext);
+            // Make sure both anchors were processed.
+            $substr = '<span class="filter-ally-wrapper ally-anchor-wrapper">'.
+                '<a href="'.$CFG->wwwroot.'/pluginfile.php/'.$path.'"';
+            $this->assertNotContains($substr, $filteredtext);
+        }
     }
 }

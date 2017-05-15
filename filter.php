@@ -228,6 +228,14 @@ EOF;
                 preg_match($regex, $url, $matches);
                 $contextid = $matches[1];
                 $context = context::instance_by_id($contextid);
+                $blacklistedcontexts = [
+                    CONTEXT_USER,
+                    CONTEXT_COURSECAT,
+                    CONTEXT_SYSTEM
+                ];
+                if (in_array($context->contextlevel, $blacklistedcontexts)) {
+                    continue;
+                }
                 $canviewfeedback = has_capability('filter/ally:viewfeedback', $context);
                 $candownload = has_capability('filter/ally:viewdownload', $context);
                 if (!$canviewfeedback && !$candownload) {
