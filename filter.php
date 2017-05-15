@@ -228,8 +228,9 @@ EOF;
                 preg_match($regex, $url, $matches);
                 $contextid = $matches[1];
                 $context = context::instance_by_id($contextid);
-                $coursecontext = $context->get_course_context();
-                if (is_guest($coursecontext)) {
+                $canviewfeedback = has_capability('filter/ally:viewfeedback', $context);
+                $candownload = has_capability('filter/ally:viewdownload', $context);
+                if (!$canviewfeedback && !$candownload) {
                     continue;
                 }
                 $arr = explode('/', $matches[2]);
@@ -282,8 +283,8 @@ EOF;
                 // Flag html as processed with #P# so that it doesn't get hit again with multiples of the same link or image.
                 $wrapper->html = str_replace('<'.$type, '<'.$type.'#P#', $html);
                 $wrapper->url = $url;
-                $wrapper->candownload = has_capability('filter/ally:viewdownload', $context);
-                $wrapper->canviewfeedback = has_capability('filter/ally:viewfeedback', $context);
+                $wrapper->candownload = $candownload;
+                $wrapper->canviewfeedback = $canviewfeedback;
                 $wrapper->isimage = $type === 'img';
                 $wrapped = $renderer->render_wrapper($wrapper);
 
