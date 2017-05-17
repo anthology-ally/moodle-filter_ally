@@ -218,12 +218,19 @@ class behat_filter_ally extends behat_base {
 
         $course = $this->get_current_course();
 
-        $data = (object) [
+        $assigngen = $gen->get_plugin_generator('mod_assign');
+
+        $data = [
             'course' => $course->id,
-            'name' => $assignname
+            'name' => $assignname,
+            'submissiondrafts' => 0,
+            'assignsubmission_file_enabled' => 1,
+            'assignsubmission_file_maxfiles' => 12,
+            'assignsubmission_file_maxsizebytes' => 10000,
+            'assignsubmission_onlinetext_enabled' => 1
         ];
 
-        $assign = $gen->create_module('assign', $data);
+        $assign = $assigngen->create_instance($data);
 
         foreach ($files as $file) {
             $file = trim($file);
@@ -295,6 +302,28 @@ class behat_filter_ally extends behat_base {
         }
         $path .= "//span[contains(concat(' ', @class, ' '), ' $phclass ')]";
         return $path;
+    }
+
+    /**
+     * @Given /^I should not see any placeholders in the submissions area$/
+     */
+    public function i_should_not_see_any_placeholders_in_the_submissions_area() {
+        $xpathbase = "//div[contains(@class, 'summary_assignsubmission_file')]";
+        $xpathdownload = "$xpathbase//span[contains(concat(' ', @class, ' '), ' ally-download ')]";
+        $xpathfeedback = "$xpathbase//span[contains(concat(' ', @class, ' '), ' ally-feedback ')]";
+        $xpath = $xpathdownload.'|'.$xpathfeedback;
+        $this->execute('behat_general::should_not_exist', [$xpath, 'xpath_element']);
+    }
+
+    /**
+     * @Given /^I should not see any placeholders in the grading submissions column$/
+     */
+    public function i_should_not_see_any_placeholders_in_the_grading_submissions_column() {
+        $xpathbase = "//div[contains(@id, 'assign_files_tree')]";
+        $xpathdownload = "$xpathbase//span[contains(concat(' ', @class, ' '), ' ally-download ')]";
+        $xpathfeedback = "$xpathbase//span[contains(concat(' ', @class, ' '), ' ally-feedback ')]";
+        $xpath = $xpathdownload.'|'.$xpathfeedback;
+        $this->execute('behat_general::should_not_exist', [$xpath, 'xpath_element']);
     }
 
     /**
@@ -417,5 +446,13 @@ class behat_filter_ally extends behat_base {
                 }
             }
         }
+    }
+
+    /**
+     * @Given /^I view all submissions$/
+     */
+    public function i_view_all_submissions() {
+        $path = "//a[contains(text(), 'View all submissions')][contains(@class, 'btn')]";
+        $this->execute('behat_general::i_click_on', [$path, 'xpath_element']);
     }
 }

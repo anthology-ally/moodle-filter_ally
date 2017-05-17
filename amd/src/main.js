@@ -233,12 +233,10 @@ function($, Templates, Ally, ImageCover, Util) {
             if (canViewFeedback || canDownload) {
                 applyPlaceHolders()
                     .done(function() {
-                        Ally.init(jwt);
                         ImageCover.init();
+                        Ally.init(jwt, config);
                     });
             }
-            ImageCover.init();
-            Ally.init(jwt, config);
         };
     };
 });

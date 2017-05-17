@@ -44,7 +44,19 @@ Feature: When the ally filter is enabled, ally place holders are inserted when a
     And I follow "Course 1"
     And I allow guest access for current course
     And I create assignment "test assignment" with additional file fixtures "bpd_bikes_640px.jpg, testgif_small.gif, testpng_small.png"
-    And I reload the page
+    And I log out
+    And I log in as "student1"
+    And I follow "Course 1"
+    And I follow "test assignment"
+    When I press "Add submission"
+    And I upload "lib/tests/fixtures/empty.txt" file to "File submissions" filemanager
+    And I press "Save changes"
+    Then I should see "Submitted for grading"
+    And I should see "Not graded"
+    And "empty.txt" "link" should exist
+    And I log out
+    And I log in as "teacher1"
+    When I follow "Course 1"
     And I follow "test assignment"
     Then I should see the feedback place holder for the "1st" assignment file
     And I should see the feedback place holder for the "2nd" assignment file
@@ -52,6 +64,8 @@ Feature: When the ally filter is enabled, ally place holders are inserted when a
     And I should see the download place holder for the "1st" assignment file
     And I should see the download place holder for the "2nd" assignment file
     And I should see the download place holder for the "3rd" assignment file
+    And I view all submissions
+    And I should not see any placeholders in the grading submissions column
     And I log out
     And I log in as "student1"
     When I follow "Course 1"
@@ -62,6 +76,7 @@ Feature: When the ally filter is enabled, ally place holders are inserted when a
     And I should see the download place holder for the "1st" assignment file
     And I should see the download place holder for the "2nd" assignment file
     And I should see the download place holder for the "3rd" assignment file
+    And I should not see any placeholders in the submissions area
     And I log out
     And I log in as "guest"
     When I follow "Course 1"
