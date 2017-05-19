@@ -27,7 +27,5 @@ defined('MOODLE_INTERNAL') || die();
 
 $string['pluginname'] = 'Ally';
 $string['filtername'] = 'Ally';
-$string['configserver'] = 'Server';
-$string['configserverdesc'] = 'Ally server url';
 $string['ally:viewfeedback'] = 'View Ally feedback';
 $string['ally:viewdownload'] = 'View Ally download button';

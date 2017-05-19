@@ -223,11 +223,11 @@ function($, Templates, Ally, ImageCover, Util) {
         /**
          * Init function.
          * @param jwt
-         * @param canViewFeedback
-         * @param canDownload
-         * @param moduleFileMapping
+         * @param {object} config
+         * @param {boolean} canViewFeedback
+         * @param {boolean} canDownload
          */
-        this.init = function(jwt, canViewFeedback, canDownload) {
+        this.init = function(jwt, config, canViewFeedback, canDownload) {
             self.canViewFeedback = canViewFeedback;
             self.canDownload = canDownload;
             if (canViewFeedback || canDownload) {
@@ -237,7 +237,8 @@ function($, Templates, Ally, ImageCover, Util) {
                         ImageCover.init();
                     });
             }
-
+            ImageCover.init();
+            Ally.init(jwt, config);
         };
     };
 });

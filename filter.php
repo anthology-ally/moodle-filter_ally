@@ -244,7 +244,14 @@ EOF;
             // argument. If you pass large amounts of data into the amd arguments then it throws a debug error.
             $CFG->additionalhtmlfooter .= $script;
 
-            $amdargs = [$jwt, $canviewfeedback, $candownload];
+            $config = get_config('tool_ally');
+            // We only want to send these config vars - we don't want to be sending security sensitive stuff like the shared secret!
+            $configvars = (object) [
+                'adminurl' => !empty($config->adminurl) ? $config->adminurl : null,
+                'pushurl' => !empty($config->pushurl) ? $config->pushurl : null,
+                'clientid' => !empty($config->clientid) ? $config->clientid : null
+            ];
+            $amdargs = [$jwt, $configvars, $canviewfeedback, $candownload];
             $page->requires->js_call_amd('filter_ally/main', 'init', $amdargs);
             $jsinitialised = true;
         }
