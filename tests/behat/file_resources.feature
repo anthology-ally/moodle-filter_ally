@@ -28,7 +28,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     Given the ally filter is enabled
 
   @javascript
-  Scenario: File resources are processed.
+  Scenario Outline: File resources are processed.
     Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
@@ -37,11 +37,11 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | student1 | Student   | 1        | student1@example.com |
       | teacher1 | Teacher   | 1        | teacher1@example.com |
     And the following "course enrolments" exist:
-      | user     | course | role           |
-      | student1 | C1     | student        |
-      | teacher1 | C1     | teacher        |
+      | user     | course   | role    |
+      | student1 | <course> | student |
+      | teacher1 | <course> | teacher |
     And I log in as "teacher1"
-    And I follow "Course 1"
+    And <coursestep>
     And I allow guest access for current course
     And I create file resources using fixtures "bpd_bikes_640px.jpg, testgif_small.gif, testpng_small.png"
     When I reload the page
@@ -53,7 +53,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should see the download place holder for the "3rd" file resource
     And I log out
     And I log in as "student1"
-    When I follow "Course 1"
+    When <coursestep>
     Then I should not see the feedback place holder for the "1st" file resource
     And I should not see the feedback place holder for the "2nd" file resource
     And I should not see the feedback place holder for the "3rd" file resource
@@ -62,11 +62,15 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should see the download place holder for the "3rd" file resource
     And I log out
     And I log in as "guest"
-    When I follow "Course 1"
+    When <coursestep>
     Then I should not see the feedback place holder for the "1st" file resource
     And I should not see the feedback place holder for the "2nd" file resource
     And I should not see the feedback place holder for the "3rd" file resource
     And I should not see the download place holder for the "1st" file resource
     And I should not see the download place holder for the "2nd" file resource
     And I should not see the download place holder for the "3rd" file resource
+    Examples:
+    | course               | coursestep            |
+    | C1                   | I follow "Course 1"   |
+    | Acceptance test site | I am on site homepage |
 
