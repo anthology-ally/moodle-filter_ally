@@ -177,6 +177,11 @@ function($, Templates, Ally, ImageCover, Util) {
         var applyPlaceHolders = function() {
             var dfd = $.Deferred();
 
+            if (ally_module_maps === undefined) {
+                dfd.resolve();
+                return dfd.promise();
+            }
+
             var tasks = [
                 {
                     mapVar: ally_module_maps.file_resources,

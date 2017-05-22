@@ -205,11 +205,15 @@ class filter_ally extends moodle_text_filter {
      * Set up the filter using settings provided in the admin settings page.
      * Also, get the file resource course module id -> file id mappings.
      *
-     * @param $page
-     * @param $context
+     * @param moodle_page $page
+     * @param context $context
      */
     public function setup($page, $context) {
         global $USER, $COURSE, $CFG;
+
+        if ($page->pagelayout === 'embedded') {
+            return;
+        }
 
         // This only requires execution once per request.
         static $jsinitialised = false;
