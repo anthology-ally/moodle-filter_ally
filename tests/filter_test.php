@@ -151,6 +151,7 @@ class filter_ally_testcase extends advanced_testcase {
         $this->assertNotEmpty($map);
 
         $PAGE->set_url($CFG->wwwroot.'/user/view.php');
+        $PAGE->set_pagetype('course-view-topics');
         $map = phpunit_util::call_internal_method(
             $this->filter, 'map_moduleid_to_pathhash', [$course], 'filter_ally'
         );

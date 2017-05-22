@@ -169,9 +169,9 @@ class filter_ally extends moodle_text_filter {
      * @throws dml_exception
      */
     protected function map_moduleid_to_pathhash($course) {
-        global $DB;
+        global $DB, $PAGE;
 
-        if (!$this->is_course_page()) {
+        if (!$this->is_course_page() && $PAGE->pagetype !== 'site-index') {
             return [];
         }
 

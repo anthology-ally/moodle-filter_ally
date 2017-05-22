@@ -189,13 +189,14 @@ class behat_filter_ally extends behat_base {
 
             $data = (object) [
                 'course' => $course->id,
-                'name' => $file
+                'name' => $file,
+                'section' => 1 // Section 1 so that it will also work on front page.
             ];
 
             $resource = $gen->create_module('resource', $data);
 
             // Add actual file there.
-            $filerecord = ['component' => 'mod_label', 'filearea' => 'intro',
+            $filerecord = ['component' => 'mod_resource', 'filearea' => 'content',
                 'contextid' => context_module::instance($resource->cmid)->id, 'itemid' => 0,
                 'filename' => $file, 'filepath' => '/'];
             $fs = get_file_storage();
