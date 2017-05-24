@@ -180,11 +180,18 @@ class filter_ally extends moodle_text_filter {
         if (empty($modules)) {
             return [];
         }
+
         $contextsbymoduleid = [];
         $moduleidsbycontext = [];
         foreach ($modules as $modid => $module) {
-            $contextsbymoduleid[$module->id] = $module->context->id;
-            $moduleidsbycontext[$module->context->id] = $module->id;
+            if ($module->uservisible) {
+                $contextsbymoduleid[$module->id] = $module->context->id;
+                $moduleidsbycontext[$module->context->id] = $module->id;
+            }
+        }
+
+        if (empty($contextsbymoduleid)) {
+            return [];
         }
 
         list($insql, $params) = $DB->get_in_or_equal($contextsbymoduleid);

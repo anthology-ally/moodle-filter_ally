@@ -112,6 +112,8 @@ class filter_ally_testcase extends advanced_testcase {
 
         $gen = $this->getDataGenerator();
         $course = $gen->create_course();
+        $student = $gen->create_user();
+        $gen->enrol_user($student->id, $course->id, 'student');
 
         $map = phpunit_util::call_internal_method(
             $this->filter, 'map_moduleid_to_pathhash', [$course], 'filter_ally'
@@ -131,8 +133,9 @@ class filter_ally_testcase extends advanced_testcase {
             $fixturepath = $fixturedir.$file;
 
             $data = (object) [
-                'course' => $course->id,
-                'name' => $file
+                'course'  => $course->id,
+                'name'    => $file,
+                'visible' => 0
             ];
 
             $resource = $gen->create_module('resource', $data);
@@ -150,6 +153,15 @@ class filter_ally_testcase extends advanced_testcase {
         );
         $this->assertNotEmpty($map);
 
+        // Check students don't get anything as all the resources were invisible.
+        $this->setUser($student);
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_moduleid_to_pathhash', [$course], 'filter_ally'
+        );
+        $this->assertEmpty($map);
+
+        // Check that admin user doesn't get anything when not on the appropriate page.
+        $this->setAdminUser();
         $PAGE->set_url($CFG->wwwroot.'/user/view.php');
         $PAGE->set_pagetype('course-view-topics');
         $map = phpunit_util::call_internal_method(

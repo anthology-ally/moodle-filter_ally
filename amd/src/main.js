@@ -151,7 +151,7 @@ function($, Templates, Ally, ImageCover, Util) {
             var onTemplateRendered = function() {
                 c++;
                 // All resource modules have been dealt with.
-                if (c >= moduleFileMapping.length) {
+                if (c >= Object.keys(moduleFileMapping).length) {
                     dfd.resolve();
                 }
             };
@@ -165,7 +165,7 @@ function($, Templates, Ally, ImageCover, Util) {
                     url: $(moduleEl).attr('href')
                 };
                 renderTemplate(data, pathHash, moduleEl)
-                    .done(onTemplateRendered());
+                    .done(onTemplateRendered);
             }
             return dfd.promise();
         };
