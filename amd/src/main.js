@@ -65,7 +65,19 @@ function($, Templates, Ally, ImageCover, Util) {
          */
         var placeHoldSelector = function(selector, map) {
             var dfd = $.Deferred();
+
+            var c = 0;
+
             $(selector).each(function() {
+
+                /**
+                 * Check that all selectors have been processed.
+                 */
+                var checkComplete = function() {
+                    if (c === $(selector).length) {
+                        dfd.resolve();
+                    }
+                };
                 var url,
                     type;
 
@@ -87,8 +99,9 @@ function($, Templates, Ally, ImageCover, Util) {
                 path = decodeURIComponent(path);
                 var pathHash = map[path];
                 if (pathHash === undefined) {
-                    dfd.reject();
-                    return dfd.promise();
+                    c++;
+                    checkComplete();
+                    return;
                 }
 
                 var data = {
@@ -99,7 +112,8 @@ function($, Templates, Ally, ImageCover, Util) {
 
                 renderTemplate(data, pathHash, $(this))
                     .done(function(){
-                        dfd.resolve();
+                        c++;
+                        checkComplete();
                     });
             });
             return dfd.promise();
