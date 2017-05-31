@@ -22,7 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery'], function($) {
+define([], function() {
     return new function() {
         var _config = null;
         var _token = null;
@@ -35,7 +35,7 @@ define(['jquery'], function($) {
         this.init = function(jwt, config) {
             _token = jwt;
             _config = config;
-        }
+        };
 
         /**
          * Get the JWT token that can be used to authenticate the current user

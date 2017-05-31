@@ -1,8 +1,6 @@
 {
     "extends": "../../.eslintrc",
     "globals": {
-        "$": false,
-        "console": false,
         "ally_module_maps" : false
     }
 }
