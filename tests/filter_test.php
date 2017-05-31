@@ -105,6 +105,61 @@ class filter_ally_testcase extends advanced_testcase {
         $this->assertNotEmpty($map);
     }
 
+    public function test_map_folder_file_paths_to_pathhash() {
+        global $PAGE, $CFG;
+
+        $this->resetAfterTest();
+        $this->setAdminUser();
+
+        $gen = $this->getDataGenerator();
+
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_folder_file_paths_to_pathhash', [], 'filter_ally'
+        );
+        $this->assertEmpty($map);
+
+        $course = $gen->create_course();
+        $data = (object) [
+            'course' => $course->id
+        ];
+        $assign = $gen->create_module('folder', $data);
+
+        $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
+        $files = scandir($fixturedir);
+
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+            $file = trim($file);
+            $fixturepath = $fixturedir.$file;
+
+            // Add actual file there.
+            $filerecord = [
+                'component' => 'mod_folder',
+                'filearea' => 'content',
+                'contextid' => context_module::instance($assign->cmid)->id,
+                'itemid' => 0,
+                'filename' => $file,
+                'filepath' => '/'
+            ];
+            $fs = get_file_storage();
+            $fs->create_file_from_pathname($filerecord, $fixturepath);
+        }
+
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_folder_file_paths_to_pathhash', [], 'filter_ally'
+        );
+        $this->assertEmpty($map);
+
+        $PAGE->set_pagetype('mod-folder-view');
+        $_GET['id'] = $assign->cmid;
+        $map = phpunit_util::call_internal_method(
+            $this->filter, 'map_folder_file_paths_to_pathhash', [], 'filter_ally'
+        );
+        $this->assertNotEmpty($map);
+    }
+
     public function test_map_moduleid_to_pathhash() {
         global $PAGE, $CFG;
 

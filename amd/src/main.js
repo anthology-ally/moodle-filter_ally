@@ -151,6 +151,26 @@ function($, Templates, Ally, ImageCover, Util) {
         };
 
         /**
+         * Add place holders for folder module files.
+         * @param {array}
+         * @return {promise}
+         */
+        var placeHoldFolderModule = function(folderFileMapping) {
+            var dfd = $.Deferred();
+            Util.whenTrue(function() {
+                return $('.foldertree > .filemanager .ygtvitem').length > 0;
+            }, 10)
+                .done(function() {
+                    var unwrappedlinks = '.foldertree > .filemanager span:not(.filter-ally-wrapper) > a[href*="pluginfile.php"]';
+                    placeHoldSelector(unwrappedlinks, folderFileMapping)
+                       .done(function() {
+                          dfd.resolve();
+                       });
+                });
+            return dfd.promise();
+        };
+
+        /**
          * Add place holders for resource module.
          * @param moduleFileMapping
          * @return {promise}
@@ -206,6 +226,10 @@ function($, Templates, Ally, ImageCover, Util) {
                     method: placeHoldAssignModule
                 },
                 {
+                    mapVar: ally_module_maps.folder_files,
+                    method: placeHoldFolderModule
+                },
+                {
                     mapVar: ally_module_maps.forum_files,
                     method: placeHoldForumModule
                 }
@@ -254,6 +278,9 @@ function($, Templates, Ally, ImageCover, Util) {
                     .done(function() {
                         ImageCover.init();
                         Ally.init(jwt, config);
+                        setInterval(function() {
+                            placeHoldFolderModule(ally_module_maps.folder_files);
+                        }, 5000);
                     });
             }
         };
