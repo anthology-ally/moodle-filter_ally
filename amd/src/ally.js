@@ -24,10 +24,33 @@
 
 define(['jquery'], function($) {
     return new function() {
+        var _config = null;
+        var _token = null;
+
+        /**
+         * Initialize the AMD module with the necessary data
+         * @param  {String} jwt    The JWT token
+         * @param  {Object} config The Ally configuration containing the Ally client id and base URL
+         */
         this.init = function(jwt, config) {
-            // Initialising function for Ally AX library.
-            console.log('token', jwt);
-            console.log('config', config);
+            _token = jwt;
+            _config = config;
+        }
+
+        /**
+         * Get the JWT token that can be used to authenticate the current user
+         * @return {String} The JWT token
+         */
+        this.token = function() {
+            return _token;
+        };
+
+        /**
+         * Get the Ally configuration containing the Ally client id and base URL
+         * @return {Object} The Ally configuration
+         */
+        this.config = function() {
+           return _config;
         };
     };
 });
