@@ -336,6 +336,9 @@ EOF;
         $elements = [];
         $results = $doc->getElementsByTagName('a');
         foreach ($results as $result) {
+            if (!is_object($result->attributes) || !is_object($result->attributes->getNamedItem('href'))) {
+                continue;
+            }
             $href = $result->attributes->getNamedItem('href')->nodeValue;
             if (strpos($href, 'pluginfile.php') !== false) {
                 $elements[] = (object) [
@@ -347,6 +350,9 @@ EOF;
         }
         $results = $doc->getElementsByTagName('img');
         foreach ($results as $result) {
+            if (!is_object($result->attributes) || !is_object($result->attributes->getNamedItem('src'))) {
+                continue;
+            }
             $src = $result->attributes->getNamedItem('src')->nodeValue;
             if (strpos($src, 'pluginfile.php') !== false) {
                 $elements[] = (object) [
