@@ -362,7 +362,10 @@ EOF;
             if (strpos($url, 'pluginfile.php') !== false) {
                 $regex = '/(?:.*)pluginfile\.php\/(\d*?)\/(.*)$/';
                 $matches = [];
-                preg_match($regex, $url, $matches);
+                $matched = preg_match($regex, $url, $matches);
+                if (!$matched) {
+                    continue;
+                }
                 $contextid = $matches[1];
                 $context = context::instance_by_id($contextid);
                 $blacklistedcontexts = [
