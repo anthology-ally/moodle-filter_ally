@@ -22,19 +22,44 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define([], function() {
+define(['jquery'], function($) {
     return new function() {
         var _config = null;
         var _token = null;
+        var _baseUrl = null;
+
+        /**
+         * Get the base URL for a given url.
+         *
+         * e.g.,  given `https://ally.local/api/v1/20/lti/institution`, this function will return `https://ally.local`.
+         *
+         * @param  {String} url A full URL
+         * @return {String} The base URL of the given `url`.
+         */
+        var getBaseUrl = function(url) {
+            var parser = document.createElement('a');
+            parser.href = url;
+
+            var baseUrl = parser.protocol + '//' + parser.hostname;
+            if (parser.port) {
+                baseUrl += ':' + parser.port;
+            }
+
+            return baseUrl;
+        };
 
         /**
          * Initialize the AMD module with the necessary data
          * @param  {String} jwt    The JWT token
-         * @param  {Object} config The Ally configuration containing the Ally client id and base URL
+         * @param  {Object} config The Ally configuration containing the Ally client id and admin URL
          */
         this.init = function(jwt, config) {
             _token = jwt;
             _config = config;
+            _baseUrl = getBaseUrl(config.adminurl);
+
+            // Load up the Ally script
+            $.getScript(_baseUrl + '/integration/moodlerooms/ally.js');
         };
 
         /**
@@ -50,7 +75,15 @@ define([], function() {
          * @return {Object} The Ally configuration
          */
         this.config = function() {
-           return _config;
+            return _config;
+        };
+
+        /**
+         * Get the Ally base URL
+         * @return {String} The Ally base URL
+         */
+        this.getAllyBaseUrl = function() {
+            return _baseUrl;
         };
     };
 });
