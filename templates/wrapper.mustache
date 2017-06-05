@@ -1,21 +1,25 @@
-<span class="filter-ally-wrapper{{#isimage}} ally-image-wrapper{{/isimage}}{{^isimage}} ally-anchor-wrapper{{/isimage}}">{{{html}}}
     {{#isimage}}
-    <span class="ally-image-cover">
-        <span class="ally-actions">
-            {{#canviewfeedback}}
-            <span class="ally-feedback" data-file-id="{{fileid}}" data-file-url="{{url}}">FEEDBACK</span>
-            {{/canviewfeedback}}
+    <span class="filter-ally-wrapper ally-image-wrapper">
+        {{{html}}}
+        <span class="ally-image-cover">
+            <span class="ally-actions">
+                {{#canviewfeedback}}
+                <span class="ally-feedback" data-file-id="{{fileid}}" data-file-url="{{url}}"></span>
+                {{/canviewfeedback}}
+            </span>
         </span>
     </span>
     {{/isimage}}
     {{^isimage}}
-    <span class="ally-actions">
-        {{#canviewfeedback}}
-        <span class="ally-feedback" data-file-id="{{fileid}}" data-file-url="{{url}}">FEEDBACK</span>
-        {{/canviewfeedback}}
-        {{#candownload}}
-        <span class="ally-download" data-file-id="{{fileid}}" data-file-url="{{url}}">DOWNLOAD</span>
-        {{/candownload}}
-    </span>
+    <div class="filter-ally-wrapper ally-anchor-wrapper clearfix">
+        {{{html}}}
+        <div class="ally-actions">
+            {{#canviewfeedback}}
+            <div class="ally-feedback" data-file-id="{{fileid}}" data-file-url="{{url}}"></div>
+            {{/canviewfeedback}}
+            {{#candownload}}
+            <div class="ally-download" data-file-id="{{fileid}}" data-file-url="{{url}}"></div>
+            {{/candownload}}
+        </div>
+    </div>
     {{/isimage}}
-</span>

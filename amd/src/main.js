@@ -192,7 +192,7 @@ function($, Templates, Ally, ImageCover, Util) {
 
             for (var moduleId in moduleFileMapping) {
                 var pathHash = moduleFileMapping[moduleId];
-                var moduleEl = $('#module-' + moduleId + ' .activityinstance');
+                var moduleEl = $('#module-' + moduleId + ' .activityinstance a:first-of-type');
                 var data = {
                     isimage: false,
                     fileid: pathHash,
@@ -237,7 +237,6 @@ function($, Templates, Ally, ImageCover, Util) {
 
             $(document).ready(function() {
                 var completed = 0;
-
                 /**
                  * Run this once a task has resolved.
                  */

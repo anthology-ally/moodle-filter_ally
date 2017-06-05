@@ -1,0 +1,16 @@
+/* Snap resources when displayed as cards. */
+.snap-resource-card .section .activity.snap-resource .activityinstance div.filter-ally-wrapper {
+    display: block;
+}
+
+.snap-resource-card .snap-resource .filter-ally-wrapper > a {
+    display: block;
+    float: left;
+    width: 85%;
+}
+.snap-resource-card .snap-resource .filter-ally-wrapper .ally-actions {
+    display: block;
+    float: right;
+    text-align: right;
+    width: 15%;
+}
