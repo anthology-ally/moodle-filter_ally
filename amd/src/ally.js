@@ -22,7 +22,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery'], function($) {
+define(['jquery', 'core/log'], function($, log) {
     return new function() {
         var _config = null;
         var _token = null;
@@ -56,10 +56,20 @@ define(['jquery'], function($) {
         this.init = function(jwt, config) {
             _token = jwt;
             _config = config;
+            if (!config.adminurl) {
+                // Do not localise - just a debug message.
+                log.info('The Ally admin tool is not configured with a Launch URL. Aborting JS load.');
+                return;
+            }
             _baseUrl = getBaseUrl(config.adminurl);
 
-            // Load up the Ally script
-            $.getScript(_baseUrl + '/integration/moodlerooms/ally.js');
+            // Load up the Ally script.
+            // Note - this is not to be cached as it is just a loader script.
+            // The target script below loads up the latest version of the amd module which does get cached.
+            $.getScript(_baseUrl + '/integration/moodlerooms/ally.js')
+                .fail(function() {
+                    log.error('Failed to load Ally JS');
+                });
         };
 
         /**
