@@ -340,6 +340,12 @@ EOF;
         $this->assertNotContains('<span class="ally-feedback"', $filteredtext);
     }
 
+    public function test_filter_img_noslashargs() {
+        global $CFG;
+        $CFG->slasharguments = 0;
+        $this->test_filter_img();
+    }
+
     public function test_filter_img_blacklistedcontexts() {
         global $PAGE, $CFG, $USER;
         $this->resetAfterTest();
@@ -394,6 +400,12 @@ EOF;
         }
     }
 
+    public function test_filter_img_blacklistedcontexts_noslashargs() {
+        global $CFG;
+        $CFG->slasharguments = 0;
+        $this->test_filter_img_blacklistedcontexts();
+    }
+
     /**
      * Make sure that regex chars are handled correctly when present in img src file names.
      */
@@ -446,6 +458,12 @@ EOF;
             $count = count($matches[0]);
             $this->assertEquals(1, $count);
         }
+    }
+
+    public function test_filter_img_regexchars_noslashargs() {
+        global $CFG;
+        $CFG->slasharguments = 0;
+        $this->test_filter_img_regexchars();
     }
 
     /**
@@ -548,6 +566,12 @@ EOF;
         $this->assertNotContains('<span class="ally-feedback"', $filteredtext);
     }
 
+    public function test_filter_anchor_noslashargs() {
+        global $CFG;
+        $CFG->slasharguments = 0;
+        $this->test_filter_anchor();
+    }
+
     public function test_filter_anchor_blacklistedcontexts() {
         global $PAGE, $CFG, $USER;
         $this->resetAfterTest();
@@ -598,6 +622,12 @@ EOF;
             $count = count($matches[0]);
             $this->assertEquals(0, $count);
         }
+    }
+
+    public function test_filter_anchor_blacklistedcontexts_noslashargs() {
+        global $CFG;
+        $CFG->slasharguments = 0;
+        $this->test_filter_anchor_blacklistedcontexts();
     }
 
     /**
@@ -652,6 +682,12 @@ EOF;
             $count = count($matches[0]);
             $this->assertEquals(1, $count);
         }
+    }
+
+    public function test_filter_anchor_regexchars_noslashargs() {
+        global $CFG;
+        $CFG->slasharguments = 0;
+        $this->test_filter_anchor_regexchars();
     }
 
     public function test_map_forum_attachment_file_paths_to_pathhash() {
