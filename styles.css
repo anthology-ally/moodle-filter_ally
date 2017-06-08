@@ -1,35 +1,40 @@
 
 /* Ally actions inline-block for files from wysiwyg editor & attatchments in forms etc. */
 .filter-ally-wrapper,
-.ally-actions,
-.ally-download,
-.ally-feedback,
+.filter-ally-wrapper .ally-actions,
+.filter-ally-wrapper .ally-download,
+.filter-ally-wrapper .ally-feedback,
 .section .activity .activityinstance div.filter-ally-wrapper,
-.section .activity .activityinstance div.ally-actions {
+.section .activity .activityinstance .filter-ally-wrapper div.ally-actions {
     display: inline-block;
 }
 
 /* Ally image wrapper. */
 .filter-ally-wrapper .ally-image-cover {
-    background-color: rgba(0,0,0,.8);
     position: absolute;
-    display: block;
+    display: none;
+    z-index: 1;
 }
 
-.filter-ally-wrapper .ally-image-cover .ally-actions {
+.filter-ally-wrapper.ally-image-wrapper .ally-actions {
     position: absolute;
-    bottom: 0.5em;
-    left: 0.5em;
     display: block;
+    z-index: 2;
+}
+
+.filter-ally-wrapper.ally-image-wrapper .ally-feedback {
+    width: 20px;
+    height: 20px;
 }
 
 /* CSS required for testing purposes only */
 body.behat-site .filter-ally-wrapper .ally-actions div,
 body.behat-site .filter-ally-wrapper .ally-actions span {
     border: 4px solid red;
-    min-width: 1em;
-    min-height: 1em;
+    min-width: 20px;
+    min-height: 20px;
 }
-body.behat-site .filter-ally-wrapper .ally-actions span {
+body.behat-site .filter-ally-wrapper .ally-actions span,
+body.behat-site .filter-ally-wrapper .ally-image-cover {
     display: block;
 }

@@ -30,15 +30,26 @@ define(['jquery', 'filter_ally/util'], function($, Util) {
                 var wrapper = this;
                 var img = $(wrapper).find('img');
                 var cover = $(wrapper).find('.ally-image-cover');
+                var actions = $(wrapper).find('.ally-actions');
                 var marginTop = parseInt($(img).css('marginTop'));
                 var marginLeft = parseInt($(img).css('marginLeft'));
                 Util.onCoordsChange(img, function(coords) {
-                    $(cover).css('width', (coords.right - coords.left) + 'px');
-                    $(cover).css('height', (coords.bottom - coords.top) + 'px');
+                    var width = (coords.right - coords.left);
+                    var height = (coords.bottom - coords.top);
+                    $(cover)
+                        .css('width', width + 'px')
+                        .css('height', height + 'px');
                     var topPos = $(img).position().top + marginTop;
                     var leftPos = $(img).position().left + marginLeft;
-                    $(cover).css('top', topPos + 'px');
-                    $(cover).css('left', leftPos + 'px');
+                    $(cover)
+                        .css('top', topPos + 'px')
+                        .css('left', leftPos + 'px');
+                    if (actions.length) {
+                        var actionHeight =  $(wrapper).find('.ally-actions .ally-feedback').height();
+                        $(wrapper).find('.ally-actions')
+                            .css('top', (topPos + height - actionHeight) + 'px')
+                            .css('left', leftPos + 'px');
+                    }
                 });
             });
         };
