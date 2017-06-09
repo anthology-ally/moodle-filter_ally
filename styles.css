@@ -68,7 +68,24 @@
     vertical-align: baseline;
 }
 
-/* CSS required for testing purposes only. */
+.filter-ally-wrapper.ally-anchor-wrapper .ally-actions a {
+  padding: 5px;
+}
+
+.filter-ally-wrapper.ally-anchor-wrapper .ally-actions > div {
+  margin-left: -8px;
+}
+
+.filter-ally-wrapper.ally-anchor-wrapper .ally-actions > div:first-child {
+  margin-left: 0;
+}
+
+.filter-ally-wrapper.ally-anchor-wrapper .ally-actions img {
+    height: 20px;
+    width: 20px;
+}
+
+/* CSS required for testing purposes only */
 body.behat-site .filter-ally-wrapper .ally-image-cover,
 body.behat-site .filter-ally-wrapper .ally-actions .ally-feedback,
 body.behat-site .filter-ally-wrapper .ally-actions .ally-download {
