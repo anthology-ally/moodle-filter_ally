@@ -193,6 +193,11 @@ function($, Templates, Ally, ImageCover, Util) {
             for (var moduleId in moduleFileMapping) {
                 var pathHash = moduleFileMapping[moduleId];
                 var moduleEl = $('#module-' + moduleId + ' .activityinstance a:first-of-type');
+                var processed = moduleEl.find('.filter-ally-wrapper');
+                if (processed.length > 0) {
+                    dfd.resolve();
+                    return dfd.promise(); // Already processed.
+                }
                 var data = {
                     isimage: false,
                     fileid: pathHash,
