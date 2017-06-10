@@ -31,6 +31,7 @@ define(['jquery', 'filter_ally/util'], function($, Util) {
                 var img = $(wrapper).find('img');
                 var cover = $(wrapper).find('.ally-image-cover');
                 var actions = $(wrapper).find('.ally-actions');
+                var feedback = actions.find('.ally-feedback');
                 var marginTop = parseInt($(img).css('marginTop'));
                 var marginLeft = parseInt($(img).css('marginLeft'));
                 Util.onCoordsChange(img, function(coords) {
@@ -45,9 +46,8 @@ define(['jquery', 'filter_ally/util'], function($, Util) {
                         .css('top', topPos + 'px')
                         .css('left', leftPos + 'px');
                     if (actions.length) {
-                        var actionHeight =  $(wrapper).find('.ally-actions .ally-feedback').height();
-                        $(wrapper).find('.ally-actions')
-                            .css('top', (topPos + height - actionHeight) + 'px')
+                        feedback
+                            .css('top', (topPos + height - feedback.height()) + 'px')
                             .css('left', leftPos + 'px');
                     }
                 });
