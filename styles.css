@@ -58,7 +58,14 @@
 }
 
 .filter-ally-wrapper.ally-image-wrapper .ally-actions .ally-feedback a {
+    display: inline-block;
+    width: 100%;
+    height: 100%;
     padding: 5px;
+}
+
+.filter-ally-wrapper.ally-image-wrapper .ally-actions .ally-feedback img {
+    vertical-align: baseline;
 }
 
 /* CSS required for testing purposes only. */
