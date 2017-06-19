@@ -180,9 +180,9 @@ function($, Templates, Ally, ImageCover, Util) {
             var c = 0;
 
             /**
-             * Once template promise resolved, resolve promise for this function.
+             * Once all modules processed, resolve promise for this function.
              */
-            var onTemplateRendered = function() {
+            var checkAllProcessed = function() {
                 c++;
                 // All resource modules have been dealt with.
                 if (c >= Object.keys(moduleFileMapping).length) {
@@ -192,11 +192,11 @@ function($, Templates, Ally, ImageCover, Util) {
 
             for (var moduleId in moduleFileMapping) {
                 var pathHash = moduleFileMapping[moduleId];
-                var moduleEl = $('#module-' + moduleId + ' .activityinstance a:first-of-type');
+                var moduleEl = $('#module-' + moduleId + ':not(.snap-native) .activityinstance a:first-of-type');
                 var processed = moduleEl.find('.filter-ally-wrapper');
                 if (processed.length > 0) {
-                    dfd.resolve();
-                    return dfd.promise(); // Already processed.
+                    checkAllProcessed(); // Already processed.
+                    continue;
                 }
                 var data = {
                     isimage: false,
@@ -204,7 +204,7 @@ function($, Templates, Ally, ImageCover, Util) {
                     url: $(moduleEl).attr('href')
                 };
                 renderTemplate(data, pathHash, moduleEl)
-                    .done(onTemplateRendered);
+                    .done(checkAllProcessed);
             }
             return dfd.promise();
         };
