@@ -366,7 +366,7 @@ EOF;
             $url = $element->url;
 
             if (strpos($url, 'pluginfile.php') !== false) {
-                $regex = '/(?:.*)pluginfile\.php\/(\d*?)\/(.*)$/';
+                $regex = '/(?:.*)pluginfile\.php(?:\?file=|)(?:\/|%2F)(\d*?)(?:\/|%2F)(.*)$/';
                 $matches = [];
                 $matched = preg_match($regex, $url, $matches);
                 if (!$matched) {
@@ -387,7 +387,12 @@ EOF;
                 if (!$canviewfeedback && !$candownload) {
                     continue;
                 }
-                $arr = explode('/', $matches[2]);
+                if (strpos($matches[2], '%2F') !== false) {
+                    $del = '%2F';
+                } else {
+                    $del = '/';
+                }
+                $arr = explode($del, $matches[2]);
                 if (count($arr) === 3) {
                     $component = $arr[0];
                     $filearea = $arr[1];
