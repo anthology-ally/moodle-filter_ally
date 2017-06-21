@@ -68,13 +68,14 @@ function($, Templates, Ally, ImageCover, Util) {
 
             var c = 0;
 
+            var length = $(selector).length;
             $(selector).each(function() {
 
                 /**
                  * Check that all selectors have been processed.
                  */
                 var checkComplete = function() {
-                    if (c === $(selector).length) {
+                    if (c === length) {
                         dfd.resolve();
                     }
                 };
