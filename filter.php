@@ -329,6 +329,8 @@ EOF;
 
         $filesbyareakey = [];
 
+        $supportedcomponents = local_file::list_html_file_supported_components();
+
         $doc = new \DOMDocument();
         libxml_use_internal_errors(true); // Required for HTML5.
         $doc->loadHTML('<?xml encoding="utf-8" ?>' . $text);
@@ -410,6 +412,15 @@ EOF;
                     $filename = implode($arr, '/');
                 }
                 $component = urldecode($component);
+
+                if (!in_array($component, $supportedcomponents)) {
+                    $canviewfeedback = false;
+                }
+
+                if ($component === 'mod_page' && $filearea === 'content') {
+                    $itemid = 0;
+                }
+
                 // Strip params from end of the url .e.g. file.pdf?forcedownload=1.
                 $query = strpos($filename, '?');
                 if ($query) {

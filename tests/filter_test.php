@@ -262,7 +262,7 @@ EOF;
         $fs = get_file_storage();
         $filerecord = array(
             'contextid' => context_course::instance($course->id)->id,
-            'component' => 'test',
+            'component' => 'mod_label',
             'filearea' => 'intro',
             'itemid' => 0,
             'filepath' => '/',
@@ -368,7 +368,7 @@ EOF;
             $fs = get_file_storage();
             $filerecord = array(
                 'contextid' => $context->id,
-                'component' => 'test',
+                'component' => 'mod_label',
                 'filearea' => 'intro',
                 'itemid' => 0,
                 'filepath' => '/',
@@ -430,7 +430,7 @@ EOF;
         foreach ($regextestfilenames as $filename) {
             $filerecord = array(
                 'contextid' => context_course::instance($course->id)->id,
-                'component' => 'test',
+                'component' => 'mod_label',
                 'filearea' => 'intro',
                 'itemid' => 0,
                 'filepath' => '/',
@@ -497,7 +497,7 @@ EOF;
         $fs = get_file_storage();
         $filerecord = array(
             'contextid' => context_course::instance($course->id)->id,
-            'component' => 'test',
+            'component' => 'mod_label',
             'filearea' => 'intro',
             'itemid' => 0,
             'filepath' => '/',
@@ -594,7 +594,7 @@ EOF;
             $fs = get_file_storage();
             $filerecord = array(
                 'contextid' => $context->id,
-                'component' => 'test',
+                'component' => 'mod_label',
                 'filearea' => 'intro',
                 'itemid' => 0,
                 'filepath' => '/',
@@ -654,7 +654,7 @@ EOF;
         foreach ($regextestfilenames as $filename) {
             $filerecord = array(
                 'contextid' => context_course::instance($course->id)->id,
-                'component' => 'test',
+                'component' => 'mod_label',
                 'filearea' => 'intro',
                 'itemid' => 0,
                 'filepath' => '/',
