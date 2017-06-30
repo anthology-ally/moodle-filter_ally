@@ -199,13 +199,13 @@ class filter_ally extends moodle_text_filter {
     }
 
     /**
-     * Map moduleid to pathname hash.
+     * Map file resource moduleid to pathname hash.
      * @param $course
      * @return array
      * @throws coding_exception
      * @throws dml_exception
      */
-    protected function map_moduleid_to_pathhash($course) {
+    protected function map_resource_file_paths_to_pathhash($course) {
         global $DB, $PAGE;
 
         if (!$this->is_course_page() && $PAGE->pagetype !== 'site-index') {
@@ -233,11 +233,21 @@ class filter_ally extends moodle_text_filter {
 
         list($insql, $params) = $DB->get_in_or_equal($contextsbymoduleid);
 
-        $sql = "contextid $insql AND component = 'mod_resource' AND mimetype IS NOT NULL AND filename != '.'";
+        $sql = "contextid $insql
+            AND component = 'mod_resource'
+            AND mimetype IS NOT NULL
+            AND filename != '.'
+            AND filearea = 'content'";
 
-        $files = $DB->get_records_select('files', $sql, $params);
+        $files = $DB->get_records_select('files', $sql, $params, 'contextid ASC, sortorder DESC, id ASC');
         $pathhashbymoduleid = [];
+        $contextid = null;
         foreach ($files as $id => $file) {
+            if ($file->contextid === $contextid) {
+                // We've already got the first file for this contextid.
+                continue;
+            }
+            $contextid = $file->contextid;
             $moduleid = $moduleidsbycontext[$file->contextid];
             $pathhashbymoduleid[$moduleid] = $file->pathnamehash;
         }
@@ -264,7 +274,7 @@ class filter_ally extends moodle_text_filter {
         if (!$jsinitialised) {
             require_once($CFG->libdir.'/filelib.php');
 
-            $modulefilemapping = $this->map_moduleid_to_pathhash($COURSE);
+            $modulefilemapping = $this->map_resource_file_paths_to_pathhash($COURSE);
             $assignmentmap = $this->map_assignment_file_paths_to_pathhash();
             $forummap = $this->map_forum_attachment_file_paths_to_pathhash();
             $foldermap = $this->map_folder_file_paths_to_pathhash();

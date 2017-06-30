@@ -193,7 +193,12 @@ function($, Templates, Ally, ImageCover, Util) {
 
             for (var moduleId in moduleFileMapping) {
                 var pathHash = moduleFileMapping[moduleId];
-                var moduleEl = $('#module-' + moduleId + ':not(.snap-native) .activityinstance a:first-of-type');
+                if ($('body').hasClass('theme-snap')) {
+                    var moduleEl = $('#module-' + moduleId + ':not(.snap-native) .activityinstance ' +
+                            '.snap-asset-link a:first-of-type');
+                } else {
+                    var moduleEl = $('#module-' + moduleId + ' .activityinstance a:first-of-type');
+                }
                 var processed = moduleEl.find('.filter-ally-wrapper');
                 if (processed.length > 0) {
                     checkAllProcessed(); // Already processed.

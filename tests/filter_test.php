@@ -160,7 +160,7 @@ class filter_ally_testcase extends advanced_testcase {
         $this->assertNotEmpty($map);
     }
 
-    public function test_map_moduleid_to_pathhash() {
+    public function map_resource_file_paths_to_pathhash() {
         global $PAGE, $CFG;
 
         $this->resetAfterTest();
@@ -171,7 +171,7 @@ class filter_ally_testcase extends advanced_testcase {
         $gen->enrol_user($student->id, $course->id, 'student');
 
         $map = phpunit_util::call_internal_method(
-            $this->filter, 'map_moduleid_to_pathhash', [$course], 'filter_ally'
+            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], 'filter_ally'
         );
         $this->assertEmpty($map);
 
@@ -204,14 +204,14 @@ class filter_ally_testcase extends advanced_testcase {
         }
 
         $map = phpunit_util::call_internal_method(
-            $this->filter, 'map_moduleid_to_pathhash', [$course], 'filter_ally'
+            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], 'filter_ally'
         );
         $this->assertNotEmpty($map);
 
         // Check students don't get anything as all the resources were invisible.
         $this->setUser($student);
         $map = phpunit_util::call_internal_method(
-            $this->filter, 'map_moduleid_to_pathhash', [$course], 'filter_ally'
+            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], 'filter_ally'
         );
         $this->assertEmpty($map);
 
@@ -220,7 +220,7 @@ class filter_ally_testcase extends advanced_testcase {
         $PAGE->set_url($CFG->wwwroot.'/user/view.php');
         $PAGE->set_pagetype('course-view-topics');
         $map = phpunit_util::call_internal_method(
-            $this->filter, 'map_moduleid_to_pathhash', [$course], 'filter_ally'
+            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], 'filter_ally'
         );
 
         $this->assertEmpty($map);
