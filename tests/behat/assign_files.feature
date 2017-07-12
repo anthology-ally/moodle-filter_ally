@@ -28,7 +28,7 @@ Feature: When the ally filter is enabled, ally place holders are inserted when a
     Given the ally filter is enabled
 
   @javascript
-  Scenario: Assignment additional files are processed.
+  Scenario Outline: Assignment additional files are processed.
     Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
@@ -40,6 +40,9 @@ Feature: When the ally filter is enabled, ally place holders are inserted when a
       | user     | course | role           |
       | student1 | C1     | student        |
       | teacher1 | C1     | teacher        |
+    And the following config values are set as admin:
+      | config              | value            |
+      | slasharguments      | <slasharguments> |
     And I log in as "teacher1"
     And I follow "Course 1"
     And I allow guest access for current course
@@ -87,4 +90,8 @@ Feature: When the ally filter is enabled, ally place holders are inserted when a
     And I should not see the download place holder for the "1st" assignment file
     And I should not see the download place holder for the "2nd" assignment file
     And I should not see the download place holder for the "3rd" assignment file
+  Examples:
+  | slasharguments |
+  | 1              |
+  | 0              |
 

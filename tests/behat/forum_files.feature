@@ -39,6 +39,9 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | user     | course | role           |
       | student1 | C1     | student        |
       | teacher1 | C1     | editingteacher        |
+    And the following config values are set as admin:
+      | config              | value            |
+      | slasharguments      | <slasharguments> |
     And I log in as "teacher1"
     And I follow "Course 1"
     And I turn editing mode on
@@ -104,12 +107,14 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should not see the feedback place holder for the post entitled "Student reply (image file)" by "Student 1"
     And I should not see the download place holder for the post entitled "Student reply (image file)" by "Student 1"
   Examples:
-  | forumtypestr      | forumtype         |
-  | Moodlerooms Forum | Moodlerooms forum |
-  | Forum             | forum             |
+  | forumtypestr      | forumtype         | slasharguments |
+  | Moodlerooms Forum | Moodlerooms forum | 1              |
+  | Forum             | forum             | 1              |
+  | Moodlerooms Forum | Moodlerooms forum | 0              |
+  | Forum             | forum             | 0              |
 
   @javascript
-  Scenario: Social format attachments are processed appropriately.
+  Scenario Outline: Social format attachments are processed appropriately.
     Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | social |
@@ -121,6 +126,9 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | user     | course | role           |
       | student1 | C1     | student        |
       | teacher1 | C1     | editingteacher |
+    And the following config values are set as admin:
+      | config              | value            |
+      | slasharguments      | <slasharguments> |
     And I log in as "teacher1"
     And I follow "Course 1"
     And I add a new discussion to "Course 1" forum with:
@@ -177,3 +185,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should not see the download place holder for the post entitled "Student reply (non image file)" by "Student 1"
     And I should not see the feedback place holder for the post entitled "Student reply (image file)" by "Student 1"
     And I should not see the download place holder for the post entitled "Student reply (image file)" by "Student 1"
+  Examples:
+  | slasharguments |
+  | 1              |
+  | 0              |

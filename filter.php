@@ -436,6 +436,12 @@ EOF;
                 if ($query) {
                     $filename = substr($filename, 0, $query);
                 }
+                // Strip additional params from end of the url .e.g. ?file=...&forcedownload=1.
+                $query = strpos($filename, '&');
+                if ($query) {
+                    $filename = substr($filename, 0, $query);
+                }
+
                 $filename = urldecode($filename);
                 $filearea = urldecode($filearea);
 
@@ -490,9 +496,9 @@ EOF;
                 $replaceregex = '~'.preg_quote($stripclosingtag, '~').'(?:\s*|)(?:>|/>)~m';
 
                 if ($component == 'mod_folder') {
-                    $replaceregex = '/<a href="' . preg_quote($url, '/') . '">.*?<\/a>/';
+                    $ampencodedurl = str_replace('&', '&amp;', $url);
+                    $replaceregex = '/<a href="' . preg_quote($ampencodedurl, '/') . '">.*?<\/a>/';
                 }
-
                 $text = preg_replace($replaceregex, $wrapped, $text);
             }
         }

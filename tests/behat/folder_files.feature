@@ -43,6 +43,9 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | activity | name             | intro                   | course               | idnumber | display | showexpanded | section |
       | folder   | Test folder name | Test folder description | Acceptance test site | folder1  | 0       | 1            | 1       |
       | folder   | Test folder name | Test folder description | C1                   | folder1  | 0       | 1            | 0       |
+    And the following config values are set as admin:
+      | config              | value            |
+      | slasharguments      | <slasharguments> |
     When I log in as "teacher1"
     And <coursestep>
     And I allow guest access for current course
@@ -74,10 +77,12 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should not see the feedback place holder for the "2nd" file in folder
     And I should not see the download place holder for the "1st" file in folder
     And I should not see the download place holder for the "2nd" file in folder
-    Examples:
-    | course               | coursestep            |
-    | C1                   | I follow "Course 1"   |
-    | Acceptance test site | I am on site homepage |
+  Examples:
+  | course               | coursestep            | slasharguments |
+  | C1                   | I follow "Course 1"   | 1              |
+  | Acceptance test site | I am on site homepage | 1              |
+  | C1                   | I follow "Course 1"   | 0              |
+  | Acceptance test site | I am on site homepage | 0              |
 
   @javascript
   Scenario Outline: Folder files are processed appropriately when viewed on own mod page
@@ -90,6 +95,9 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | activity | name               | intro                     | course               | idnumber | display | showexpanded | section |
       | folder   | Inline folder name | Inline folder description | C1                   | folder1  | 1       | 1            | 0       |
       | folder   | Inline folder name | Inline folder description | Acceptance test site | folder1  | 1       | 1            | 1       |
+    And the following config values are set as admin:
+      | config              | value            |
+      | slasharguments      | <slasharguments> |
     When I log in as "teacher1"
     And <coursestep>
     And I allow guest access for current course
@@ -117,9 +125,11 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should not see the feedback place holder for the "2nd" file in folder
     And I should not see the download place holder for the "1st" file in folder
     And I should not see the download place holder for the "2nd" file in folder
-    Examples:
-    | course               | coursestep            |
-    | C1                   | I follow "Course 1"   |
-    | Acceptance test site | I am on site homepage |
+  Examples:
+  | course               | coursestep            | slasharguments |
+  | C1                   | I follow "Course 1"   | 1              |
+  | Acceptance test site | I am on site homepage | 1              |
+  | C1                   | I follow "Course 1"   | 0              |
+  | Acceptance test site | I am on site homepage | 0              |
 
 
