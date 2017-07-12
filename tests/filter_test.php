@@ -42,39 +42,6 @@ class filter_ally_testcase extends advanced_testcase {
         $this->filter->setup($PAGE, $context);
     }
 
-    /**
-     * @param stored_file $file
-     * @return moodle_url
-     */
-    private function url(\stored_file $file) {
-        $itemid = $this->preprocess_stored_file_itemid($file);
-        return \moodle_url::make_pluginfile_url($file->get_contextid(), $file->get_component(), $file->get_filearea(),
-            $itemid, $file->get_filepath(), $file->get_filename());
-    }
-
-    /**
-     * Pre process stored file for getting a plugin or webservice url.
-     * This fixes an issue with some modules that have a root page, so they use an item id = 0 when there should be no id.
-     * @param \stored_file $file
-     * @return mixed null if fixing, item's id otherwise
-     */
-    private function preprocess_stored_file_itemid(\stored_file $file) {
-        $itemid = $file->get_itemid();
-
-        // Some plugins do not like an itemid of 0 in the web service download path.
-        $compareas = [
-            'block_html~content',
-            'course~legacy',
-            'course~summary'
-        ];
-        if ($file->get_filearea() === 'intro' && $itemid == 0) {
-            $itemid = null;
-        } else if (in_array($file->get_component().'~'.$file->get_filearea(), $compareas) && $itemid == 0) {
-            $itemid = null;
-        }
-        return $itemid;
-    }
-
     public function test_is_course_page() {
         global $PAGE, $CFG;
 
@@ -326,7 +293,7 @@ EOF;
         );
         $teststring = 'moodletest';
         $file = $fs->create_file_from_string($filerecord, $teststring);
-        $url = $this->url($file);
+        $url = local_file::url($file);
 
         $this->setUser($student);
 
@@ -380,7 +347,7 @@ EOF;
         );
         $teststring = 'moodletest';
         $file = $fs->create_file_from_string($filerecord, $teststring);
-        $url = $this->url($file);
+        $url = local_file::url($file);
         $text = $this->img_mock_html($url);
         // Make sure neither student created images were processed when logged in as a student.
         $filteredtext = $this->filter->filter($text);
@@ -492,7 +459,7 @@ EOF;
             );
             $teststring = 'moodletest';
             $file = $fs->create_file_from_string($filerecord, $teststring);
-            $url = $this->url($file);
+            $url = local_file::url($file);
             $urls[] = $url;
             $text .= '<img src="'.$url.'"/>test';
         }
@@ -557,7 +524,7 @@ EOF;
         );
         $teststring = 'moodletest';
         $file = $fs->create_file_from_string($filerecord, $teststring);
-        $url = $this->url($file);
+        $url = local_file::url($file);
 
         $this->setUser($student);
 
@@ -602,7 +569,7 @@ EOF;
         );
         $teststring = 'moodletest';
         $file = $fs->create_file_from_string($filerecord, $teststring);
-        $url = $this->url($file);
+        $url = local_file::url($file);
         $text = $this->anchor_mock_html($url);
         // Make sure neither student created files were processed when logged in as a student.
         $filteredtext = $this->filter->filter($text);
@@ -653,7 +620,7 @@ EOF;
             );
             $teststring = 'moodletest';
             $file = $fs->create_file_from_string($filerecord, $teststring);
-            $url = $this->url($file);
+            $url = local_file::url($file);
 
             $text = <<<EOF
             <p>
@@ -712,7 +679,7 @@ EOF;
             );
             $teststring = 'moodletest';
             $file = $fs->create_file_from_string($filerecord, $teststring);
-            $url = $this->url($file);
+            $url = local_file::url($file);
             $urls[] = $url;
             $text .= '<a href="'.$url.'">test</a>';
         }
