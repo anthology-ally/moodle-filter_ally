@@ -49,15 +49,15 @@
 </span>
 {{/isimage}}
 {{^isimage}}
-<div class="filter-ally-wrapper ally-anchor-wrapper clearfix">
+<span class="filter-ally-wrapper ally-anchor-wrapper clearfix">
     {{{html}}}
-    <div class="ally-actions">
+    <span class="ally-actions">
         {{#canviewfeedback}}
-        <div class="ally-feedback" data-file-id="{{fileid}}" data-file-url="{{url}}"></div>
+        <span class="ally-feedback" data-file-id="{{fileid}}" data-file-url="{{url}}"></span>
         {{/canviewfeedback}}
         {{#candownload}}
-        <div class="ally-download" data-file-id="{{fileid}}" data-file-url="{{url}}"></div>
+        <span class="ally-download" data-file-id="{{fileid}}" data-file-url="{{url}}"></span>
         {{/candownload}}
-    </div>
-</div>
+    </span>
+</span>
 {{/isimage}}

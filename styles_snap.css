@@ -1,45 +1,39 @@
-/* Snap resources when displayed as cards. */
-.snap-resource-card .section .activity.snap-resource .activityinstance div.filter-ally-wrapper {
-    display: block;
+/*
+* Ally styles for Snap theme.
+*/
+
+/* Hide Ally when moving things in Snap. */
+.snap-move-inprogress .ally-actions{
+    display: none !important;
 }
 
-.snap-resource-card .snap-resource .filter-ally-wrapper > a {
-    display: block;
-    float: left;
-    width: 85%;
-}
-.snap-resource-card .snap-resource .filter-ally-wrapper .ally-actions {
-    display: block;
-    float: right;
-    text-align: right;
-    width: 15%;
+/* Increase the size of download icon on resource cards. */
+.snap-resource-card .snap-resource .ally-download img {
+    -webkit-transform: scale(1.2);
+    -moz-transform: scale(1.2);
+    -ms-transform: scale(1.2);
+    -o-transform: scale(1.2);
+    transform: scale(1.2);
 }
 
-.snap-resource-card .snap-resource .filter-ally-wrapper .ally-actions .ally-feedback img {
-    height: 20px;
-    width: 20px;
-}
+/* Snap resources when displayed as cards on large screen devices. */
+@media screen and (min-width: 767px) {
+    .snap-resource-card .snap-resource .filter-ally-wrapper > a {
+        display: block;
+        float: left;
+        width: 85%;
+    }
 
-.snap-resource-card .snap-resource .filter-ally-wrapper .ally-actions .ally-download {
-    /* The download icon has padding assymetric to the standard Ally icon. Squash it */
-    margin-right: -3px;
-}
+    .snap-resource-card .snap-resource .filter-ally-wrapper .ally-actions {
+        display: block;
+        float: right;
+        text-align: right;
+        width: 15%;
+    }
 
-.snap-resource-card .snap-resource .filter-ally-wrapper .ally-actions .ally-download img {
-    height: 25px;
-    width: 25px;
-}
-
-.snap-resource-card .snap-resource .filter-ally-wrapper .ally-actions a {
-    left: 5px;
-    padding: 5px;
-    position: relative;
-}
-
-.snap-resource-card .snap-resource .filter-ally-wrapper .ally-actions > div {
-    margin-top: 10px;
-}
-
-.snap-resource-card .snap-resource .filter-ally-wrapper .ally-actions > div:first-child {
-    margin-top: 3px;
+    .snap-resource-card .snap-resource a[data-ally-file-id] {
+        display: block;
+        text-align: center;
+        margin: 0.3em 0;
+    }
 }
