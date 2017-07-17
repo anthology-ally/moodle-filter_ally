@@ -30,6 +30,10 @@ class filter_ally_testcase extends advanced_testcase {
 
     public function setUp() {
         global $PAGE, $CFG;
+
+        // We reset after every test because the filter modifies $CFG->additionalhtmlfooter.
+        $this->resetAfterTest();
+
         require_once(__DIR__.'/../filter.php');
 
         $PAGE->set_url($CFG->wwwroot.'/course/view.php');
@@ -41,8 +45,6 @@ class filter_ally_testcase extends advanced_testcase {
     public function test_is_course_page() {
         global $PAGE, $CFG;
 
-        $this->resetAfterTest();
-
         $PAGE->set_url($CFG->wwwroot.'/course/view.php');
         $iscoursepage = phpunit_util::call_internal_method($this->filter, 'is_course_page', [], 'filter_ally');
         $this->assertTrue($iscoursepage);
@@ -53,8 +55,6 @@ class filter_ally_testcase extends advanced_testcase {
 
     public function test_map_assignment_file_paths_to_pathhash() {
         global $PAGE, $CFG;
-
-        $this->resetAfterTest();
 
         $gen = $this->getDataGenerator();
 
@@ -108,7 +108,6 @@ class filter_ally_testcase extends advanced_testcase {
     public function test_map_folder_file_paths_to_pathhash() {
         global $PAGE, $CFG;
 
-        $this->resetAfterTest();
         $this->setAdminUser();
 
         $gen = $this->getDataGenerator();
@@ -162,8 +161,6 @@ class filter_ally_testcase extends advanced_testcase {
 
     public function map_resource_file_paths_to_pathhash() {
         global $PAGE, $CFG;
-
-        $this->resetAfterTest();
 
         $gen = $this->getDataGenerator();
         $course = $gen->create_course();
@@ -226,6 +223,33 @@ class filter_ally_testcase extends advanced_testcase {
         $this->assertEmpty($map);
     }
 
+    /**
+     * @param bool $fileparam
+     */
+    public function test_process_url($fileparam = false) {
+        $fileparam = $fileparam ? '?file=' : '';
+
+        $urlformats = [
+            'somecomponent' => 'http://test.com/pluginfile.php'.$fileparam.'/123/somecomponent/somearea/myfile.test',
+            'label' => 'http://test.com/pluginfile.php'.$fileparam.'/123/label/somearea/0/myfile.test',
+            'question' => 'http://test.com/pluginfile.php'.$fileparam.'/123/question/somearea/123/5/0/myfile.test'
+        ];
+
+        foreach ($urlformats as $expectedcomponent => $url) {
+            list($contextid, $component, $filearea, $itemid, $filename) = phpunit_util::call_internal_method(
+                $this->filter, 'process_url', [$url], 'filter_ally'
+            );
+            $this->assertEquals(123, $contextid);
+            $this->assertEquals($expectedcomponent, $component);
+            $this->assertEquals('somearea', $filearea);
+            $this->assertEquals(0, $itemid);
+            $this->assertEquals('myfile.test', $filename);
+        }
+    }
+
+    public function test_process_url_fileparam() {
+        $this->test_process_url(true);
+    }
 
     /**
      * Get mock html for testing images.
@@ -245,7 +269,6 @@ EOF;
 
     public function test_filter_img() {
         global $PAGE, $CFG;
-        $this->resetAfterTest();
 
         $PAGE->set_url($CFG->wwwroot.'/course/view.php');
 
@@ -348,7 +371,6 @@ EOF;
 
     public function test_filter_img_blacklistedcontexts() {
         global $PAGE, $CFG, $USER;
-        $this->resetAfterTest();
 
         $this->setAdminUser();
 
@@ -410,7 +432,6 @@ EOF;
      * Make sure that regex chars are handled correctly when present in img src file names.
      */
     public function test_filter_img_regexchars() {
-        $this->resetAfterTest();
 
         $gen = $this->getDataGenerator();
         $course = $gen->create_course();
@@ -438,7 +459,7 @@ EOF;
             );
             $teststring = 'moodletest';
             $file = $fs->create_file_from_string($filerecord, $teststring);
-            $url = tool_ally\local_file::url($file);
+            $url = local_file::url($file);
             $urls[] = $url;
             $text .= '<img src="'.$url.'"/>test';
         }
@@ -483,8 +504,6 @@ EOF;
     }
 
     public function test_filter_anchor() {
-
-        $this->resetAfterTest();
 
         $gen = $this->getDataGenerator();
 
@@ -574,7 +593,6 @@ EOF;
 
     public function test_filter_anchor_blacklistedcontexts() {
         global $PAGE, $CFG, $USER;
-        $this->resetAfterTest();
 
         $this->setAdminUser();
 
@@ -634,7 +652,6 @@ EOF;
      * Make sure that regex chars are handled correctly when present in anchor href file names.
      */
     public function test_filter_anchor_regexchars() {
-        $this->resetAfterTest();
 
         $gen = $this->getDataGenerator();
         $course = $gen->create_course();
@@ -662,7 +679,7 @@ EOF;
             );
             $teststring = 'moodletest';
             $file = $fs->create_file_from_string($filerecord, $teststring);
-            $url = tool_ally\local_file::url($file);
+            $url = local_file::url($file);
             $urls[] = $url;
             $text .= '<a href="'.$url.'">test</a>';
         }
@@ -692,8 +709,6 @@ EOF;
 
     public function test_map_forum_attachment_file_paths_to_pathhash() {
         global $PAGE, $CFG, $DB, $COURSE;
-
-        $this->resetAfterTest();
 
         $gen = $this->getDataGenerator();
         $course = $gen->create_course();

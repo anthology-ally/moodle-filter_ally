@@ -318,6 +318,55 @@ EOF;
     }
 
     /**
+     * Process file url for file components.
+     * @param string $url
+     * @return void|array
+     */
+    private function process_url($url) {
+        $regex = '/(?:.*)pluginfile\.php(?:\?file=|)(?:\/|%2F)(\d*?)(?:\/|%2F)(.*)$/';
+        $matches = [];
+        $matched = preg_match($regex, $url, $matches);
+        if (!$matched) {
+            return;
+        }
+        $contextid = $matches[1];
+        if (strpos($matches[2], '%2F') !== false) {
+            $del = '%2F';
+        } else {
+            $del = '/';
+        }
+        $arr = explode($del, $matches[2]);
+        $component = urldecode(array_shift($arr));
+        if (count($arr) === 2) {
+            $filearea = array_shift($arr);
+            $itemid = 0;
+            $filename = array_shift($arr);
+        } else if (count($arr) === 3) {
+            $filearea = array_shift($arr);
+            $itemid = array_shift($arr);
+            $filename = array_shift($arr);
+        } else if ($component === 'question' ) {
+            $filearea = array_shift($arr);
+            array_shift($arr); // Remove previewcontextid.
+            array_shift($arr); // Remove previewcomponent.
+            $itemid = array_shift($arr);
+            $filename = array_shift($arr);
+        } else {
+            $filearea = array_shift($arr);
+            $itemid = array_shift($arr);
+            $filename = implode($arr, '/');
+        }
+
+        return [
+            $contextid,
+            $component,
+            $filearea,
+            $itemid,
+            $filename
+        ];
+    }
+
+    /**
      * Filters the given HTML text, looking for links pointing to files so that the file id data attribute can
      * be injected.
      *
@@ -378,13 +427,12 @@ EOF;
             $url = $element->url;
 
             if (strpos($url, 'pluginfile.php') !== false) {
-                $regex = '/(?:.*)pluginfile\.php(?:\?file=|)(?:\/|%2F)(\d*?)(?:\/|%2F)(.*)$/';
-                $matches = [];
-                $matched = preg_match($regex, $url, $matches);
-                if (!$matched) {
+                list($contextid, $component, $filearea, $itemid, $filename) = $this->process_url($url);
+
+                if ($contextid === null) {
                     continue;
                 }
-                $contextid = $matches[1];
+
                 $context = context::instance_by_id($contextid);
                 $blacklistedcontexts = [
                     CONTEXT_USER,
@@ -399,29 +447,6 @@ EOF;
                 if (!$canviewfeedback && !$candownload) {
                     continue;
                 }
-                if (strpos($matches[2], '%2F') !== false) {
-                    $del = '%2F';
-                } else {
-                    $del = '/';
-                }
-                $arr = explode($del, $matches[2]);
-                if (count($arr) === 3) {
-                    $component = $arr[0];
-                    $filearea = $arr[1];
-                    $itemid = 0;
-                    $filename = $arr[2];
-                } else if (count($arr) === 4) {
-                    $component = $arr[0];
-                    $filearea = $arr[1];
-                    $itemid = $arr[2];
-                    $filename = $arr[3];
-                } else {
-                    $component = array_shift($arr);
-                    $filearea = array_shift($arr);
-                    $itemid = array_shift($arr);
-                    $filename = implode($arr, '/');
-                }
-                $component = urldecode($component);
 
                 if (!in_array($component, $supportedcomponents)) {
                     $canviewfeedback = false;
