@@ -718,7 +718,7 @@ EOF;
         $gen->enrol_user($teacher->id, $course->id, 'editingteacher');
         $this->setUser($teacher);
 
-        $PAGE->set_pagetype('mod-forum');
+        $PAGE->set_pagetype('mod-forum-view');
         $COURSE = $course;
 
         // Should be empty when nothing added.

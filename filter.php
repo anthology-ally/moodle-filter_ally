@@ -109,7 +109,7 @@ class filter_ally extends moodle_text_filter {
             if ($forum = forum_get_course_forum($COURSE->id, 'social')) {
                 $cm = $this->get_forum_cm($forum->id);
             }
-        } else if (strpos($PAGE->pagetype, 'mod-forum') === 0) {
+        } else if (in_array($PAGE->pagetype, ['mod-forum-view', 'mod-forum-discuss'])) {
             $cmid = optional_param('id', false, PARAM_INT);
             if ($cmid) {
                 list($course, $cm) = get_course_and_cm_from_cmid($cmid);
