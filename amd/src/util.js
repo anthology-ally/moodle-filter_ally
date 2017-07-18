@@ -112,5 +112,20 @@ define(['jquery'], function($) {
             // Perform an immediate initial run
             _loop();
         };
+
+        /**
+         * Builds an object which contains all the parameters passed in a URL.
+         * @param url URL which has parameters
+         * @returns {Object}
+         */
+        this.getQuery = function(url) {
+            var query = {};
+
+            url.replace(/[?&](.+?)=([^&#]*)/g, function (_, key, value) {
+                query[key] = decodeURI(value).replace(/\+/g, ' ');
+            });
+
+            return query;
+        };
     };
 });

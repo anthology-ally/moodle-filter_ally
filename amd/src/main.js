@@ -96,9 +96,31 @@ function($, Templates, Ally, ImageCover, Util) {
                     regex = /pluginfile.php\/(\d*)\/(.*)/;
                 }
                 var match = url.match(regex);
-                var path = match[1] + '/' + match[2];
-                path = decodeURIComponent(path);
-                var pathHash = map[path];
+                var pathHash;
+                if (match) {
+                    var path = match[1] + '/' + match[2];
+                    path = decodeURIComponent(path);
+                    pathHash = map[path];
+                }
+
+                if (pathHash === undefined) {
+                    // Maybe 'slasharguments' setting is disabled for this host.
+                    // Let's see if the file URI is found in the URL query.
+                    var query = Util.getQuery(url);
+                    if (query.file) {
+                        var filePath = decodeURIComponent(query.file);
+                        regex = /\/(\d*)\/(.*)/;
+
+                        match = filePath.match(regex);
+                        if (match) {
+                            path = match[1] + '/' + match[2];
+                            path = decodeURIComponent(path);
+                            pathHash = map[path];
+                        }
+                    }
+                }
+
+                // Pathhash was definitely not found :( .
                 if (pathHash === undefined) {
                     c++;
                     checkComplete();
