@@ -531,11 +531,11 @@ EOF;
         $text = $this->anchor_mock_html($url);
         $filteredtext = $this->filter->filter($text);
         // Make sure student gets download palceholder.
-        $this->assertContains('<div class="ally-download"', $filteredtext);
+        $this->assertContains('<span class="ally-download"', $filteredtext);
         // As we are not logged in as a teacher, we shouldn't get the feedback placeholder.
-        $this->assertNotContains('<div class="ally-feedback"', $filteredtext);
+        $this->assertNotContains('<span class="ally-feedback"', $filteredtext);
         // Make sure both anchors were processed.
-        $regex = '~<div class="filter-ally-wrapper ally-anchor-wrapper clearfix">'.
+        $regex = '~<span class="filter-ally-wrapper ally-anchor-wrapper">'.
             '\\n'.'(?:\s*|)<a href="'.preg_quote($url, '~').'"~';
         preg_match_all($regex, $filteredtext, $matches);
         $count = count($matches[0]);
@@ -544,9 +544,9 @@ EOF;
         $this->setUser($teacher);
         // Make sure teachers get download and feedback place holder.
         $filteredtext = $this->filter->filter($text);
-        $this->assertContains('<div class="ally-download"', $filteredtext);
+        $this->assertContains('<span class="ally-download"', $filteredtext);
         // As we are logged in as a teacher, we should get the feedback placeholder.
-        $this->assertContains('<div class="ally-feedback"', $filteredtext);
+        $this->assertContains('<span class="ally-feedback"', $filteredtext);
         // Make sure both anchors were processed.
         preg_match_all($regex, $filteredtext, $matches);
         $count = count($matches[0]);
@@ -634,7 +634,7 @@ EOF;
             $this->assertNotContains('<span class="ally-download"', $filteredtext);
             $this->assertNotContains('<span class="ally-feedback"', $filteredtext);
             // Make sure wrappers do not exist - i.e not processed.
-            $regex = '~<div class="filter-ally-wrapper ally-anchor-wrapper clearfix">'.
+            $regex = '~<span class="filter-ally-wrapper ally-anchor-wrapper">'.
                 '\\n'.'(?:\s*|)<a href="'.preg_quote($url, '~').'"~';
             preg_match_all($regex, $filteredtext, $matches);
             $count = count($matches[0]);
@@ -686,14 +686,14 @@ EOF;
         $text = '<p>'.$text.'</p>';
         $filteredtext = $this->filter->filter($text);
         // Make sure all anchors were processed.
-        $substr = '<div class="ally-download"';
+        $substr = '<span class="ally-download"';
         $count = substr_count($filteredtext, $substr);
         $this->assertEquals(count($regextestfilenames), $count);
-        $substr = '<div class="ally-feedback"';
+        $substr = '<span class="ally-feedback"';
         $count = substr_count($filteredtext, $substr);
         $this->assertEquals(count($regextestfilenames), $count);
         foreach ($urls as $url) {
-            $regex = '~<div class="filter-ally-wrapper ally-anchor-wrapper clearfix">'.
+            $regex = '~<span class="filter-ally-wrapper ally-anchor-wrapper">'.
                 '\\n'.'(?:\s*|)<a href="'.preg_quote($url, '~').'"~';
             preg_match_all($regex, $filteredtext, $matches);
             $count = count($matches[0]);
