@@ -41,7 +41,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | student1 | C1     | student        |
       | teacher1 | C1     | teacher        |
     And I log in as "teacher1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I create a label with fixture images "bpd_bikes_640px.jpg, testgif_small.gif, testpng_small.png"
     When I reload the page
     Then I should see the feedback place holder for the "1st" image
@@ -52,7 +52,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And the ally image cover area should exist for the "3rd" image
     And I log out
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     Then I should not see the feedback place holder for the "1st" image
     And I should not see the feedback place holder for the "2nd" image
     And I should not see the feedback place holder for the "3rd" image
@@ -74,7 +74,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | student1 | C1     | student        |
       | teacher1 | C1     | teacher        |
     And I log in as "teacher1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I allow guest access for current course
     And I create a label with random text files "test1.txt, test2.txt, test3.txt"
     When I reload the page
@@ -86,7 +86,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should see the download place holder for the "3rd" anchor
     And I log out
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     Then I should not see the feedback place holder for the "1st" anchor
     And I should not see the feedback place holder for the "2nd" anchor
     And I should not see the feedback place holder for the "3rd" anchor
@@ -95,7 +95,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should see the download place holder for the "3rd" anchor
     And I log out
     And I log in as "guest"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     Then I should not see the feedback place holder for the "1st" anchor
     And I should not see the feedback place holder for the "2nd" anchor
     And I should not see the feedback place holder for the "3rd" anchor
