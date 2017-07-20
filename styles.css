@@ -83,6 +83,10 @@
     vertical-align: baseline;
 }
 
+.filter-ally-wrapper.ally-image-wrapper .ally-accessibility-score-indicator {
+    box-sizing: border-box;
+}
+
 /*
 * CSS for behat tests.
 */
