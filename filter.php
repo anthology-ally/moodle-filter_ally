@@ -397,6 +397,12 @@ EOF;
         $elements = [];
         $results = $doc->getElementsByTagName('a');
         foreach ($results as $result) {
+            // Skipping when in modules that load the page 2 times.
+            if ($result->parentNode->tagName === 'span'
+                && $result->parentNode->getAttribute('class') === 'filter-ally-wrapper ally-anchor-wrapper') {
+                continue;
+            }
+
             if (!is_object($result->attributes) || !is_object($result->attributes->getNamedItem('href'))) {
                 continue;
             }
