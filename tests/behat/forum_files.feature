@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Tests for form attacments processed by Ally filter.
+# Tests for forum attachments processed by Ally filter.
 #
 # @package    filter_ally
 # @author     Guy Thomas
