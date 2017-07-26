@@ -38,6 +38,17 @@ use tool_ally\local_file;
 class filter_ally extends moodle_text_filter {
 
     /**
+     * @var array File ids (path hashes) of all processed files by url.
+     */
+    private static $fileidsbyurl = [];
+
+    /**
+     * Constants for identifying html element types and 'ally-'.$type.'-wrapper' usage.
+     */
+    const ANCHOR = 'anchor';
+    const IMAGE  = 'image';
+
+    /**
      * Are we on a course page ? (not course settings, etc. The actual course page).
      * @return bool
      * @throws coding_exception
@@ -367,6 +378,69 @@ EOF;
     }
 
     /**
+     * Verifies and fixes the text if the filter was found to have been already applied.
+     * This has been found to be a fix for answers in the lesson module that get stripped off data attrs.
+     * @param string $type
+     * @param DOMElement $element
+     * @param string $text
+     * @return bool|string false if filter not applied, string with fixed text otherwise.
+     */
+    private function verify_and_fix_if_applied($type, DOMElement $element, $text) {
+        $feedbackfound = false;
+        if ($element->parentNode->tagName === 'span'
+            && $element->parentNode->getAttribute('class') === 'filter-ally-wrapper ally-'.$type.'-wrapper') {
+
+            $feedbacknodes = $element->parentNode->getElementsByTagName('span');
+            foreach ($feedbacknodes as $feedbacknode) {
+                if (is_object($element->attributes)
+                    && is_object($feedbacknode->attributes->getNamedItem('data-file-id'))
+                    && is_object($feedbacknode->attributes->getNamedItem('data-file-url'))) {
+                    $feedbackfound = true;
+                    break;
+                }
+            }
+
+            // Feedback placeholders and feedback data has been found, continue.
+            if ($feedbackfound) {
+                return $text;
+            }
+        } else {
+            return false;
+        }
+
+        if (!is_object($element->attributes) || !is_object($element->attributes->getNamedItem('href'))) {
+            return false;
+        }
+        $href = $element->attributes->getNamedItem($type === self::ANCHOR ? 'href' : 'src')->nodeValue;
+        if (strpos($href, 'pluginfile.php') !== false) {
+            if (!empty(self::$fileidsbyurl[$href])) {
+                // Feedback placeholders have no data attributes. Let's try to fill them again.
+                $spanclasses = ['ally-feedback', 'ally-download'];
+                $linkpos = strpos($text, $href); // Link position.
+                foreach ($spanclasses as $spanclass) {
+                    $classpos = strpos($text, $spanclass, $linkpos); // Class position.
+                    if ($classpos === false) {
+                        continue;
+                    }
+                    $classend = $classpos + strlen($spanclass) + 1; // Class definition end.
+                    $strtomatch = substr($text, $linkpos, $classend - $linkpos);
+                    $strforreplacement = substr($text, $linkpos, $classpos - $linkpos);
+
+                    $strforreplacement .= $spanclass.'" ';
+                    $strforreplacement .= 'data-file-id="'.self::$fileidsbyurl[$href].'" ';
+                    $strforreplacement .= 'data-file-url="'.$href.'"';
+                    $text = str_replace($strtomatch, $strforreplacement, $text);
+                }
+                return $text;
+            } else {
+                return false; // Pathhash has not been processed.
+            }
+        } else {
+            return false; // No applicable links found.
+        }
+    }
+
+    /**
      * Filters the given HTML text, looking for links pointing to files so that the file id data attribute can
      * be injected.
      *
@@ -397,12 +471,6 @@ EOF;
         $elements = [];
         $results = $doc->getElementsByTagName('a');
         foreach ($results as $result) {
-            // Skipping when in modules that load the page 2 times.
-            if ($result->parentNode->tagName === 'span'
-                && $result->parentNode->getAttribute('class') === 'filter-ally-wrapper ally-anchor-wrapper') {
-                continue;
-            }
-
             if (!is_object($result->attributes) || !is_object($result->attributes->getNamedItem('href'))) {
                 continue;
             }
@@ -462,6 +530,15 @@ EOF;
                     $itemid = 0;
                 }
 
+                if ($component === 'mod_lesson') {
+                    $verifiedresult = $this->verify_and_fix_if_applied(
+                        $element->type === 'a' ? self::ANCHOR : self::IMAGE, $element->result, $text);
+                    if ($verifiedresult !== false) {
+                        $text = $verifiedresult;
+                        continue;
+                    }
+                }
+
                 // Strip params from end of the url .e.g. file.pdf?forcedownload=1.
                 $query = strpos($filename, '?');
                 if ($query) {
@@ -501,6 +578,9 @@ EOF;
                     // Assume that this file should not be processed - i.e. not authored by a teacher / manager, etc.
                     continue;
                 }
+
+                // Store the path hash in case it's needed again.
+                self::$fileidsbyurl[$url] = $pathhash;
 
                 $html = $doc->saveHTML($element->result);
                 $type = $element->type;
