@@ -44,12 +44,12 @@ Feature: When the ally filter is enabled, ally place holders are inserted when a
       | config              | value            |
       | slasharguments      | <slasharguments> |
     And I log in as "teacher1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I allow guest access for current course
     And I create assignment "test assignment" with additional file fixtures "bpd_bikes_640px.jpg, testgif_small.gif, testpng_small.png"
     And I log out
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "test assignment"
     When I press "Add submission"
     And I upload "lib/tests/fixtures/empty.txt" file to "File submissions" filemanager
@@ -59,7 +59,7 @@ Feature: When the ally filter is enabled, ally place holders are inserted when a
     And "empty.txt" "link" should exist
     And I log out
     And I log in as "teacher1"
-    When I follow "Course 1"
+    When I am on "Course 1" course homepage
     And I follow "test assignment"
     Then I should see the feedback place holder for the "1st" assignment file
     And I should see the feedback place holder for the "2nd" assignment file
@@ -71,7 +71,7 @@ Feature: When the ally filter is enabled, ally place holders are inserted when a
     And I should not see any placeholders in the grading submissions column
     And I log out
     And I log in as "student1"
-    When I follow "Course 1"
+    When I am on "Course 1" course homepage
     And I follow "test assignment"
     Then I should not see the feedback place holder for the "1st" assignment file
     And I should not see the feedback place holder for the "2nd" assignment file
@@ -82,7 +82,7 @@ Feature: When the ally filter is enabled, ally place holders are inserted when a
     And I should not see any placeholders in the submissions area
     And I log out
     And I log in as "guest"
-    When I follow "Course 1"
+    When I am on "Course 1" course homepage
     And I follow "test assignment"
     Then I should not see the feedback place holder for the "1st" assignment file
     And I should not see the feedback place holder for the "2nd" assignment file

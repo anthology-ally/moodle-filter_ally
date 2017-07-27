@@ -43,8 +43,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | config              | value            |
       | slasharguments      | <slasharguments> |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
     And I add a "<forumtypestr>" to section "1" and I fill the form with:
       | Forum name | Test forum name |
       | Forum type | Standard forum for general use |
@@ -63,7 +62,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | Attachment | lib/tests/fixtures/gd-logo.png |
     And I log out
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Test forum name"
     And I reply "Teacher discussion" post from "Test forum name" <forumtype> with:
       | Subject | Student reply (non image file) |
@@ -75,7 +74,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | Attachment | lib/tests/fixtures/upload_users.csv |
     And I log out
     And I log in as "teacher1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Test forum name"
     And I follow "Teacher discussion"
     And I should see the feedback place holder for the post entitled "Teacher discussion" by "Teacher 1"
@@ -92,7 +91,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I log out
     # Check placeholders for students.
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Test forum name"
     And I follow "Teacher discussion"
     And I should not see the feedback place holder for the post entitled "Teacher discussion" by "Teacher 1"
@@ -130,7 +129,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | config              | value            |
       | slasharguments      | <slasharguments> |
     And I log in as "teacher1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I add a new discussion to "Course 1" forum with:
       | Subject | Teacher discussion |
       | Message | This is the body |
@@ -145,7 +144,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | Attachment | lib/tests/fixtures/gd-logo.png |
     And I log out
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I reply "Teacher discussion" post from "Social forum" forum with:
       | Subject | Student reply (non image file) |
       | Message | This is the body |
@@ -156,7 +155,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | Attachment | lib/tests/fixtures/upload_users.csv |
     And I log out
     And I log in as "teacher1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Discuss this topic"
     And I should see the feedback place holder for the post entitled "Teacher discussion" by "Teacher 1"
     And I should see the download place holder for the post entitled "Teacher discussion" by "Teacher 1"
@@ -172,7 +171,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I log out
     # Check placeholders for students.
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "Discuss this topic"
     And I should not see the feedback place holder for the post entitled "Teacher discussion" by "Teacher 1"
     And I should see the download place holder for the post entitled "Teacher discussion" by "Teacher 1"
