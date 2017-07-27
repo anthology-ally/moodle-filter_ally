@@ -49,18 +49,37 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I follow "Course 1"
     And I turn editing mode on
     And I follow "MyGlossary"
-    And I add a glossary entry with the following data:
-      | Concept    | EntryNoCategory |
-      | Definition | Definition      |
+    When I add a glossary entry with the following data:
+      | Concept    | Teacher Entry      |
+      | Definition | Teacher Definition |
       | Attachment | lib/tests/fixtures/empty.txt |
     Then I should see the feedback place holder for the "1st" glossary attachment
-    Then I should see the download place holder for the "1st" glossary attachment
+    And I should see the download place holder for the "1st" glossary attachment
     And I log out
     And I log in as "student1"
     And I follow "Course 1"
-    And I follow "MyGlossary"
+    When I follow "MyGlossary"
     Then I should not see the feedback place holder for the "1st" glossary attachment
-    Then I should see the download place holder for the "1st" glossary attachment
+    And I should see the download place holder for the "1st" glossary attachment
+    # Note, we have to give the Student entry a prefix of B because "S" for student clicks on 'special' instead of 'S'
+    When I add a glossary entry with the following data:
+      | Concept       | B Student Entry              |
+      | Definition    | B Student Definition         |
+      | Attachment    | lib/tests/fixtures/empty.txt |
+    # Student will not see any place holders for the entry they added.
+    Then I should not see the feedback place holder for the "1st" glossary attachment
+    Then I should not see the download place holder for the "1st" glossary attachment
+    And I log out
+    And I log in as "teacher1"
+    And I follow "Course 1"
+    And I follow "MyGlossary"
+    When I click on "T" "link" in the ".entrybox" "css_element"
+    Then I should see the feedback place holder for the "1st" glossary attachment
+    And I should see the download place holder for the "1st" glossary attachment
+    When I click on "B" "link" in the ".entrybox" "css_element"
+    Then I should not see the feedback place holder for the "1st" glossary attachment
+    And I should not see the download place holder for the "1st" glossary attachment
+
   Examples:
   | slasharguments |
   | 1              |
