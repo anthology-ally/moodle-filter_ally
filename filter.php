@@ -286,9 +286,13 @@ class filter_ally extends moodle_text_filter {
      * @param context $context
      */
     public function setup($page, $context) {
-        global $USER, $COURSE, $CFG;
+        global $USER, $COURSE, $CFG, $PAGE;
 
         if ($page->pagelayout === 'embedded') {
+            return;
+        }
+
+        if ($PAGE->pagetype === 'admin-setting-additionalhtml' || $PAGE->pagetype === 'admin-search') {
             return;
         }
 
