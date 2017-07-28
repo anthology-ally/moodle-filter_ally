@@ -194,6 +194,35 @@ function($, Templates, Ally, ImageCover, Util) {
         };
 
         /**
+         * Add place holders for folder module files.
+         * @param {array}
+         * @return {promise}
+         */
+        var placeHoldGlossaryModule = function(glossaryFileMapping) {
+            var dfd = $.Deferred();
+
+            // Glossary attachment markup is terrible!
+            // The first thing we need to do is rewrite the glossary attachments so that they are encapsulated.
+            $('.entry .attachments > br').each(function() {
+                var mainAnchor = $(this).prev('a[href*="pluginfile.php"]');
+                mainAnchor.addClass('ally-glossary-attachment');
+                var iconAnchor = $(mainAnchor).prev('a[href*="pluginfile.php"]');
+                $(this).after('<div class="ally-glossary-attachment-row"></div>');
+                var container = $(this).next('.ally-glossary-attachment-row');
+                container.append(iconAnchor);
+                container.append(mainAnchor);
+                $(this).remove();
+            });
+
+            var unwrappedlinks = '.entry .attachments .ally-glossary-attachment';
+            placeHoldSelector(unwrappedlinks, glossaryFileMapping)
+                .done(function() {
+                    dfd.resolve();
+                });
+            return dfd.promise();
+        };
+
+        /**
          * Add place holders for resource module.
          * @param moduleFileMapping
          * @return {promise}
@@ -265,6 +294,10 @@ function($, Templates, Ally, ImageCover, Util) {
                 {
                     mapVar: ally_module_maps.forum_files,
                     method: placeHoldForumModule
+                },
+                {
+                    mapVar: ally_module_maps.glossary_files,
+                    method: placeHoldGlossaryModule
                 }
             ];
 
