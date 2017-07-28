@@ -199,6 +199,29 @@ class filter_ally extends moodle_text_filter {
     }
 
     /**
+     * Map file paths to pathname hash.
+     * @return array
+     * @throws coding_exception
+     * @throws moodle_exception
+     */
+    protected function map_glossary_file_paths_to_pathhash() {
+        global $PAGE;
+        $map = [];
+
+        if ($PAGE->pagetype === 'mod-glossary-view') {
+            $cmid = optional_param('id', false, PARAM_INT);
+            if ($cmid === false) {
+                return $map;
+            }
+            list($course, $cm) = get_course_and_cm_from_cmid($cmid);
+            unset($course);
+            $map = $this->get_cm_file_map($cm, 'mod_glossary', 'attachment');
+        }
+
+        return $map;
+    }
+
+    /**
      * Map file resource moduleid to pathname hash.
      * @param $course
      * @return array
@@ -278,6 +301,7 @@ class filter_ally extends moodle_text_filter {
             $assignmentmap = $this->map_assignment_file_paths_to_pathhash();
             $forummap = $this->map_forum_attachment_file_paths_to_pathhash();
             $foldermap = $this->map_folder_file_paths_to_pathhash();
+            $glossarymap = $this->map_glossary_file_paths_to_pathhash();
             $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
             $coursecontext = context_course::instance($COURSE->id);
             $canviewfeedback = has_capability('filter/ally:viewfeedback', $coursecontext);
@@ -288,6 +312,7 @@ class filter_ally extends moodle_text_filter {
                 'assignment_files' => $assignmentmap,
                 'forum_files' => $forummap,
                 'folder_files' => $foldermap,
+                'glossary_files' => $glossarymap
             ];
             $json = json_encode($modulemaps);
 
@@ -434,6 +459,11 @@ EOF;
 
             if (strpos($url, 'pluginfile.php') !== false) {
                 list($contextid, $component, $filearea, $itemid, $filename) = $this->process_url($url);
+
+                if ($component === 'mod_glossary' && $filearea === 'attachment') {
+                    // We have to do this with JS as the DOM needs rewriting.
+                    continue;
+                }
 
                 if ($contextid === null) {
                     continue;
