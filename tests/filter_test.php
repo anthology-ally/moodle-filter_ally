@@ -767,4 +767,56 @@ EOF;
         );
         $this->assertNotEmpty($map);
     }
+
+    public function test_verify_and_fix_if_applied_lesson_module() {
+        global $PAGE;
+
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+        $teacher = $gen->create_user();
+        $gen->enrol_user($teacher->id, $course->id, 'teacher');
+        $this->setUser($teacher);
+        $fs = get_file_storage();
+
+        // Test regex chars in file name.
+        $regextestfilenames = [
+            'test (2).txt',
+            'test (3:?).txt',
+            'test (~4).txt'
+        ];
+        $urls = [];
+        $text = ''; // Paragraph with links.
+        $datalesstext = ''; // Paragraph with dataless links.
+        foreach ($regextestfilenames as $filename) {
+            $filerecord = array(
+                'contextid' => context_course::instance($course->id)->id,
+                'component' => 'mod_lesson',
+                'filearea' => 'page_contents',
+                'itemid' => 0,
+                'filepath' => '/',
+                'filename' => $filename
+            );
+            $teststring = 'moodletest';
+            $file = $fs->create_file_from_string($filerecord, $teststring);
+            $url = local_file::url($file);
+            $urls[] = $url;
+            $anchortext = '<a href="'.$url.'">test</a>';
+            $text .= $anchortext;
+
+            $renderer = $PAGE->get_renderer('filter_ally');
+            $wrapper = new \filter_ally\renderables\wrapper();
+            $wrapper->html = $anchortext;
+            $wrapper->candownload = true;
+            $wrapper->canviewfeedback = true;
+            $wrapper->isimage = false;
+            $wrapped = $renderer->render_wrapper($wrapper);
+            $datalesstext .= str_replace(' data-file-id="" data-file-url=""', '', $wrapped);
+        }
+        $text = '<p>'.$text.'</p>';
+        $datalesstext = '<p>'.$datalesstext.'</p>';
+        $filteredtext = $this->filter->filter($text); // The links have been processed, so they have been added to the fileids.
+        $datalessfilteredtext = $this->filter->filter($datalesstext); // This should add the file ids to the data less spans.
+
+        $this->assertEquals($filteredtext, $datalessfilteredtext);
+    }
 }
