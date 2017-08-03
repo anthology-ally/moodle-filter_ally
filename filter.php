@@ -377,18 +377,17 @@ EOF;
         }
         $arr = explode($del, $matches[2]);
         $component = urldecode(array_shift($arr));
+        $fileurlprops = local_file::get_component_support_fileurlproperties($component, $url);
+        if (!empty($fileurlprops)) {
+            return $fileurlprops;
+        }
+
         if (count($arr) === 2) {
             $filearea = array_shift($arr);
             $itemid = 0;
             $filename = array_shift($arr);
         } else if (count($arr) === 3) {
             $filearea = array_shift($arr);
-            $itemid = array_shift($arr);
-            $filename = array_shift($arr);
-        } else if ($component === 'question' ) {
-            $filearea = array_shift($arr);
-            array_shift($arr); // Remove previewcontextid.
-            array_shift($arr); // Remove previewcomponent.
             $itemid = array_shift($arr);
             $filename = array_shift($arr);
         } else {
