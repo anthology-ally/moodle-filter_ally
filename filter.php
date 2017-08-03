@@ -421,7 +421,7 @@ EOF;
 
             $feedbacknodes = $element->parentNode->getElementsByTagName('span');
             foreach ($feedbacknodes as $feedbacknode) {
-                if (is_object($element->attributes)
+                if (is_object($feedbacknode->attributes)
                     && is_object($feedbacknode->attributes->getNamedItem('data-file-id'))
                     && is_object($feedbacknode->attributes->getNamedItem('data-file-url'))) {
                     $feedbackfound = true;
