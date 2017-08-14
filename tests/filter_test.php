@@ -591,6 +591,43 @@ EOF;
         $this->test_filter_anchor();
     }
 
+    /**
+     * Test processing an anchor where the anchor style attribute contains html entity quotes.
+     */
+    public function test_filter_anchor_style_with_htmlentities() {
+
+        $gen = $this->getDataGenerator();
+
+        $course = $gen->create_course();
+        $teacher = $gen->create_user();
+        $gen->enrol_user($teacher->id, $course->id, 'teacher');
+
+        $fs = get_file_storage();
+        $filerecord = array(
+            'contextid' => context_course::instance($course->id)->id,
+            'component' => 'mod_label',
+            'filearea' => 'intro',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'test.txt'
+        );
+        $teststring = 'moodletest';
+        $file = $fs->create_file_from_string($filerecord, $teststring);
+        $url = local_file::url($file);
+
+        $text = '<a href="'.$url.'" ';
+        $text .= 'style="font-size: 1rem; font-family: Georgia, Times, &quot;Times New Roman&quot;, serif;';
+        $text .= 'background-color: rgb(255, 255, 255);">';
+        $text .= 'test.txt</a>';
+
+        $this->setUser($teacher);
+        // Make sure teachers get download and feedback place holder.
+        $filteredtext = $this->filter->filter($text);
+        $this->assertContains('<span class="ally-download"', $filteredtext);
+        // As we are logged in as a teacher, we should get the feedback placeholder.
+        $this->assertContains('<span class="ally-feedback"', $filteredtext);
+    }
+
     public function test_filter_anchor_blacklistedcontexts() {
         global $PAGE, $CFG, $USER;
 
