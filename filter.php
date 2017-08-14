@@ -631,18 +631,24 @@ EOF;
                 $wrapper->isimage = $type === 'img';
                 $wrapped = $renderer->render_wrapper($wrapper);
 
-                // Build a regex to cope with void tags closed by /> or >.
-                if (substr($html, -2) === '/>') {
-                    $stripclosingtag = substr($html, 0, strlen($html) - 2);
-                } else {
-                    $stripclosingtag = substr($html, 0, strlen($html) - 1);
-                }
-
-                $replaceregex = '~'.preg_quote($stripclosingtag, '~').'(?:\s*|)(?:>|/>)~m';
-
-                if ($component == 'mod_folder') {
+                if ($component === 'mod_folder' && $filearea !== 'intro') {
                     $ampencodedurl = str_replace('&', '&amp;', $url);
                     $replaceregex = '/<a href="' . preg_quote($ampencodedurl, '/') . '">.*?<\/a>/';
+                } else {
+                    // To cope with void tags closed by /> or >.
+                    if (substr($html, -2) === '/>') {
+                        $htmltosrch = substr($html, 0, strlen($html) - 2);
+                    } else {
+                        $htmltosrch = substr($html, 0, strlen($html) - 1);
+                    }
+                    // Replace quotes and single quotes with alternatives.
+                    // This is to cope with the fact that in some cases $doc->saveHTML swaps single quotes to double
+                    // quotes.
+                    $htmltosrch = preg_quote($htmltosrch, '~');
+                    $pattern = '/(\'|"|&quot;)/';
+                    $htmltosrch = preg_replace($pattern, '(\'|"|&quot;)', $htmltosrch);
+                    $replaceregex = '~'.$htmltosrch.'(?:\s*|)(?:>|/>)~m';
+
                 }
                 $text = preg_replace($replaceregex, $wrapped, $text);
             }
