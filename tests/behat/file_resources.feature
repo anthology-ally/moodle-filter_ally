@@ -70,7 +70,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should not see the download place holder for the "2nd" file resource
     And I should not see the download place holder for the "3rd" file resource
     Examples:
-    | course               | coursestep            |
-    | C1                   | I follow "Course 1"   |
-    | Acceptance test site | I am on site homepage |
+    | course               | coursestep                         |
+    | C1                   | I am on "Course 1" course homepage |
+    | Acceptance test site | I am on site homepage              |
 

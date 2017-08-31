@@ -78,11 +78,11 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should not see the download place holder for the "1st" file in folder
     And I should not see the download place holder for the "2nd" file in folder
   Examples:
-  | course               | coursestep            | slasharguments |
-  | C1                   | I follow "Course 1"   | 1              |
-  | Acceptance test site | I am on site homepage | 1              |
-  | C1                   | I follow "Course 1"   | 0              |
-  | Acceptance test site | I am on site homepage | 0              |
+  | course               | coursestep                         | slasharguments |
+  | C1                   | I am on "Course 1" course homepage | 1              |
+  | Acceptance test site | I am on site homepage              | 1              |
+  | C1                   | I am on "Course 1" course homepage | 0              |
+  | Acceptance test site | I am on site homepage              | 0              |
 
   @javascript
   Scenario Outline: Folder files are processed appropriately when viewed on own mod page
@@ -126,10 +126,10 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should not see the download place holder for the "1st" file in folder
     And I should not see the download place holder for the "2nd" file in folder
   Examples:
-  | course               | coursestep            | slasharguments |
-  | C1                   | I follow "Course 1"   | 1              |
-  | Acceptance test site | I am on site homepage | 1              |
-  | C1                   | I follow "Course 1"   | 0              |
-  | Acceptance test site | I am on site homepage | 0              |
+  | course               | coursestep                         | slasharguments |
+  | C1                   | I am on "Course 1" course homepage | 1              |
+  | Acceptance test site | I am on site homepage              | 1              |
+  | C1                   | I am on "Course 1" course homepage | 0              |
+  | Acceptance test site | I am on site homepage              | 0              |
 
 

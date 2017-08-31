@@ -46,8 +46,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | activity | name       | intro                     | displayformat | course | idnumber  |
       | glossary | MyGlossary | Test glossary description | encyclopedia  | C1     | glossary1 |
     And I log in as "teacher1"
-    And I follow "Course 1"
-    And I turn editing mode on
+    And I am on "Course 1" course homepage with editing mode on
     And I follow "MyGlossary"
     When I add a glossary entry with the following data:
       | Concept    | Teacher Entry      |
@@ -57,7 +56,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should see the download place holder for the "1st" glossary attachment
     And I log out
     And I log in as "student1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     When I follow "MyGlossary"
     Then I should not see the feedback place holder for the "1st" glossary attachment
     And I should see the download place holder for the "1st" glossary attachment
@@ -71,7 +70,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     Then I should not see the download place holder for the "1st" glossary attachment
     And I log out
     And I log in as "teacher1"
-    And I follow "Course 1"
+    And I am on "Course 1" course homepage
     And I follow "MyGlossary"
     When I click on "T" "link" in the ".entrybox" "css_element"
     Then I should see the feedback place holder for the "1st" glossary attachment
