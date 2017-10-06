@@ -1,83 +1,61 @@
-# Ally #
+# Ally filter
 
-TODO Describe the plugin shortly here.
+The Ally filter provides accessibility scores and tools for files uploaded to Moodle by teachers. It also provides
+alternative download types to enhance accessibility - e.g. audio, braille, etc
 
-TODO Provide more detailed description here.
+## Installation
 
-## Testing ##
+The Ally filter can be downloaded from:
 
-It can be difficult to test without Ally installed. Following is how styling
-can be tested for the 3 ways Ally integrations with Moodle in the UI filter.
+https://github.com/moodlerooms/moodle-filter_ally
 
-First, it is assumed you have enabled the Ally filter in order to get the
-placement of `ally-feedback`, `ally-image-cover` and `ally-download`
-elements. These are the placeholder elements where Ally will "inject" a bit
-of HTML when it has determined the link(s) should show.
+The filter should be located and named as:
+ [yourmoodledir]/filter/ally
+ 
+## Configuration
 
-Second, it will be helpful to place Ally's base CSS class in the `<head />`
-area to get the base styles for the elements Ally places:
+For the filter to function it is necessary to download and configure the Ally admin tool:
+ 
+https://github.com/moodlerooms/moodle-tool_ally
+ 
+Instructions on how to do so are available in the README.md file for the admin tool.
 
-  `<link rel="stylesheet" href="https://prod.ally.ac/integration/css/ally.css" />`
+## Usage
 
-Then, for each type of integration point (feedback, image cover and download),
-you can some additional HTML:
+The filter will be functional after the Ally admin tool has been successfully configured and your Ally
+representative has finalised the setup.
 
-### Instructor Feedback icon ###
+### Non image files
 
-The instructor feedback icon is a little meter indicator that, when clicked,
-opens a modal for instructors to be instructed how to improve the accessibility
-of the file. Find the appropriate `.ally-feedback` element and place the
-following in the DOM:
+The filter should automatically add two new icons to non-image files created by teachers (.pdf, .doc, .docx, .odt, .ppt,
+.pptx, .odp, .html).
+For teachers, a feedback icon and an alternative downloads icon will display.
+For students, only the alternative downloads icon will display.
 
-```
-<a href="#" class="ally-accessibility-score-indicator ally-accessibility-score-indicator-high ally-instructor-feedback">
-  <img src="https://performance.ally.ac/integration/img/ally-icon-indicator-high.svg" alt="" aria-hidden="true">
-  <span class="screenreader-only">Accessibility score: High. Click to improve</span>
-</a>
-```
+### Image files
 
-When Ally "activates" the item, it places the above content and it appends the CSS class `ally-active` to the
-`.ally-feedback` element. So doing both will show how Ally will look with the icon visible. When the `ally-active`
-class is removed again, it should appear as though Ally has done nothing.
+For teachers, a feedback icon will be shown.
+For any potentially seizure inducing images, a seizure guard will be displayed over the image.
+For students, only the seizure guard will be shown for images capable of inducing seizures.
 
-### Download accessible versions icon ###
+### Teacher feedback icon
 
-The download icon is placed to allow students to download accessible versions.
-When clicked, a modal appears where a student can select the alternative
-version they wish to view. To enable this the way Ally does, find the appropriate
-`.ally-download` element and place the following in the DOM:
+The teacher feedback icon is a little meter indicator with 3 states :
+* (red) low, requires improvement
+* (amber) medium, has areas for improvement
+* (green) high accessibility.
+On clicking the feedback icon, the feedback modal is displayed. This modal will offer advice on how to improve the
+accessibility of the file. In some cases the feedback modal will also present options to automatically correct or
+improve accessibility.
 
-```
-<a href="#" title="Accessible versions" aria-haspopup="true">
-    <img src="https://performance.ally.ac/integration/moodlerooms/img/ally-download.svg" alt="Accessible versions">
-</a>
-```
+### Download accessible versions icon
 
-When Ally "activates" the item, it places the above content and it appends the CSS class `ally-active` to the
-`.ally-download` element. So doing both will show how Ally will look with the icon visible. When the `ally-active`
-class is removed again, it should appear as though Ally has done nothing.
+The download icon allows students to download accessible versions.
+When clicked, a modal appears where a student can select the alternative version they wish to download.
 
-### Seizure Guard image cover ###
+## License for Ally filter
 
-The seizure guard is placed over images (GIFs) that Ally has determined carries
-a risk of causing seizures. To enable this the way Ally does, find the
-appropriate `.ally-image-cover` element and place the following in the DOM:
-
-```
-<div class="ally-image-seizure-guard">
-    <button title="Potentially seizure inducing animation. Press to enable.">
-        <img src="https://performance.ally.ac/integration/img/ally-icon-seizure-flag.svg">
-    </button>
-</div>
-```
-
-When Ally "activates" the item, it places the above content and it appends the CSS class `ally-active` to the
-`.ally-image-cover` element. So doing both will show how Ally will look when the guard is active. When the `ally-active`
-class is removed again, it should appear as though Ally has done nothing.
-
-## License ##
-
-Blackboard Inc 2017
+© Blackboard Inc 2017
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
