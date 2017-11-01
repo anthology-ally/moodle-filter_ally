@@ -338,7 +338,7 @@ EOF;
         $cm = $modinfo->get_cm($label->cmid);
         $filerecord = array(
             'contextid' => $cm->context->id,
-            'component' => 'mod_label',
+            'component' => 'mod_notwhitelisted',
             'filearea' => 'intro',
             'itemid' => 0,
             'filepath' => '/',
@@ -560,7 +560,7 @@ EOF;
         $cm = $modinfo->get_cm($label->cmid);
         $filerecord = array(
             'contextid' => $cm->context->id,
-            'component' => 'mod_label',
+            'component' => 'mod_notwhitelisted',
             'filearea' => 'intro',
             'itemid' => 0,
             'filepath' => '/',
