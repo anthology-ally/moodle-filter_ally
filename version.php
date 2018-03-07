@@ -25,9 +25,9 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'filter_ally';
-$plugin->release   = '3.3.3';
+$plugin->release   = '3.4.1';
 $plugin->version   = 2017120801;
-$plugin->requires  = 2016052300;
+$plugin->requires  = 2017111300;
 $plugin->maturity  = MATURITY_BETA;
 $plugin->dependencies = [
     'tool_ally'      => 2017120801,
