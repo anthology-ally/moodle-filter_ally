@@ -2,6 +2,6 @@
   "description": "Grunt tasks for filter_ally",
   "private": true,
   "devDependencies": {
-    "grunt-load-gruntfile" : "^0.0.2"
+    "grunt-load-gruntfile": "^0.0.2"
   }
 }

@@ -22,7 +22,7 @@
 
 
 @filter @filter_ally
-Feature: When the ally filter is enabled ally place holders are inserted when appropriate into user generated content.
+Feature: When the ally filter is enabled ally place holders and annotations are inserted when appropriate into user generated content.
 
   Background:
     Given the ally filter is enabled
@@ -102,3 +102,29 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should not see the download place holder for the "1st" anchor
     And I should not see the download place holder for the "2nd" anchor
     And I should not see the download place holder for the "3rd" anchor
+
+  @javascript
+  Scenario: Course section html is annotated.
+    Given the following "courses" exist:
+      | fullname | shortname | category | format |
+      | Course 1 | C1        | 0        | topics |
+    And the following "users" exist:
+      | username | firstname | lastname | email                |
+      | student1 | Student   | 1        | student1@example.com |
+      | teacher1 | Teacher1  | 1        | teacher1@example.com |
+    And the following "course enrolments" exist:
+      | user     | course | role           |
+      | student1 | C1     | student        |
+      | teacher1 | C1     | teacher        |
+    And course "C1" section 1 has html summary of "<p>My section summary</p>"
+    And course "C1" section 2 has text summary of "Plain text summary - should have no annotation"
+    When I log in as "teacher1"
+    Then I am on "Course 1" course homepage
+    And section 1 html is annotated
+    And section 2 html is not annotated
+    And I log out
+    # Annotations for HTML summaries should be available for all roles.
+    When I log in as "student1"
+    Then I am on "Course 1" course homepage
+    And section 1 html is annotated
+    And section 2 html is not annotated

@@ -24,11 +24,18 @@
 // NOTE: no MOODLE_INTERNAL test here, this file may be required by behat before including /config.php.
 require_once(__DIR__ . '/../../../../lib/behat/behat_base.php');
 
+use \Behat\Mink\Exception\ExpectationException;
+use \tool_ally\local_content;
+use \tool_ally\models\component_content;
+
 /**
  * Ally filter context
+ *
  * @author    Guy Thomas <gthomas@moodlerooms.com>
  * @copyright Copyright (c) 2017 Blackboard Inc.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @category  test
+ * @package   filter_ally
  */
 class behat_filter_ally extends behat_base {
     /**
@@ -164,6 +171,27 @@ class behat_filter_ally extends behat_base {
         $label = $DB->get_record('label', ['id' => $label->id]);
         $label->intro = $labeltext;
         $DB->update_record('label', $label);
+    }
+
+    /**
+     * @Given /I create a label with html content "(?P<content_string>[^"]*)" in section (?P<section_number>\d*)$/
+     * @param string $content
+     */
+    public function i_create_a_label_with_html_content($content, $section) {
+
+        $gen = testing_util::get_data_generator();
+
+        $course = $this->get_current_course();
+
+        $data = (object) [
+            'course' => $course->id,
+            'name' => 'test label',
+            'intro' => $content,
+            'introformat' => FORMAT_HTML,
+            'section' => $section
+        ];
+
+        $gen->create_module('label', $data);
     }
 
     /**
@@ -468,5 +496,257 @@ class behat_filter_ally extends behat_base {
     public function i_view_all_submissions() {
         $path = "//a[contains(text(), 'View all submissions')][contains(@class, 'btn')]";
         $this->execute('behat_general::i_click_on', [$path, 'xpath_element']);
+    }
+
+    /**
+     * @param string $shortname
+     * @param int $section
+     * @param string $summary
+     * @param int $format
+     * @throws dml_exception
+     */
+    private function section_has_summary($shortname, $section, $summary, $format) {
+        global $DB;
+        $course = $DB->get_field('course', 'id', ['shortname' => $shortname]);
+        $coursesection = $DB->get_record('course_sections', ['course' => $course, 'section' => $section]);
+        $coursesection->summaryformat = $format;
+        $coursesection->summary = $summary;
+        $DB->update_record('course_sections', $coursesection);
+    }
+
+    /**
+     * @param string $shortname
+     * @param int $section
+     * @param string $summary
+     * @Given /^course "(?P<shortname_string>[^"]*)" section (?P<section_number>\d*) has html summary of \
+     * "(?P<summary_string>[^"]*)"$/
+     */
+    public function section_has_html_summary($shortname, $section, $summary) {
+        $this->section_has_summary($shortname, $section, $summary, FORMAT_HTML);
+    }
+
+    /**
+     * @param string $shortname
+     * @param int $section
+     * @param string $summary
+     * @Given /^course "(?P<shortname_string>[^"]*)" section (?P<section_number>\d*) has text summary of \
+     * "(?P<summary_string>[^"]*)"$/
+     */
+    public function section_has_text_summary($shortname, $section, $summary) {
+        $this->section_has_summary($shortname, $section, $summary, FORMAT_PLAIN);
+    }
+
+    /**
+     * @Given /^section (?P<section_number>\d*) html is annotated$/
+     */
+    public function section_is_annotated($section) {
+        $selector = '#section-'.$section.' > .content > div[class*="summary"] > .no-overflow[data-ally-richcontent]';
+        $node = $this->find('css', $selector);
+        if (empty($node)) {
+            throw new ExpectationException(
+                    'Failed to find annotation for section '.$section.' summary', $this->getSession());
+        }
+        $annotation = $node->getAttribute('data-ally-richcontent');
+        if (strpos($annotation, 'course:course_section:summary') === false) {
+            throw new ExpectationException(
+                    'Annotation is incorrect for '.$section.' summary - '.$annotation, $this->getSession());
+        }
+    }
+
+    /**
+     * @Given /^section (?P<section_number>\d*) html is not annotated$/
+     */
+    public function section_is_not_annotated($section) {
+        $selector = '#section-'.$section.' > .content > div[class*="summary"] > .no-overflow';
+        $node = $this->find('css', $selector);
+
+        if ($node->hasAttribute('data-ally-richcontent')) {
+            throw new ExpectationException(
+                    'Annotation exists but should not exist for section '.$section.' summary', $this->getSession());
+        }
+    }
+
+    /**
+     * Get label content node by it's html content
+     * @param string $html
+     * @return \Behat\Mink\Element\NodeElement
+     * @throws ExpectationException
+     */
+    private function get_label_content_node_by_html_content($html) {
+        $modname = 'label';
+        $html = $this->escape($html);
+        $selector = <<<XPATH
+//li[contains(concat( " ", @class, " " ), " activity ") and contains(concat( " ", @class, " " ), " $modname ")]
+//div[contains(concat( " ", @class, " " ), " no-overflow ")][@data-ally-richcontent]//*[contains(text(), "$html")]
+//parent::div[contains(concat( " ", @class, " " ), " no-overflow ")]
+XPATH;
+
+        return $this->find('xpath', $selector);
+    }
+
+    /**
+     * @param string $html
+     * @Given /^label with html "(?P<html_string>[^"]*)" is annotated$/
+     */
+    public function label_is_annotated($html) {
+        $modname = 'label';
+        $node = $this->get_label_content_node_by_html_content($html);
+        if (empty($node)) {
+            throw new ExpectationException(
+                    'Failed to find annotation for module '.$modname.' with html '.$html, $this->getSession());
+        }
+        $annotation = $node->getAttribute('data-ally-richcontent');
+        if (strpos($annotation, 'label:label:intro') === false) {
+            throw new ExpectationException(
+                    'Annotation is incorrect for for module '.$modname.' with html '.$html.' - '.$annotation,
+                    $this->getSession());
+        }
+        $wsparams = explode(':', $annotation);
+        if (count($wsparams) < 4) {
+            throw new ExpectationException('Incorrect number of params in label annotation '.$annotation);
+        }
+    }
+
+    /**
+     * Get html content from annotation
+     * @param string $annotation
+     * @return component_content
+     */
+    private function get_html_content($annotation) {
+        $wsparams = explode(':', $annotation);
+        if (count($wsparams) < 4) {
+            throw new ExpectationException('Incorrect number of params in label annotation '.$annotation);
+        }
+        $component = $wsparams[0];
+        $table = $wsparams[1];
+        $field = $wsparams[2];
+        $id = $wsparams[3];
+        return local_content::get_html_content(
+            $id, $component, $table, $field, null);
+    }
+
+    /**
+     * @param string $html
+     * @Given /^I follow the webservice content url for label "(?P<html_string>[^"]*)"$/
+     */
+    public function follow_label_ws_url($html) {
+        $node = $this->get_label_content_node_by_html_content($html);
+        $annotation = $node->getAttribute('data-ally-richcontent');
+        $content = $this->get_html_content($annotation);
+        $this->getSession()->visit($content->contenturl);
+    }
+
+    protected function assert_element_in_viewport_or_not($node, $assertin = true) {
+
+        $xpath = $node->getXpath();
+        $xpath = str_replace(chr(13), '', $xpath);
+        $xpath = str_replace(chr(10), '', $xpath);
+        if (strpos($xpath, '(//html') !== false) {
+            $xpath = substr($xpath, strlen('(//html'));
+            $xpath = substr($xpath, 0, strrpos($xpath, ')[1]'));
+        }
+
+        $script = <<<JS
+        (function(){
+            var isElementInViewport = function(el) {
+                var rect = el.getBoundingClientRect();
+                return (
+                    rect.top >= 0 &&
+                    rect.left >= 0 &&
+                    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+                    rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+                );
+            }
+            var el = document.evaluate('$xpath', document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+            return isElementInViewport(el);
+        })();
+JS;
+
+        $inviewport = $this->getSession()->evaluateScript($script);
+
+        if ($assertin) {
+            if (!$inviewport) {
+                throw new ExpectationException('Element is not in view port ' . $xpath, $this->getSession());
+            }
+        } else {
+            if ($inviewport) {
+                throw new ExpectationException('Element is in view port and should not be ' . $xpath, $this->getSession());
+            }
+        }
+    }
+
+    /**
+     * Ensure element is either visible or not taking into account viewport
+     * @param string $element
+     * @param string $selectortype
+     * @param boolean $visible
+     * @throws ExpectationException
+     */
+    protected function ensure_element_visible_or_not($element, $selectortype, $visible) {
+        if ($visible) {
+            $node = $this->ensure_element_is_visible($element, $selectortype);
+        } else {
+            try {
+                $node = $this->get_selected_node($selectortype, $element);
+            } catch (Exception $e) {
+                $node = null;
+            }
+            if (empty($node)) {
+                // Failed to get node - so it can't be visible.
+                return;
+            }
+            if ($node->isVisible()) {
+                throw new ExpectationException(
+                        'Element is visible and should not be '.$node->getXpath(), $this->getSession());
+            }
+        }
+
+        $this->assert_element_in_viewport_or_not($node, $visible);
+    }
+
+    /**
+     * @Given /^the "(?P<selector_string>[^"]*)" element "(?P<element_string>[^"]*)" is visible and in viewport$/
+     * @param string $selectortype
+     * @param string $element
+     * @throws ExpectationException
+     */
+    public function ensure_element_is_visible_and_in_viewport($selectortype, $element) {
+        $this->ensure_element_visible_or_not($element, $selectortype, true);
+    }
+
+    /**
+     * @Given /^the "(?P<selector_string>[^"]*)" element "(?P<element_string>[^"]*)" is not visible or not in viewport$/
+     * @param string $selectortype
+     * @param string $element
+     * @throws ExpectationException
+     */
+    public function ensure_element_is_not_visible_or_not_in_viewport($selectortype, $element) {
+        $this->ensure_element_visible_or_not($element, $selectortype, false);
+    }
+
+    /**
+     * @param string $content
+     * @Given /^the label with html content "(?P<content_string>[^"]*)" is visible and in viewport$/
+     */
+    public function ensure_label_with_content_visible_and_in_viewport($content) {
+        $label = $this->get_label_content_node_by_html_content($content);
+        if (!$label->isVisible()) {
+            throw new ExpectationException(
+                    'Label is not visible and should be: '.$label->getXpath(),
+                    $this->getSession());
+        }
+        $this->assert_element_in_viewport_or_not($label, true);
+    }
+
+    /**
+     * @param string $content
+     * @Given /^the label with html content "(?P<content_string>[^"]*)" is not visible or not in viewport$/
+     */
+    public function ensure_label_with_content_not_visible_or_not_in_viewport($content) {
+        $label = $this->get_label_content_node_by_html_content($content);
+        if (!$label->isVisible()) {
+            return; // Not visible so no need to check viewport.
+        }
+        $this->assert_element_in_viewport_or_not($label, false);
     }
 }
