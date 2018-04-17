@@ -266,40 +266,137 @@ function($, Templates, Ally, ImageCover, Util) {
             return dfd.promise();
         };
 
+        var buildContentIdent = function(component, table, field, id) {
+            return [component, table, field, id].join(':');
+        };
+
         /**
-         * Apply place holders.
+         * Add annotations to sections content.
+         */
+        var annotateSections = function(sectionMapping) {
+            var dfd = $.Deferred();
+
+            for (var s in sectionMapping) {
+                var sectionId = sectionMapping[s];
+                var ident = buildContentIdent('course', 'course_section', 'summary', sectionId);
+
+                var selectors = [
+                    '#' + s + ' > .content > div[class*="summary"] > .no-overflow',
+                    'body.theme-snap #' + s + ' > .content > .summary > div > .no-overflow' // Snap.
+                ];
+
+                $(selectors.join(',')).attr('data-ally-richcontent', ident);
+            }
+
+            dfd.resolve();
+            return dfd.promise();
+        };
+
+        /**
+         * Annotate module introductions.
+         * @param introMapping
+         */
+        var annotateModuleIntros = function(introMapping, module) {
+            for (var c in introMapping) {
+                var annotation = introMapping[c];
+                var selectors = [
+                    'body.path-mod-' + module + '.cmid-' + c + ' #intro > .no-overflow',
+                    // We need to be specific here for non course pages to skip this.
+                    'li.activity.modtype_' + module + '#module-' + c + ' .contentafterlink > .no-overflow > .no-overflow',
+                    'li.snap-activity.modtype_' + module + '#module-' + c + ' .contentafterlink > .no-overflow'
+                ];
+                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+            }
+        };
+
+        /**
+         * Add annotations to forums.
+         */
+        var annotateForums = function(forumMapping) {
+
+            // Annotate introductions.
+            var intros = forumMapping['intros'];
+            annotateModuleIntros(intros, 'forum');
+
+            // Annotate discussions.
+            var discussions = forumMapping['posts'];
+            for (var d in discussions) {
+                var post = 'p' + d;
+                var annotation = discussions[d];
+                var postSelector = "#page-mod-forum-discuss a#" + post +
+                        ' + div.firstpost div.posting.fullpost';
+                var contentSelector = postSelector + ' > *:not(.attachedimages):not([data-ally-richcontent])';
+                $(postSelector).prepend("<div data-ally-richcontent='" + annotation + "'></div>");
+                $(contentSelector).detach().appendTo(postSelector + ' > div[data-ally-richcontent]');
+            }
+        };
+
+        var annotateMRForums = function(forumMapping) {
+
+            // Annotate introductions.
+            var intros = forumMapping['intros'];
+            annotateModuleIntros(intros, 'hsuforum');
+
+            var discussions = forumMapping['posts'];
+            for (var d in discussions) {
+                var annotation = discussions[d];
+                var postSelector = 'article[id="p' + d + '"] div.posting';
+                $(postSelector).attr('data-ally-richcontent', annotation);
+            }
+        };
+
+        var annotateModules = function(moduleMapping) {
+            var dfd = $.Deferred();
+            if (moduleMapping['mod_forum'] !== undefined) {
+                annotateForums(moduleMapping['mod_forum']);
+            }
+            if (moduleMapping['mod_hsuforum'] !== undefined) {
+                annotateMRForums(moduleMapping['mod_hsuforum']);
+            }
+            dfd.resolve();
+            return dfd.promise();
+        };
+
+        /**
+         * Apply place holders and add annotations to content.
          * @return {promise}
          */
         var applyPlaceHolders = function() {
             var dfd = $.Deferred();
 
-            if (ally_module_maps === undefined) {
+            if (ally_module_maps === undefined || ally_section_maps === undefined) {
                 dfd.resolve();
                 return dfd.promise();
             }
 
-            var tasks = [
-                {
-                    mapVar: ally_module_maps.file_resources,
-                    method: placeHoldResourceModule
-                },
-                {
-                    mapVar: ally_module_maps.assignment_files,
-                    method: placeHoldAssignModule
-                },
-                {
-                    mapVar: ally_module_maps.folder_files,
-                    method: placeHoldFolderModule
-                },
-                {
-                    mapVar: ally_module_maps.forum_files,
-                    method: placeHoldForumModule
-                },
-                {
-                    mapVar: ally_module_maps.glossary_files,
-                    method: placeHoldGlossaryModule
-                }
-            ];
+            var tasks = [{
+                mapVar: ally_module_maps.file_resources,
+                method: placeHoldResourceModule
+            },
+            {
+                mapVar: ally_module_maps.assignment_files,
+                method: placeHoldAssignModule
+            },
+            {
+                mapVar: ally_module_maps.folder_files,
+                method: placeHoldFolderModule
+            },
+            {
+                mapVar: ally_module_maps.forum_files,
+                method: placeHoldForumModule
+            },
+            {
+                mapVar: ally_module_maps.glossary_files,
+                method: placeHoldGlossaryModule
+            },
+            {
+                mapVar: ally_section_maps,
+                method: annotateSections
+            },
+            {
+                mapVar: ally_annotation_maps,
+                method: annotateModules
+            }];
 
             $(document).ready(function() {
                 var completed = 0;
