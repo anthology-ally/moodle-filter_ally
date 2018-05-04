@@ -29,3 +29,4 @@ $string['pluginname'] = 'Ally';
 $string['filtername'] = 'Ally';
 $string['ally:viewfeedback'] = 'View Ally feedback';
 $string['ally:viewdownload'] = 'View Ally download button';
+$string['privacy:metadata'] = 'The Ally plugin does not store any personal data.';
