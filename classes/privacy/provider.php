@@ -24,6 +24,8 @@
 
 namespace filter_ally\privacy;
 
+use core_privacy\local\metadata\collection;
+
 defined('MOODLE_INTERNAL') || die();
 
 /**
@@ -32,16 +34,17 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright Copyright (c) 2018 Blackboard Inc. (http://www.blackboard.com)
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements \core_privacy\local\metadata\null_provider {
+class provider implements \core_privacy\local\metadata\provider {
     use \core_privacy\local\legacy_polyfill;
 
-    /**
-     * Get the language string identifier with the component's language
-     * file to explain why this plugin stores no data.
-     *
-     * @return string
-     */
-    public static function _get_reason() {
-        return 'privacy:metadata';
+    public static function _get_metadata(collection $collection) {
+        $collection->link_external_location('jwt', [
+            'userid'   => 'privacy:metadata:jwt:userid',
+            'courseid' => 'privacy:metadata:jwt:courseid',
+            'locale'   => 'privacy:metadata:jwt:locale',
+            'roles'    => 'privacy:metadata:jwt:roles',
+        ], 'privacy:metadata:jwt:externalpurpose');
+
+        return $collection;
     }
 }
