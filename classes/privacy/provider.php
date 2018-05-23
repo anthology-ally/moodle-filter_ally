@@ -40,7 +40,7 @@ class provider implements \core_privacy\local\metadata\provider, \core_privacy\l
     use \core_privacy\local\legacy_polyfill;
 
     public static function _get_metadata(collection $collection) {
-        $collection->link_external_location('jwt', [
+        $collection->add_external_location_link('jwt', [
             'userid'   => 'privacy:metadata:jwt:userid',
             'courseid' => 'privacy:metadata:jwt:courseid',
             'locale'   => 'privacy:metadata:jwt:locale',
