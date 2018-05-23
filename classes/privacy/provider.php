@@ -25,6 +25,8 @@
 namespace filter_ally\privacy;
 
 use core_privacy\local\metadata\collection;
+use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\contextlist;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -34,11 +36,11 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright Copyright (c) 2018 Blackboard Inc. (http://www.blackboard.com)
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements \core_privacy\local\metadata\provider {
+class provider implements \core_privacy\local\metadata\provider, \core_privacy\local\request\plugin\provider {
     use \core_privacy\local\legacy_polyfill;
 
     public static function _get_metadata(collection $collection) {
-        $collection->link_external_location('jwt', [
+        $collection->add_external_location_link('jwt', [
             'userid'   => 'privacy:metadata:jwt:userid',
             'courseid' => 'privacy:metadata:jwt:courseid',
             'locale'   => 'privacy:metadata:jwt:locale',
@@ -46,5 +48,18 @@ class provider implements \core_privacy\local\metadata\provider {
         ], 'privacy:metadata:jwt:externalpurpose');
 
         return $collection;
+    }
+
+    public static function _get_contexts_for_userid($userid) {
+        return new contextlist();
+    }
+
+    public static function _export_user_data(approved_contextlist $contextlist) {
+    }
+
+    public static function _delete_data_for_all_users_in_context(\context $context) {
+    }
+
+    public static function _delete_data_for_user(approved_contextlist $contextlist) {
     }
 }
