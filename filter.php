@@ -26,6 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 require_once(__DIR__.'/../../mod/forum/lib.php');
 
 use filter_ally\renderables\wrapper;
+use tool_ally\cache;
 use tool_ally\local_file;
 
 /**
@@ -593,17 +594,22 @@ EOF;
                 $pathhash = sha1($filepath);
 
                 if (!isset($filesbyareakey[$areakey])) {
-                    $files = local_file::iterator();
-                    /** @var stored_file[] $files */
-                    $files = $files->in_context($context)->with_component($component)->with_filearea($filearea);
-                    $files = $files->with_itemid($itemid);
-                    $filekeys = [];
-                    foreach ($files as $file) {
-                        $key = $file->get_pathnamehash();
-                        $filekeys[$key] = true;
+                    if (!defined('ALLY_OMITCACHE') && $keys = cache::instance()->get($areakey)) {
+                        $filesbyareakey[$areakey] = $keys;
+                    } else {
+                        $files = local_file::iterator();
+                        /** @var stored_file[] $files */
+                        $files = $files->in_context($context)->with_component($component)->with_filearea($filearea);
+                        $files = $files->with_itemid($itemid);
+                        $filekeys = [];
+                        foreach ($files as $file) {
+                            $key = $file->get_pathnamehash();
+                            $filekeys[$key] = true;
+                        }
+                        $filesbyareakey[$areakey] = $filekeys;
+                        cache::instance()->set($areakey, $filekeys);
+                        unset($files);
                     }
-                    unset($files);
-                    $filesbyareakey[$areakey] = $filekeys;
                 }
 
                 $filesbypathhash = $filesbyareakey[$areakey];
