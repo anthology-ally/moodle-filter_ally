@@ -28,6 +28,7 @@ require_once(__DIR__.'/../../mod/forum/lib.php');
 use filter_ally\renderables\wrapper;
 use tool_ally\cache;
 use tool_ally\local_file;
+use tool_ally\local_content;
 
 /**
  * Filter for processing file links for Ally accessibility enhancements.
@@ -291,6 +292,27 @@ class filter_ally extends moodle_text_filter {
     }
 
     /**
+     * Section ids hashed by section-numbers.
+     * @return array
+     */
+    protected function map_sections_to_ids() {
+        global $PAGE, $COURSE;
+
+        $sectionmap = [];
+        if (strpos($PAGE->pagetype, 'course-view-') === 0) {
+
+            $component = local_content::component_instance('course');
+            $sections = $component->get_course_section_summary_rows($COURSE->id);
+
+            foreach ($sections as $section) {
+                $sectionmap['section-'.$section->section] = intval($section->id);
+            }
+        }
+
+        return $sectionmap;
+    }
+
+    /**
      * Set up the filter using settings provided in the admin settings page.
      * Also, get the file resource course module id -> file id mappings.
      *
@@ -298,7 +320,7 @@ class filter_ally extends moodle_text_filter {
      * @param context $context
      */
     public function setup($page, $context) {
-        global $USER, $COURSE, $CFG, $PAGE;
+        global $USER, $COURSE, $CFG, $PAGE, $DB;
 
         if ($page->pagelayout === 'embedded') {
             return;
@@ -311,6 +333,11 @@ class filter_ally extends moodle_text_filter {
         // This only requires execution once per request.
         static $jsinitialised = false;
         if (!$jsinitialised) {
+
+            $sectionmap = $this->map_sections_to_ids();
+            $sectionjson = json_encode($sectionmap);
+            $annotationmaps = json_encode(local_content::annotation_maps($COURSE->id));
+
             require_once($CFG->libdir.'/filelib.php');
 
             $modulefilemapping = $this->map_resource_file_paths_to_pathhash($COURSE);
@@ -330,11 +357,13 @@ class filter_ally extends moodle_text_filter {
                 'folder_files' => $foldermap,
                 'glossary_files' => $glossarymap
             ];
-            $json = json_encode($modulemaps);
+            $filejson = json_encode($modulemaps);
 
             $script = <<<EOF
             <script>
-                var ally_module_maps = $json;
+                var ally_module_maps = $filejson;
+                var ally_section_maps = $sectionjson;
+                var ally_annotation_maps = $annotationmaps;
             </script>
 EOF;
 
@@ -470,6 +499,25 @@ EOF;
     }
 
     /**
+     * Where supported, apply content annotation.
+     *
+     * @param string $text
+     */
+    private function apply_content_annotation($text) {
+
+        $annotation = local_content::get_annotation($this->context);
+        if (empty($annotation)) {
+            return $text;
+        }
+
+        $pattern = '/\>/mU';
+
+        $text = preg_replace ( $pattern , ' data-ally-richcontent = "'.$annotation.'" >' , $text , 1);
+
+        return $text;
+    }
+
+    /**
      * Filters the given HTML text, looking for links pointing to files so that the file id data attribute can
      * be injected.
      *
@@ -479,6 +527,8 @@ EOF;
      */
     public function filter($text, array $options = array()) {
         global $PAGE;
+
+        $text = $this->apply_content_annotation($text);
 
         if (strpos($text, 'pluginfile.php') === false) {
             // No plugin files to process, so don't do anything expensive.
