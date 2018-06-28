@@ -30,6 +30,7 @@ function($, Templates, Ally, ImageCover, Util) {
 
         self.canViewFeedback = false;
         self.canDownload = false;
+        self.stateStale = false;
 
         /**
          * Render template and insert result in appropriate place.
@@ -37,6 +38,12 @@ function($, Templates, Ally, ImageCover, Util) {
          */
         var renderTemplate = function(data, pathHash, targetEl) {
             var dfd = $.Deferred();
+
+            if ($(targetEl).parents('.filter-ally-wrapper').length) {
+                // This has already been processed.
+                dfd.resolve();
+                return dfd.promise();
+            }
 
             // Too expensive to do at module level - this is a course level capability.
             data.canviewfeedback = self.canViewFeedback;
@@ -278,7 +285,7 @@ function($, Templates, Ally, ImageCover, Util) {
 
             for (var s in sectionMapping) {
                 var sectionId = sectionMapping[s];
-                var ident = buildContentIdent('course', 'course_section', 'summary', sectionId);
+                var ident = buildContentIdent('course', 'course_sections', 'summary', sectionId);
 
                 var selectors = [
                     '#' + s + ' > .content > div[class*="summary"] > .no-overflow',
@@ -305,12 +312,16 @@ function($, Templates, Ally, ImageCover, Util) {
                     'li.activity.modtype_' + module + '#module-' + c + ' .contentafterlink > .no-overflow > .no-overflow',
                     'li.snap-activity.modtype_' + module + '#module-' + c + ' .contentafterlink > .no-overflow'
                 ];
+                if (module === 'hsuforum') {
+                    selectors.push('#hsuforum-header .hsuforum_introduction > .no-overflow');
+                }
                 $(selectors.join(',')).attr('data-ally-richcontent', annotation);
             }
         };
 
         /**
          * Add annotations to forums.
+         * @param array forumMapping.
          */
         var annotateForums = function(forumMapping) {
 
@@ -331,6 +342,10 @@ function($, Templates, Ally, ImageCover, Util) {
             }
         };
 
+        /**
+         * Add annotations to moodlerooms forums.
+         * @param array forumMapping
+         */
         var annotateMRForums = function(forumMapping) {
 
             // Annotate introductions.
@@ -345,6 +360,29 @@ function($, Templates, Ally, ImageCover, Util) {
             }
         };
 
+        /**
+         * Add annotations to glossary.
+         * @param array mapping
+         */
+        var annotateGlossary = function(mapping) {
+            // Annotate introductions.
+            var intros = mapping['intros'];
+            annotateModuleIntros(intros, 'glossary');
+
+            // Annotate entries.
+            var entries = mapping['entries'];
+            for (var e in entries) {
+                var annotation = entries[e];
+                var entryFooter = $('.entrylowersection .commands a[href*="id=' + e + '"]');
+                var entry = $(entryFooter).parents('.glossarypost').find('.entry .no-overflow');
+                $(entry).attr('data-ally-richcontent', annotation);
+            }
+        };
+
+        /**
+         * Annotate supported modules
+         * @param moduleMapping
+         */
         var annotateModules = function(moduleMapping) {
             var dfd = $.Deferred();
             if (moduleMapping['mod_forum'] !== undefined) {
@@ -352,6 +390,9 @@ function($, Templates, Ally, ImageCover, Util) {
             }
             if (moduleMapping['mod_hsuforum'] !== undefined) {
                 annotateMRForums(moduleMapping['mod_hsuforum']);
+            }
+            if (moduleMapping['mod_glossary'] !== undefined) {
+                annotateGlossary(moduleMapping['mod_glossary']);
             }
             dfd.resolve();
             return dfd.promise();
@@ -444,6 +485,24 @@ function($, Templates, Ally, ImageCover, Util) {
                             placeHoldFolderModule(ally_module_maps.folder_files);
                         }, 5000);
                     });
+
+                // Re-apply placeholders when hide / show clicked in action menu.
+                var reApplySelectors = [
+                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_hide',
+                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_show',
+                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_moveleft',
+                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_moveright',
+                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_duplicate'
+                ].join(', ');
+                $('.course-content').on('click', reApplySelectors, function() {
+                    self.stateStale = true;
+                });
+                $(document).ajaxComplete(function() {
+                    if (self.stateStale) {
+                        applyPlaceHolders();
+                        self.stateStale = false;
+                    }
+                });
             }
         };
     };

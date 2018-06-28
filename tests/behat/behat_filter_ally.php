@@ -547,7 +547,7 @@ class behat_filter_ally extends behat_base {
                     'Failed to find annotation for section '.$section.' summary', $this->getSession());
         }
         $annotation = $node->getAttribute('data-ally-richcontent');
-        if (strpos($annotation, 'course:course_section:summary') === false) {
+        if (strpos($annotation, 'course:course_sections:summary') === false) {
             throw new ExpectationException(
                     'Annotation is incorrect for '.$section.' summary - '.$annotation, $this->getSession());
         }
