@@ -103,7 +103,7 @@ class filter_ally extends moodle_text_filter {
         global $COURSE;
         $modinfo = get_fast_modinfo($COURSE);
         $instances = $modinfo->get_instances_of('forum');
-        $cm = $instances[$forumid];
+        $cm = isset($instances[$forumid]) ? $instances[$forumid] : null;
         return $cm;
     }
 
@@ -393,6 +393,14 @@ EOF;
      * @return void|array
      */
     private function process_url($url) {
+        // First, make sure this pluginfile.php is for the current site.
+        // We're not interested in URLs pointing to other sites!
+        $baseurl = new moodle_url('/pluginfile.php');
+        $fileurl = new moodle_url($url);
+        if (!$fileurl->compare($baseurl, URL_MATCH_BASE)) {
+            return;
+        }
+
         $regex = '/(?:.*)pluginfile\.php(?:\?file=|)(?:\/|%2F)(\d*?)(?:\/|%2F)(.*)$/';
         $matches = [];
         $matched = preg_match($regex, $url, $matches);
@@ -591,7 +599,12 @@ EOF;
                     continue;
                 }
 
-                $context = context::instance_by_id($contextid);
+                $context = context::instance_by_id($contextid, IGNORE_MISSING);
+                if (!$context) {
+                    // The context couldn't be found (perhaps this is a copy/pasted url pointing at old deleted content). Move on.
+                    continue;
+                }
+
                 $blacklistedcontexts = [
                     CONTEXT_USER,
                     CONTEXT_COURSECAT,

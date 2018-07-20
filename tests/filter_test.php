@@ -227,12 +227,13 @@ class filter_ally_testcase extends advanced_testcase {
      * @param bool $fileparam
      */
     public function test_process_url($fileparam = false) {
+        global $CFG;
         $fileparam = $fileparam ? '?file=' : '';
 
         $urlformats = [
-            'somecomponent' => 'http://test.com/pluginfile.php'.$fileparam.'/123/somecomponent/somearea/myfile.test',
-            'label' => 'http://test.com/pluginfile.php'.$fileparam.'/123/label/somearea/0/myfile.test',
-            'question' => 'http://test.com/pluginfile.php'.$fileparam.'/123/question/somearea/123/5/0/myfile.test'
+            'somecomponent' => $CFG->wwwroot.'/pluginfile.php'.$fileparam.'/123/somecomponent/somearea/myfile.test',
+            'label' => $CFG->wwwroot.'/pluginfile.php'.$fileparam.'/123/label/somearea/0/myfile.test',
+            'question' => $CFG->wwwroot.'/pluginfile.php'.$fileparam.'/123/question/somearea/123/5/0/myfile.test'
         ];
 
         foreach ($urlformats as $expectedcomponent => $url) {
@@ -245,6 +246,13 @@ class filter_ally_testcase extends advanced_testcase {
             $this->assertEquals(0, $itemid);
             $this->assertEquals('myfile.test', $filename);
         }
+
+        // Make sure URLs belonging to different sites are *not* processed.
+        $badurl = 'http://test.com/pluginfile.php'.$fileparam.'/123/somecomponent/somearea/myfile.test';
+        $result = phpunit_util::call_internal_method(
+            $this->filter, 'process_url', [$badurl], 'filter_ally'
+        );
+        $this->assertNull($result);
     }
 
     public function test_process_url_fileparam() {
