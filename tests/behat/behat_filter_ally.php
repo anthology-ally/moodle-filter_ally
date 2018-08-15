@@ -749,4 +749,45 @@ JS;
         }
         $this->assert_element_in_viewport_or_not($label, false);
     }
+
+    /**
+     * Get content node by it's container parent node id and node expected tag.
+     * @param string $elementid
+     * @param string $elementtag
+     * @return \Behat\Mink\Element\NodeElement
+     * @throws ExpectationException
+     */
+    private function get_content_node_by_parent_id_and_tag($elementid, $elementtag) {
+        $selector = <<<XPATH
+//div[@id="$elementid"]
+//div[contains(concat( " ", @class, " " ), " no-overflow ")]
+//{$elementtag}[@data-ally-richcontent]
+XPATH;
+
+        return $this->find('xpath', $selector);
+    }
+
+    /**
+     * @param string $modname
+     * @param string $elementid
+     * @param string $elementtag
+     * @Given /^"(?P<_module_name>[^"]*)" "(?P<_element_id>[^"]*)" content is annotated on "(?P<_element_tag>[^"]*)" tag$/
+     */
+    public function module_element_is_annotated($modname, $elementid, $elementtag) {
+        $node = $this->get_content_node_by_parent_id_and_tag($elementid, $elementtag);
+        if (empty($node)) {
+            throw new ExpectationException(
+                'Failed to find annotation for module '.$modname.' with element id '.$elementid, $this->getSession());
+        }
+        $annotation = $node->getAttribute('data-ally-richcontent');
+        if (strpos($annotation, "{$modname}:{$modname}:{$elementid}") === false) {
+            throw new ExpectationException(
+                'Annotation is incorrect for for module '.$modname.' with element id  '.$elementid.' - '.$annotation,
+                $this->getSession());
+        }
+        $wsparams = explode(':', $annotation);
+        if (count($wsparams) < 4) {
+            throw new ExpectationException('Incorrect number of params in assign annotation '.$annotation);
+        }
+    }
 }

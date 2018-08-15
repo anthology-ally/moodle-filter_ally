@@ -520,9 +520,30 @@ EOF;
 
         $pattern = '/\>/mU';
 
+        // Some modules will not add a single node but will filter a set of nodes.
+        // We need to add a parent div when such setup is found.
+        $doc = $this->build_dom_doc($text);
+        $bodynode = $doc->getElementsByTagName('body')->item(0);
+        if ($bodynode->childNodes->length > 1) {
+            $text = "<div>{$text}</div>";
+        }
+
         $text = preg_replace ( $pattern , ' data-ally-richcontent = "'.$annotation.'" >' , $text , 1);
 
         return $text;
+    }
+
+    /**
+     * Builds a DOMDocument from html string.
+     * @param string $text
+     * @return DOMDocument
+     */
+    private function build_dom_doc($text) {
+        $doc = new \DOMDocument();
+        libxml_use_internal_errors(true); // Required for HTML5.
+        $doc->loadHTML('<?xml encoding="utf-8" ?>' . $text);
+        libxml_clear_errors(); // Required for HTML5.
+        return $doc;
     }
 
     /**
@@ -551,10 +572,7 @@ EOF;
 
         $supportedcomponents = local_file::list_html_file_supported_components();
 
-        $doc = new \DOMDocument();
-        libxml_use_internal_errors(true); // Required for HTML5.
-        $doc->loadHTML('<?xml encoding="utf-8" ?>' . $text);
-        libxml_clear_errors(); // Required for HTML5.
+        $doc = $this->build_dom_doc($text);
         $elements = [];
         $results = $doc->getElementsByTagName('a');
         foreach ($results as $result) {
