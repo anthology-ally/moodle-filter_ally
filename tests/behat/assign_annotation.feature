@@ -50,7 +50,7 @@ Feature: In an assignment, rich content should have annotations.
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
     And I follow "Test assignment with single html element"
-    Then "assign" "intro" content is annotated on "p" tag
+    Then "assign" "intro" content is annotated on "div" tag
     And I log out
     And I log in as "student1"
     And I am on "Course 1" course homepage
