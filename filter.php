@@ -355,7 +355,7 @@ class filter_ally extends moodle_text_filter {
                 'assignment_files' => $assignmentmap,
                 'forum_files' => $forummap,
                 'folder_files' => $foldermap,
-                'glossary_files' => $glossarymap
+                'glossary_files' => $glossarymap,
             ];
             $filejson = json_encode($modulemaps);
 
@@ -381,7 +381,7 @@ EOF;
                 'pushurl' => !empty($config->pushurl) ? $config->pushurl : null,
                 'clientid' => !empty($config->clientid) ? $config->clientid : null
             ];
-            $amdargs = [$jwt, $configvars, $canviewfeedback, $candownload];
+            $amdargs = [$jwt, $configvars, $canviewfeedback, $candownload, $COURSE->id];
             $page->requires->js_call_amd('filter_ally/main', 'init', $amdargs);
             $jsinitialised = true;
         }

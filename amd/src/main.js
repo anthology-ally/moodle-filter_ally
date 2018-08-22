@@ -399,6 +399,21 @@ function($, Templates, Ally, ImageCover, Util) {
         };
 
         /**
+         * Annotates course summary if found on footer.
+         * @param mapping
+         */
+        var annotateSnapCourseSummary = function(mapping) {
+            var dfd = $.Deferred();
+            var snapFooterCourseSummary = $('#snap-course-footer-summary > div.no-overflow');
+            if (snapFooterCourseSummary.length) {
+                var ident = buildContentIdent('course', 'course', 'summary', mapping.courseId);
+                snapFooterCourseSummary.attr('data-ally-richcontent', ident);
+            }
+            dfd.resolve();
+            return dfd.promise();
+        };
+
+        /**
          * Apply place holders and add annotations to content.
          * @return {promise}
          */
@@ -437,7 +452,12 @@ function($, Templates, Ally, ImageCover, Util) {
             {
                 mapVar: ally_annotation_maps,
                 method: annotateModules
-            }];
+            },
+            {
+                mapVar: {courseId: self.courseId},
+                method: annotateSnapCourseSummary
+            },
+            ];
 
             $(document).ready(function() {
                 var completed = 0;
@@ -472,10 +492,12 @@ function($, Templates, Ally, ImageCover, Util) {
          * @param {object} config
          * @param {boolean} canViewFeedback
          * @param {boolean} canDownload
+         * @param {int} courseId
          */
-        this.init = function(jwt, config, canViewFeedback, canDownload) {
+        this.init = function(jwt, config, canViewFeedback, canDownload, courseId) {
             self.canViewFeedback = canViewFeedback;
             self.canDownload = canDownload;
+            self.courseId = courseId;
             if (canViewFeedback || canDownload) {
                 applyPlaceHolders()
                     .done(function() {
