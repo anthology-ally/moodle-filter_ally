@@ -17,7 +17,7 @@
 #
 # @package    filter_ally
 # @author     Guy Thomas
-# @copyright  Copyright (c) 2017 Blackboard Inc.
+# @copyright  Copyright (c) 2017 Moodlerooms Inc.
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 @filter @filter_ally
@@ -107,9 +107,9 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should not see the download place holder for the post entitled "Student reply (image file)" by "Student 1"
   Examples:
   | forumtypestr      | forumtype         | slasharguments |
-  | Moodlerooms Forum | Moodlerooms forum | 1              |
+  | Open Forum        | Open Forum        | 1              |
   | Forum             | forum             | 1              |
-  | Moodlerooms Forum | Moodlerooms forum | 0              |
+  | Open Forum        | Open Forum        | 0              |
   | Forum             | forum             | 0              |
 
   @javascript
