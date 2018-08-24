@@ -343,7 +343,7 @@ function($, Templates, Ally, ImageCover, Util) {
         };
 
         /**
-         * Add annotations to moodlerooms forums.
+         * Add annotations to Open Forums.
          * @param array forumMapping
          */
         var annotateMRForums = function(forumMapping) {
