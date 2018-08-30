@@ -29,6 +29,7 @@ use filter_ally\renderables\wrapper;
 use tool_ally\cache;
 use tool_ally\local_file;
 use tool_ally\local_content;
+use tool_ally\models\pluginfileurlprops;
 
 /**
  * Filter for processing file links for Ally accessibility enhancements.
@@ -234,22 +235,11 @@ class filter_ally extends moodle_text_filter {
         return $map;
     }
 
-    /**
-     * Map file resource moduleid to pathname hash.
-     * @param $course
-     * @return array
-     * @throws coding_exception
-     * @throws dml_exception
-     */
-    protected function map_resource_file_paths_to_pathhash($course) {
-        global $DB, $PAGE;
-
-        if (!$this->is_course_page() && $PAGE->pagetype !== 'site-index') {
-            return [];
-        }
+    protected function map_course_module_file_paths_to_pathhash($course, $modname) {
+        global $DB;
 
         $modinfo = get_fast_modinfo($course);
-        $modules = $modinfo->get_instances_of('resource');
+        $modules = $modinfo->get_instances_of($modname);
         if (empty($modules)) {
             return [];
         }
@@ -270,10 +260,9 @@ class filter_ally extends moodle_text_filter {
         list($insql, $params) = $DB->get_in_or_equal($contextsbymoduleid);
 
         $sql = "contextid $insql
-            AND component = 'mod_resource'
+            AND component = 'mod_{$modname}'
             AND mimetype IS NOT NULL
-            AND filename != '.'
-            AND filearea = 'content'";
+            AND filename != '.'";
 
         $files = $DB->get_records_select('files', $sql, $params, 'contextid ASC, sortorder DESC, id ASC');
         $pathhashbymoduleid = [];
@@ -285,10 +274,55 @@ class filter_ally extends moodle_text_filter {
             }
             $contextid = $file->contextid;
             $moduleid = $moduleidsbycontext[$file->contextid];
-            $pathhashbymoduleid[$moduleid] = $file->pathnamehash;
+            if (!isset($pathhashbymoduleid[$moduleid])) {
+                $pathhashbymoduleid[$moduleid] = [];
+            }
+            $pathhashbymoduleid[$moduleid][$file->filearea] = $file->pathnamehash;
         }
 
         return $pathhashbymoduleid;
+    }
+
+    /**
+     * Map file resource moduleid to pathname hash.
+     * @param $course
+     * @return array
+     * @throws coding_exception
+     * @throws dml_exception
+     */
+    protected function map_resource_file_paths_to_pathhash($course) {
+        global $PAGE;
+
+        if (!$this->is_course_page() && $PAGE->pagetype !== 'site-index') {
+            return [];
+        }
+
+        return $this->map_course_module_file_paths_to_pathhash($course, 'resource');
+    }
+
+    /**
+     * Map lesson file paths to path hash.
+     * @return array
+     * @throws coding_exception
+     * @throws moodle_exception
+     */
+    protected function map_lesson_file_paths_to_pathhash() {
+        global $PAGE;
+        $map = [];
+
+        if ($PAGE->pagetype === 'mod-lesson-view' || $PAGE->pagetype === 'mod-lesson-continue') {
+            $cmid = optional_param('id', false, PARAM_INT);
+            if ($cmid === false) {
+                return $map;
+            }
+            list($course, $cm) = get_course_and_cm_from_cmid($cmid);
+            unset($course);
+            $map['page_contents'] = $this->get_cm_file_map($cm, 'mod_lesson', 'page_contents');
+            $map['page_answers'] = $this->get_cm_file_map($cm, 'mod_lesson', 'page_answers');
+            $map['page_responses'] = $this->get_cm_file_map($cm, 'mod_lesson', 'page_responses');
+        }
+
+        return $map;
     }
 
     /**
@@ -340,11 +374,14 @@ class filter_ally extends moodle_text_filter {
 
             require_once($CFG->libdir.'/filelib.php');
 
+            // Note, we only have to build maps for modules that don't pass their file containing content
+            // through the filter.
             $modulefilemapping = $this->map_resource_file_paths_to_pathhash($COURSE);
             $assignmentmap = $this->map_assignment_file_paths_to_pathhash();
             $forummap = $this->map_forum_attachment_file_paths_to_pathhash();
             $foldermap = $this->map_folder_file_paths_to_pathhash();
             $glossarymap = $this->map_glossary_file_paths_to_pathhash();
+            $lessonmap = $this->map_lesson_file_paths_to_pathhash();
             $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
             $coursecontext = context_course::instance($COURSE->id);
             $canviewfeedback = has_capability('filter/ally:viewfeedback', $coursecontext);
@@ -356,6 +393,7 @@ class filter_ally extends moodle_text_filter {
                 'forum_files' => $forummap,
                 'folder_files' => $foldermap,
                 'glossary_files' => $glossarymap,
+                'lesson_files' => $lessonmap
             ];
             $filejson = json_encode($modulemaps);
 
@@ -385,62 +423,6 @@ EOF;
             $page->requires->js_call_amd('filter_ally/main', 'init', $amdargs);
             $jsinitialised = true;
         }
-    }
-
-    /**
-     * Process file url for file components.
-     * @param string $url
-     * @return void|array
-     */
-    private function process_url($url) {
-        // First, make sure this pluginfile.php is for the current site.
-        // We're not interested in URLs pointing to other sites!
-        $baseurl = new moodle_url('/pluginfile.php');
-        $fileurl = new moodle_url($url);
-        if (!$fileurl->compare($baseurl, URL_MATCH_BASE)) {
-            return;
-        }
-
-        $regex = '/(?:.*)pluginfile\.php(?:\?file=|)(?:\/|%2F)(\d*?)(?:\/|%2F)(.*)$/';
-        $matches = [];
-        $matched = preg_match($regex, $url, $matches);
-        if (!$matched) {
-            return;
-        }
-        $contextid = $matches[1];
-        if (strpos($matches[2], '%2F') !== false) {
-            $del = '%2F';
-        } else {
-            $del = '/';
-        }
-        $arr = explode($del, $matches[2]);
-        $component = urldecode(array_shift($arr));
-        $fileurlprops = local_file::get_component_support_fileurlproperties($component, $url);
-        if (!empty($fileurlprops)) {
-            return $fileurlprops;
-        }
-
-        if (count($arr) === 2) {
-            $filearea = array_shift($arr);
-            $itemid = 0;
-            $filename = array_shift($arr);
-        } else if (count($arr) === 3) {
-            $filearea = array_shift($arr);
-            $itemid = array_shift($arr);
-            $filename = array_shift($arr);
-        } else {
-            $filearea = array_shift($arr);
-            $itemid = array_shift($arr);
-            $filename = implode($arr, '/');
-        }
-
-        return [
-            $contextid,
-            $component,
-            $filearea,
-            $itemid,
-            $filename
-        ];
     }
 
     /**
@@ -522,7 +504,7 @@ EOF;
 
         // Some modules will not send a single div node or have several nodes for filtering.
         // We need to add a parent div when such setup is found.
-        $doc = $this->build_dom_doc($text);
+        $doc = local_content::build_dom_doc($text);
         $bodynode = $doc->getElementsByTagName('body')->item(0);
         $shouldwrap = $bodynode->childNodes->length > 1;
         if (!$shouldwrap && $bodynode->childNodes->length === 1) {
@@ -541,16 +523,15 @@ EOF;
     }
 
     /**
-     * Builds a DOMDocument from html string.
-     * @param string $text
-     * @return DOMDocument
+     * @param $pluginfileurl
+     * @return array|null
      */
-    private function build_dom_doc($text) {
-        $doc = new \DOMDocument();
-        libxml_use_internal_errors(true); // Required for HTML5.
-        $doc->loadHTML('<?xml encoding="utf-8" ?>' . $text);
-        libxml_clear_errors(); // Required for HTML5.
-        return $doc;
+    private function process_url($pluginfileurl) {
+        $urlprops = local_file::get_fileurlproperties($pluginfileurl);
+        if (empty($urlprops)) {
+            return null;
+        }
+        return $urlprops->to_list();
     }
 
     /**
@@ -579,7 +560,7 @@ EOF;
 
         $supportedcomponents = local_file::list_html_file_supported_components();
 
-        $doc = $this->build_dom_doc($text);
+        $doc = local_content::build_dom_doc($text);
         $elements = [];
         $results = $doc->getElementsByTagName('a');
         foreach ($results as $result) {
@@ -613,7 +594,12 @@ EOF;
             $url = $element->url;
 
             if (strpos($url, 'pluginfile.php') !== false) {
-                list($contextid, $component, $filearea, $itemid, $filename) = $this->process_url($url);
+
+                $urlcomps = $this->process_url($url);
+                if (empty($urlcomps)) {
+                    continue;
+                }
+                list($contextid, $component, $filearea, $itemid, $filename) = $urlcomps;
 
                 if ($component === 'mod_glossary' && $filearea === 'attachment') {
                     // We have to do this with JS as the DOM needs rewriting.
@@ -660,20 +646,6 @@ EOF;
                         continue;
                     }
                 }
-
-                // Strip params from end of the url .e.g. file.pdf?forcedownload=1.
-                $query = strpos($filename, '?');
-                if ($query) {
-                    $filename = substr($filename, 0, $query);
-                }
-                // Strip additional params from end of the url .e.g. ?file=...&forcedownload=1.
-                $query = strpos($filename, '&');
-                if ($query) {
-                    $filename = substr($filename, 0, $query);
-                }
-
-                $filename = urldecode($filename);
-                $filearea = urldecode($filearea);
 
                 $itempath = "/$contextid/$component/$filearea/$itemid";
                 $filepath = "$itempath/$filename";

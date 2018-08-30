@@ -33,7 +33,8 @@ define(['jquery', 'filter_ally/util'], function($, Util) {
                 var feedback = $(wrapper).find('.ally-feedback');
                 var marginTop = parseInt($(img).css('marginTop'));
                 var marginLeft = parseInt($(img).css('marginLeft'));
-                Util.onCoordsChange(img, function(coords) {
+
+                var debounceCoordsChanged = Util.debounce(function(coords) {
                     var width = (coords.right - coords.left);
                     var height = (coords.bottom - coords.top);
                     $(cover)
@@ -49,6 +50,10 @@ define(['jquery', 'filter_ally/util'], function($, Util) {
                             .css('top', (topPos + height - feedback.height()) + 'px')
                             .css('left', leftPos + 'px');
                     }
+                }, 1000);
+
+                Util.onCoordsChange(img, function(coords) {
+                    debounceCoordsChanged(coords);
                 });
             });
         };

@@ -127,5 +127,32 @@ define(['jquery'], function($) {
 
             return query;
         };
+
+        /**
+         * Taken from underscore.js - debounce function to prevent function spamming on event triggers.
+         * Modified by GThomas to implement deferred.
+         * @param function func
+         * @param int wait
+         * @param boolean immediate
+         * @returns Deferred
+         */
+        this.debounce = function (func, wait, immediate) {
+            var timeout;
+            return function() {
+                var dfd = $.Deferred();
+                var context = this, args = arguments;
+                var later = function() {
+                    timeout = null;
+                    if (!immediate) { dfd.resolve(func.apply(context, args)); }
+                };
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) {
+                    dfd.resolve(func.apply(context, args));
+                }
+                return dfd;
+            };
+        };
     };
 });

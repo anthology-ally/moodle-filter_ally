@@ -30,7 +30,7 @@ function($, Templates, Ally, ImageCover, Util) {
 
         self.canViewFeedback = false;
         self.canDownload = false;
-        self.stateStale = false;
+        self.initialised = false;
 
         /**
          * Render template and insert result in appropriate place.
@@ -201,7 +201,7 @@ function($, Templates, Ally, ImageCover, Util) {
         };
 
         /**
-         * Add place holders for folder module files.
+         * Add place holders for glossary module files.
          * @param {array}
          * @return {promise}
          */
@@ -230,6 +230,93 @@ function($, Templates, Ally, ImageCover, Util) {
         };
 
         /**
+         * Encode a file path so that it can be used to find things by uri.
+         * @param filePath
+         * @returns {string}
+         */
+        var urlEncodeFilePath = function(filePath) {
+            var parts = filePath.split('/');
+            for (var p in parts) {
+               parts[p] = encodeURIComponent(parts[p]);
+            }
+            var encoded = parts.join('/');
+            return encoded;
+        };
+
+        /**
+         * General function for finding lesson component file elements and then add mapping.
+         * @param array map
+         * @param string selectorPrefix
+         * @return promise
+         */
+        var placeHoldLessonGeneral = function(map, selectorPrefix) {
+            var dfd = $.Deferred();
+            for (var c in map) {
+                var path = urlEncodeFilePath(c);
+                var sel = selectorPrefix + 'img[src*="'+path+'"], ' + selectorPrefix + 'a[href*="'+path+'"]';
+                placeHoldSelector(sel, map).done(function() {
+                    dfd.resolve();
+                });
+            }
+            return dfd.promise();
+        };
+
+        /**
+         * Placehold lesson page contents.
+         * @param array pageContentsMap
+         * @returns promise
+         */
+        var placeHoldLessonPageContents = function(pageContentsMap) {
+            return placeHoldLessonGeneral(pageContentsMap, '');
+        };
+
+        /**
+         * Placehold lesson answers.
+         * @param array pageContentsMap
+         * @returns promise
+         */
+        var placeHoldLessonAnswersContent = function(pageAnswersMap) {
+            return placeHoldLessonGeneral(pageAnswersMap,
+                    '.studentanswer table tr:nth-child(1) '); // Space at end of selector intended.
+        };
+
+        /**
+         * Placehold lesson responses.
+         * @param array pageResponsesMap
+         * @returns promise
+         */
+        var placeHoldLessonResponsesContent = function(pageResponsesMap) {
+            return placeHoldLessonGeneral(pageResponsesMap,
+                    '.studentanswer table tr.lastrow '); // Space at end of selector intended.
+        };
+
+        /**
+         * Add place holders for lesson module files.
+         * @param {array}
+         * @return {promise}
+         */
+        var placeHoldLessonModule = function(lessonFileMapping) {
+            var dfd = $.Deferred();
+
+            var pageContentsMap = lessonFileMapping.page_contents;
+            var pageAnswersMap = lessonFileMapping.page_answers;
+            var pageResponsesMap = lessonFileMapping.page_responses;
+
+            placeHoldLessonPageContents(pageContentsMap)
+                .then(function() {
+                    return placeHoldLessonAnswersContent(pageAnswersMap);
+                })
+                .then(function() {
+                    return placeHoldLessonResponsesContent(pageResponsesMap);
+                })
+                .then(function() {
+                    dfd.resolve();
+                });
+
+            return dfd.promise();
+        };
+
+        /**
          * Add place holders for resource module.
          * @param moduleFileMapping
          * @return {promise}
@@ -250,7 +337,7 @@ function($, Templates, Ally, ImageCover, Util) {
             };
 
             for (var moduleId in moduleFileMapping) {
-                var pathHash = moduleFileMapping[moduleId];
+                var pathHash = moduleFileMapping[moduleId]['content'];
                 if ($('body').hasClass('theme-snap')) {
                     var moduleEl = $('#module-' + moduleId + ':not(.snap-native) .activityinstance ' +
                             '.snap-asset-link a:first-of-type');
@@ -301,19 +388,23 @@ function($, Templates, Ally, ImageCover, Util) {
 
         /**
          * Annotate module introductions.
-         * @param introMapping
+         * @param array introMapping
+         * @param string
+         * @param array additionalSelectors
          */
-        var annotateModuleIntros = function(introMapping, module) {
-            for (var c in introMapping) {
-                var annotation = introMapping[c];
+        var annotateModuleIntros = function(introMapping, module, additionalSelectors) {
+            for (var i in introMapping) {
+                var annotation = introMapping[i];
                 var selectors = [
-                    'body.path-mod-' + module + '.cmid-' + c + ' #intro > .no-overflow',
+                    'body.path-mod-' + module + '.cmid-' + i + ' #intro > .no-overflow',
                     // We need to be specific here for non course pages to skip this.
-                    'li.activity.modtype_' + module + '#module-' + c + ' .contentafterlink > .no-overflow > .no-overflow',
-                    'li.snap-activity.modtype_' + module + '#module-' + c + ' .contentafterlink > .no-overflow'
+                    'li.activity.modtype_' + module + '#module-' + i + ' .contentafterlink > .no-overflow > .no-overflow',
+                    'li.snap-activity.modtype_' + module + '#module-' + i + ' .contentafterlink > .no-overflow'
                 ];
-                if (module === 'hsuforum') {
-                    selectors.push('#hsuforum-header .hsuforum_introduction > .no-overflow');
+                if (additionalSelectors) {
+                    for (var a in additionalSelectors) {
+                        selectors.push(additionalSelectors[a].replace('{{i}}', i));
+                    }
                 }
                 $(selectors.join(',')).attr('data-ally-richcontent', annotation);
             }
@@ -350,7 +441,7 @@ function($, Templates, Ally, ImageCover, Util) {
 
             // Annotate introductions.
             var intros = forumMapping['intros'];
-            annotateModuleIntros(intros, 'hsuforum');
+            annotateModuleIntros(intros, 'hsuforum', ['#hsuforum-header .hsuforum_introduction > .no-overflow']);
 
             var discussions = forumMapping['posts'];
             for (var d in discussions) {
@@ -380,6 +471,85 @@ function($, Templates, Ally, ImageCover, Util) {
         };
 
         /**
+         * Add annotations to page.
+         * @param array mapping
+         */
+        var annotatePage = function(mapping) {
+            var intros = mapping['intros'];
+            annotateModuleIntros(intros, 'page', ['li.snap-native.modtype_page#module-{{i}} .contentafterlink > .summary-text']);
+
+            // Annotate content.
+            var content = mapping['content'];
+            for (var c in content) {
+                var annotation = content[c];
+                var selectors = [
+                    '#page-mod-page-view #region-main .box.generalbox > .no-overflow',
+                    'li.snap-native.modtype_page#module-' + c + ' .pagemod-content'
+                ];
+                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+            }
+        };
+
+        /**
+         * Add annotations to book.
+         * @param array mapping
+         */
+        var annotateBook = function(mapping) {
+            var intros = mapping['intros'];
+
+            // For book, the only place the intro shows is on the course page when you select "display description on course page"
+            // in the module settings.
+            annotateModuleIntros(intros, 'book',
+                ['li.snap-native.modtype_book#module-{{i}} .contentafterlink > .summary-text .no-overflow']);
+
+            // Annotate content.
+            var content = mapping['chapters'];
+            for (var ch in content) {
+                var urlParams = new URLSearchParams(window.location.search);
+                var chapterId = urlParams.get('chapterid');
+                if (chapterId != ch) {
+                    continue;
+                }
+                var annotation = content[ch];
+                var selectors = [
+                    '#page-mod-book-view #region-main .box.generalbox.book_content > .no-overflow',
+                    'li.snap-native.modtype_page#module-' + ch + ' .pagemod-content'
+                ];
+                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+            }
+        };
+
+        /**
+         * Add annotations to lesson.
+         * @param array mapping
+         */
+        var annotateLesson = function(mapping) {
+            var intros = mapping['intros'];
+
+            // For lesson, the only place the intro shows is on the course page when you select "display description on course page"
+            // in the module settings.
+            annotateModuleIntros(intros, 'lesson',
+                ['li.snap-native.modtype_lesson#module-{{i}} .contentafterlink > .summary-text .no-overflow']);
+
+            // Annotate content.
+            var content = mapping['pages'];
+            for (var p in content) {
+                var urlParams = new URLSearchParams(window.location.search);
+                var pageId = urlParams.get('pageid');
+                if (pageId != p) {
+                    continue;
+                }
+                var annotation = content[p];
+                var selectors = [
+                    '#page-mod-lesson-view #region-main .box.contents > .no-overflow',
+                    'li.snap-native.modtype_page#module-' + p + ' .pagemod-content'
+                ];
+
+                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+            }
+        };
+
+        /**
          * Annotate supported modules
          * @param moduleMapping
          */
@@ -393,6 +563,15 @@ function($, Templates, Ally, ImageCover, Util) {
             }
             if (moduleMapping['mod_glossary'] !== undefined) {
                 annotateGlossary(moduleMapping['mod_glossary']);
+            }
+            if (moduleMapping['mod_page'] !== undefined) {
+                annotatePage(moduleMapping['mod_page']);
+            }
+            if (moduleMapping['mod_book'] !== undefined) {
+                annotateBook(moduleMapping['mod_book']);
+            }
+            if (moduleMapping['mod_lesson'] !== undefined) {
+                annotateLesson(moduleMapping['mod_lesson']);
             }
             dfd.resolve();
             return dfd.promise();
@@ -446,6 +625,10 @@ function($, Templates, Ally, ImageCover, Util) {
                 method: placeHoldGlossaryModule
             },
             {
+                mapVar: ally_module_maps.lesson_files,
+                method: placeHoldLessonModule
+            },
+            {
                 mapVar: ally_section_maps,
                 method: annotateSections
             },
@@ -486,6 +669,10 @@ function($, Templates, Ally, ImageCover, Util) {
             return dfd.promise();
         };
 
+        var debounceApplyPlaceHolders = Util.debounce(function() {
+            return applyPlaceHolders();
+        }, 1000);
+
         /**
          * Init function.
          * @param jwt
@@ -499,31 +686,21 @@ function($, Templates, Ally, ImageCover, Util) {
             self.canDownload = canDownload;
             self.courseId = courseId;
             if (canViewFeedback || canDownload) {
-                applyPlaceHolders()
+                debounceApplyPlaceHolders()
                     .done(function() {
                         ImageCover.init();
                         Ally.init(jwt, config);
                         setInterval(function() {
                             placeHoldFolderModule(ally_module_maps.folder_files);
                         }, 5000);
+                        self.initialised = true;
                     });
 
-                // Re-apply placeholders when hide / show clicked in action menu.
-                var reApplySelectors = [
-                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_hide',
-                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_show',
-                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_moveleft',
-                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_moveright',
-                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_duplicate'
-                ].join(', ');
-                $('.course-content').on('click', reApplySelectors, function() {
-                    self.stateStale = true;
-                });
                 $(document).ajaxComplete(function() {
-                    if (self.stateStale) {
-                        applyPlaceHolders();
-                        self.stateStale = false;
+                    if (!self.initialised) {
+                        return;
                     }
+                    debounceApplyPlaceHolders();
                 });
             }
         };
