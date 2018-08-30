@@ -174,10 +174,11 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
-     * @Given /I create a label with html content "(?P<content_string>[^"]*)" in section (?P<section_number>\d*)$/
+     * @Given I create a :module with html content :content in section :arg3
      * @param string $content
      */
-    public function i_create_a_label_with_html_content($content, $section) {
+    public function i_create_a_module_with_html_content($module, $content, $section) {
+        global $DB;
 
         $gen = testing_util::get_data_generator();
 
@@ -185,13 +186,19 @@ class behat_filter_ally extends behat_base {
 
         $data = (object) [
             'course' => $course->id,
-            'name' => 'test label',
+            'name' => 'test '.$module,
             'intro' => $content,
             'introformat' => FORMAT_HTML,
             'section' => $section
         ];
 
-        $gen->create_module('label', $data);
+        $mod = $gen->create_module($module, $data);
+
+        if ($module !== 'label') {
+            $cm = $DB->get_record('course_modules', ['id' => $mod->cmid]);
+            $cm->showdescription = 1;
+            $DB->update_record('course_modules', $cm);
+        }
     }
 
     /**
@@ -567,43 +574,41 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
-     * Get label content node by it's html content
+     * @param string $modname
      * @param string $html
      * @return \Behat\Mink\Element\NodeElement
      * @throws ExpectationException
      */
-    private function get_label_content_node_by_html_content($html) {
-        $modname = 'label';
+    private function get_module_content_node_by_html_content($modname, $html) {
         $html = $this->escape($html);
         $selector = <<<XPATH
 //li[contains(concat( " ", @class, " " ), " activity ") and contains(concat( " ", @class, " " ), " $modname ")]
 //div[contains(concat( " ", @class, " " ), " no-overflow ")][@data-ally-richcontent]//*[contains(text(), "$html")]
-//parent::div[contains(concat( " ", @class, " " ), " no-overflow ")]
+//ancestor::div[contains(concat( " ", @class, " " ), " no-overflow ")][position()=1]
 XPATH;
-
         return $this->find('xpath', $selector);
     }
 
     /**
+     * @param string module
      * @param string $html
-     * @Given /^label with html "(?P<html_string>[^"]*)" is annotated$/
+     * @Given :module with html ":html" is annotated
      */
-    public function label_is_annotated($html) {
-        $modname = 'label';
-        $node = $this->get_label_content_node_by_html_content($html);
+    public function module_with_html_is_annotated($modname, $html) {
+        $node = $this->get_module_content_node_by_html_content($modname, $html);
         if (empty($node)) {
             throw new ExpectationException(
-                    'Failed to find annotation for module '.$modname.' with html '.$html, $this->getSession());
+                'Failed to find annotation for module '.$modname.' with html '.$html, $this->getSession());
         }
         $annotation = $node->getAttribute('data-ally-richcontent');
-        if (strpos($annotation, 'label:label:intro') === false) {
+        if (strpos($annotation, $modname.':'.$modname.':intro') === false) {
             throw new ExpectationException(
-                    'Annotation is incorrect for for module '.$modname.' with html '.$html.' - '.$annotation,
-                    $this->getSession());
+                'Annotation is incorrect for for module '.$modname.' with html '.$html.' - '.$annotation,
+                $this->getSession());
         }
         $wsparams = explode(':', $annotation);
         if (count($wsparams) < 4) {
-            throw new ExpectationException('Incorrect number of params in label annotation '.$annotation);
+            throw new ExpectationException('Incorrect number of params in '.$modname.' annotation '.$annotation);
         }
     }
 
@@ -626,11 +631,12 @@ XPATH;
     }
 
     /**
+     * @param string $module
      * @param string $html
-     * @Given /^I follow the webservice content url for label "(?P<html_string>[^"]*)"$/
+     * @Given I follow the webservice content url for :module ":html"
      */
-    public function follow_label_ws_url($html) {
-        $node = $this->get_label_content_node_by_html_content($html);
+    public function follow_module_ws_url($module, $html) {
+        $node = $this->get_module_content_node_by_html_content($module, $html);
         $annotation = $node->getAttribute('data-ally-richcontent');
         $content = $this->get_html_content($annotation);
         $this->getSession()->visit($content->contenturl);
@@ -725,29 +731,31 @@ JS;
     }
 
     /**
+     * @param string $module
      * @param string $content
-     * @Given /^the label with html content "(?P<content_string>[^"]*)" is visible and in viewport$/
+     * @Given the :module with html content ":content" is visible and in viewport
      */
-    public function ensure_label_with_content_visible_and_in_viewport($content) {
-        $label = $this->get_label_content_node_by_html_content($content);
-        if (!$label->isVisible()) {
+    public function ensure_module_with_content_visible_and_in_viewport($module, $content) {
+        $mod = $this->get_module_content_node_by_html_content($module, $content);
+        if (!$mod->isVisible()) {
             throw new ExpectationException(
-                    'Label is not visible and should be: '.$label->getXpath(),
+                    $module.' is not visible and should be: '.$mod->getXpath(),
                     $this->getSession());
         }
-        $this->assert_element_in_viewport_or_not($label, true);
+        $this->assert_element_in_viewport_or_not($mod, true);
     }
 
     /**
+     * @param string $module
      * @param string $content
-     * @Given /^the label with html content "(?P<content_string>[^"]*)" is not visible or not in viewport$/
+     * @Given the :module with html content ":content" is not visible or not in viewport
      */
-    public function ensure_label_with_content_not_visible_or_not_in_viewport($content) {
-        $label = $this->get_label_content_node_by_html_content($content);
-        if (!$label->isVisible()) {
+    public function ensure_module_with_content_not_visible_or_not_in_viewport($module, $content) {
+        $mod = $this->get_module_content_node_by_html_content($module, $content);
+        if (!$mod->isVisible()) {
             return; // Not visible so no need to check viewport.
         }
-        $this->assert_element_in_viewport_or_not($label, false);
+        $this->assert_element_in_viewport_or_not($mod, false);
     }
 
     /**
