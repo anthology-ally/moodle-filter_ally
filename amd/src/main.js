@@ -30,7 +30,7 @@ function($, Templates, Ally, ImageCover, Util) {
 
         self.canViewFeedback = false;
         self.canDownload = false;
-        self.stateStale = false;
+        self.initialised = false;
 
         /**
          * Render template and insert result in appropriate place.
@@ -301,19 +301,23 @@ function($, Templates, Ally, ImageCover, Util) {
 
         /**
          * Annotate module introductions.
-         * @param introMapping
+         * @param array introMapping
+         * @param string
+         * @param array additionalSelectors
          */
-        var annotateModuleIntros = function(introMapping, module) {
-            for (var c in introMapping) {
-                var annotation = introMapping[c];
+        var annotateModuleIntros = function(introMapping, module, additionalSelectors) {
+            for (var i in introMapping) {
+                var annotation = introMapping[i];
                 var selectors = [
-                    'body.path-mod-' + module + '.cmid-' + c + ' #intro > .no-overflow',
+                    'body.path-mod-' + module + '.cmid-' + i + ' #intro > .no-overflow',
                     // We need to be specific here for non course pages to skip this.
-                    'li.activity.modtype_' + module + '#module-' + c + ' .contentafterlink > .no-overflow > .no-overflow',
-                    'li.snap-activity.modtype_' + module + '#module-' + c + ' .contentafterlink > .no-overflow'
+                    'li.activity.modtype_' + module + '#module-' + i + ' .contentafterlink > .no-overflow > .no-overflow',
+                    'li.snap-activity.modtype_' + module + '#module-' + i + ' .contentafterlink > .no-overflow'
                 ];
-                if (module === 'hsuforum') {
-                    selectors.push('#hsuforum-header .hsuforum_introduction > .no-overflow');
+                if (additionalSelectors) {
+                    for (var a in additionalSelectors) {
+                        selectors.push(additionalSelectors[a].replace('{{i}}', i));
+                    }
                 }
                 $(selectors.join(',')).attr('data-ally-richcontent', annotation);
             }
@@ -350,7 +354,7 @@ function($, Templates, Ally, ImageCover, Util) {
 
             // Annotate introductions.
             var intros = forumMapping['intros'];
-            annotateModuleIntros(intros, 'hsuforum');
+            annotateModuleIntros(intros, 'hsuforum', ['#hsuforum-header .hsuforum_introduction > .no-overflow']);
 
             var discussions = forumMapping['posts'];
             for (var d in discussions) {
@@ -380,6 +384,26 @@ function($, Templates, Ally, ImageCover, Util) {
         };
 
         /**
+         * Add annotations to page.
+         * @param array mapping
+         */
+        var annotatePage = function(mapping) {
+            var intros = mapping['intros'];
+            annotateModuleIntros(intros, 'page', ['li.snap-native.modtype_page#module-{{i}} .contentafterlink > .summary-text']);
+
+            // Annotate content.
+            var content = mapping['content'];
+            for (var c in content) {
+                var annotation = content[c];
+                var selectors = [
+                    '#page-mod-page-view #region-main .box.generalbox > .no-overflow',
+                    'li.snap-native.modtype_page#module-' + c + ' .pagemod-content'
+                ];
+                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+            }
+        };
+
+        /**
          * Annotate supported modules
          * @param moduleMapping
          */
@@ -393,6 +417,9 @@ function($, Templates, Ally, ImageCover, Util) {
             }
             if (moduleMapping['mod_glossary'] !== undefined) {
                 annotateGlossary(moduleMapping['mod_glossary']);
+            }
+            if (moduleMapping['mod_page'] !== undefined) {
+                annotatePage(moduleMapping['mod_page']);
             }
             dfd.resolve();
             return dfd.promise();
@@ -486,6 +513,10 @@ function($, Templates, Ally, ImageCover, Util) {
             return dfd.promise();
         };
 
+        var debounceApplyPlaceHolders = Util.debounce(function() {
+            return applyPlaceHolders();
+        }, 1000);
+
         /**
          * Init function.
          * @param jwt
@@ -499,31 +530,21 @@ function($, Templates, Ally, ImageCover, Util) {
             self.canDownload = canDownload;
             self.courseId = courseId;
             if (canViewFeedback || canDownload) {
-                applyPlaceHolders()
+                debounceApplyPlaceHolders()
                     .done(function() {
                         ImageCover.init();
                         Ally.init(jwt, config);
                         setInterval(function() {
                             placeHoldFolderModule(ally_module_maps.folder_files);
                         }, 5000);
+                        self.initialised = true;
                     });
 
-                // Re-apply placeholders when hide / show clicked in action menu.
-                var reApplySelectors = [
-                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_hide',
-                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_show',
-                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_moveleft',
-                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_moveright',
-                    '.moodle-actionmenu[data-enhance=moodle-core-actionmenu] .editing_duplicate'
-                ].join(', ');
-                $('.course-content').on('click', reApplySelectors, function() {
-                    self.stateStale = true;
-                });
                 $(document).ajaxComplete(function() {
-                    if (self.stateStale) {
-                        applyPlaceHolders();
-                        self.stateStale = false;
+                    if (!self.initialised) {
+                        return;
                     }
+                    debounceApplyPlaceHolders();
                 });
             }
         };
