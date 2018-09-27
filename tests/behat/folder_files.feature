@@ -86,6 +86,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
 
   @javascript
   Scenario Outline: Folder files are processed appropriately when viewed on own mod page
+    Given I skip because "This is going to be addressed in a separated ticket"
     Given the following "course enrolments" exist:
       | user     | course   | role           |
       | student1 | <course> | student        |
