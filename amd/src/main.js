@@ -201,7 +201,7 @@ function($, Templates, Ally, ImageCover, Util) {
         };
 
         /**
-         * Add place holders for folder module files.
+         * Add place holders for glossary module files.
          * @param {array}
          * @return {promise}
          */
@@ -404,6 +404,35 @@ function($, Templates, Ally, ImageCover, Util) {
         };
 
         /**
+         * Add annotations to book.
+         * @param array mapping
+         */
+        var annotateBook = function(mapping) {
+            var intros = mapping['intros'];
+
+            // For book, the only place the intro shows is on the course page when you select "display description on course page"
+            // in the module settings.
+            annotateModuleIntros(intros, 'book',
+                ['li.snap-native.modtype_book#module-{{i}} .contentafterlink > .summary-text .no-overflow']);
+
+            // Annotate content.
+            var content = mapping['chapters'];
+            for (var ch in content) {
+                var urlParams = new URLSearchParams(window.location.search);
+                var chapterId = urlParams.get('chapterid');
+                if (chapterId != ch) {
+                    continue;
+                }
+                var annotation = content[ch];
+                var selectors = [
+                    '#page-mod-book-view #region-main .box.generalbox.book_content > .no-overflow',
+                    'li.snap-native.modtype_page#module-' + ch + ' .pagemod-content'
+                ];
+                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+            }
+        };
+
+        /**
          * Annotate supported modules
          * @param moduleMapping
          */
@@ -420,6 +449,9 @@ function($, Templates, Ally, ImageCover, Util) {
             }
             if (moduleMapping['mod_page'] !== undefined) {
                 annotatePage(moduleMapping['mod_page']);
+            }
+            if (moduleMapping['mod_book'] !== undefined) {
+                annotateBook(moduleMapping['mod_book']);
             }
             dfd.resolve();
             return dfd.promise();

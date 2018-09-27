@@ -13,7 +13,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 #
-# Tests for Ally filter forum annotations.
+# Tests for Ally filter label annotations.
 #
 # @package    filter_ally
 # @author     Guy Thomas
@@ -28,7 +28,7 @@ Feature: When the ally filter is enabled ally annotations are inserted when appr
     Given the ally filter is enabled
 
   @javascript
-  Scenario: Label content is annotated and following HTML content URL for annotation works.
+  Scenario Outline: Module content is annotated and following HTML content URL for annotation works.
     Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
@@ -43,21 +43,27 @@ Feature: When the ally filter is enabled ally annotations are inserted when appr
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
     # Add padding to test viewport.
-    And I create a label with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
-    And I create a label with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
-    And I create a label with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
-    And I create a label with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
-    And I create a label with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
-    And I create a label with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
-    # Add label to check.
-    And I create a label with html content "<p>Some content</p>" in section 5
+    And I create a <module> with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
+    And I create a <module> with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
+    And I create a <module> with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
+    And I create a <module> with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
+    And I create a <module> with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
+    And I create a <module> with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
+    # Add <module> to check.
+    And I create a <module> with html content "<p>Some content</p>" in section 5
     When I reload the page
     And I should see "Some content"
-    And the label with html content "Some content" is not visible or not in viewport
-    Then label with html "Some content" is annotated
-    And I follow the webservice content url for label "Some content"
-    And the label with html content "Some content" is visible and in viewport
+    And the <module> with html content "Some content" is not visible or not in viewport
+    Then <module> with html "Some content" is annotated
+    And I follow the webservice content url for <module> "Some content"
+    And the <module> with html content "Some content" is visible and in viewport
     And I log out
     And I log in as "student1"
     And I am on "Course 1" course homepage
-    And label with html "Some content" is annotated
+    And <module> with html "Some content" is annotated
+
+  Examples:
+  |module|
+  |label |
+  |page  |
+  |book  |
