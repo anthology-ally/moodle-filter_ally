@@ -388,62 +388,6 @@ EOF;
     }
 
     /**
-     * Process file url for file components.
-     * @param string $url
-     * @return void|array
-     */
-    private function process_url($url) {
-        // First, make sure this pluginfile.php is for the current site.
-        // We're not interested in URLs pointing to other sites!
-        $baseurl = new moodle_url('/pluginfile.php');
-        $fileurl = new moodle_url($url);
-        if (!$fileurl->compare($baseurl, URL_MATCH_BASE)) {
-            return;
-        }
-
-        $regex = '/(?:.*)pluginfile\.php(?:\?file=|)(?:\/|%2F)(\d*?)(?:\/|%2F)(.*)$/';
-        $matches = [];
-        $matched = preg_match($regex, $url, $matches);
-        if (!$matched) {
-            return;
-        }
-        $contextid = $matches[1];
-        if (strpos($matches[2], '%2F') !== false) {
-            $del = '%2F';
-        } else {
-            $del = '/';
-        }
-        $arr = explode($del, $matches[2]);
-        $component = urldecode(array_shift($arr));
-        $fileurlprops = local_file::get_component_support_fileurlproperties($component, $url);
-        if (!empty($fileurlprops)) {
-            return $fileurlprops;
-        }
-
-        if (count($arr) === 2) {
-            $filearea = array_shift($arr);
-            $itemid = 0;
-            $filename = array_shift($arr);
-        } else if (count($arr) === 3) {
-            $filearea = array_shift($arr);
-            $itemid = array_shift($arr);
-            $filename = array_shift($arr);
-        } else {
-            $filearea = array_shift($arr);
-            $itemid = array_shift($arr);
-            $filename = implode($arr, '/');
-        }
-
-        return [
-            $contextid,
-            $component,
-            $filearea,
-            $itemid,
-            $filename
-        ];
-    }
-
-    /**
      * Verifies and fixes the text if the filter was found to have been already applied.
      * This has been found to be a fix for answers in the lesson module that get stripped off data attrs.
      * @param string $type
@@ -522,7 +466,7 @@ EOF;
 
         // Some modules will not send a single div node or have several nodes for filtering.
         // We need to add a parent div when such setup is found.
-        $doc = $this->build_dom_doc($text);
+        $doc = local_content::build_dom_doc($text);
         $bodynode = $doc->getElementsByTagName('body')->item(0);
         $shouldwrap = $bodynode->childNodes->length > 1;
         if (!$shouldwrap && $bodynode->childNodes->length === 1) {
@@ -538,19 +482,6 @@ EOF;
         $text = preg_replace ( $pattern , ' data-ally-richcontent = "'.$annotation.'" >' , $text , 1);
 
         return $text;
-    }
-
-    /**
-     * Builds a DOMDocument from html string.
-     * @param string $text
-     * @return DOMDocument
-     */
-    private function build_dom_doc($text) {
-        $doc = new \DOMDocument();
-        libxml_use_internal_errors(true); // Required for HTML5.
-        $doc->loadHTML('<?xml encoding="utf-8" ?>' . $text);
-        libxml_clear_errors(); // Required for HTML5.
-        return $doc;
     }
 
     /**
@@ -579,7 +510,7 @@ EOF;
 
         $supportedcomponents = local_file::list_html_file_supported_components();
 
-        $doc = $this->build_dom_doc($text);
+        $doc = local_content::build_dom_doc($text);
         $elements = [];
         $results = $doc->getElementsByTagName('a');
         foreach ($results as $result) {
@@ -613,7 +544,8 @@ EOF;
             $url = $element->url;
 
             if (strpos($url, 'pluginfile.php') !== false) {
-                list($contextid, $component, $filearea, $itemid, $filename) = $this->process_url($url);
+                list($contextid, $component, $filearea, $itemid, $filename) =
+                        local_file::get_fileurlproperties($url)->to_list();
 
                 if ($component === 'mod_glossary' && $filearea === 'attachment') {
                     // We have to do this with JS as the DOM needs rewriting.
@@ -660,20 +592,6 @@ EOF;
                         continue;
                     }
                 }
-
-                // Strip params from end of the url .e.g. file.pdf?forcedownload=1.
-                $query = strpos($filename, '?');
-                if ($query) {
-                    $filename = substr($filename, 0, $query);
-                }
-                // Strip additional params from end of the url .e.g. ?file=...&forcedownload=1.
-                $query = strpos($filename, '&');
-                if ($query) {
-                    $filename = substr($filename, 0, $query);
-                }
-
-                $filename = urldecode($filename);
-                $filearea = urldecode($filearea);
 
                 $itempath = "/$contextid/$component/$filearea/$itemid";
                 $filepath = "$itempath/$filename";
