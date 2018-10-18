@@ -29,6 +29,7 @@ use filter_ally\renderables\wrapper;
 use tool_ally\cache;
 use tool_ally\local_file;
 use tool_ally\local_content;
+use tool_ally\models\pluginfileurlprops;
 
 /**
  * Filter for processing file links for Ally accessibility enhancements.
@@ -544,6 +545,10 @@ EOF;
             $url = $element->url;
 
             if (strpos($url, 'pluginfile.php') !== false) {
+                $fileprops = local_file::get_fileurlproperties($url);
+                if (!$fileprops instanceof pluginfileurlprops) {
+                    continue;
+                }
                 list($contextid, $component, $filearea, $itemid, $filename) =
                         local_file::get_fileurlproperties($url)->to_list();
 
