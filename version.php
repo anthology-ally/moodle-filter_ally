@@ -17,19 +17,20 @@
 /**
  * Plugin version and other meta-data are defined here.
  *
- * @package     filter_ally
- * @copyright   Blackboard Inc 2017
- * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   filter_ally
+ * @copyright Copyright (c) 2017 Blackboard Inc. (http://www.blackboard.com)
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
+/** @var stdClass $plugin */
 $plugin->component = 'filter_ally';
 $plugin->release   = '3.5.2';
-$plugin->version   = 2018080800;
-$plugin->requires  = 2017111305;
-$plugin->maturity  = MATURITY_BETA;
+$plugin->version   = 2018080801;
+$plugin->requires  = 2018051700;
+$plugin->maturity  = MATURITY_STABLE;
 $plugin->dependencies = [
-    'tool_ally'      => 2018080800,
+    'tool_ally'      => 2018080801,
     'report_allylti' => 2018080800,
 ];
