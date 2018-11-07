@@ -25,6 +25,7 @@
 require_once(__DIR__ . '/../../../../lib/behat/behat_base.php');
 
 use \Behat\Mink\Exception\ExpectationException;
+use \Moodle\BehatExtension\Exception\SkippedException;
 use \tool_ally\local_content;
 use \tool_ally\models\component_content;
 
@@ -797,5 +798,12 @@ XPATH;
         if (count($wsparams) < 4) {
             throw new ExpectationException('Incorrect number of params in assign annotation '.$annotation);
         }
+    }
+
+    /**
+     * @Given /^I skip because "(?P<reason_string>[^"]*)" \(filter_ally\)$/
+     */
+    public function skip_with_reason($reason) {
+        throw new SkippedException($reason);
     }
 }
