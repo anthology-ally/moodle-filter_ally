@@ -31,6 +31,7 @@ function($, Templates, Ally, ImageCover, Util) {
         self.canViewFeedback = false;
         self.canDownload = false;
         self.initialised = false;
+        self.params = {};
 
         /**
          * Render template and insert result in appropriate place.
@@ -532,7 +533,7 @@ function($, Templates, Ally, ImageCover, Util) {
                 ['li.snap-native.modtype_lesson#module-{{i}} .contentafterlink > .summary-text .no-overflow']);
 
             // Annotate content.
-            var content = mapping['pages'];
+            var content = mapping['lesson_pages'];
             for (var p in content) {
                 var urlParams = new URLSearchParams(window.location.search);
                 var pageId = urlParams.get('pageid');
@@ -541,11 +542,50 @@ function($, Templates, Ally, ImageCover, Util) {
                 }
                 var annotation = content[p];
                 var selectors = [
-                    '#page-mod-lesson-view #region-main .box.contents > .no-overflow',
+                    '#page-mod-lesson-view #region-main .box.contents > .no-overflow', // Regular page.
+                    '#page-mod-lesson-view #region-main form > fieldset > .fcontainer > .contents .no-overflow', // Question page.
                     'li.snap-native.modtype_page#module-' + p + ' .pagemod-content'
                 ];
 
                 $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+            }
+
+            // Annotate answer answers.
+            var answers = mapping['lesson_answers'];
+            for (var a in answers) {
+                var annotation = answers[a];
+                if (self.params.answerid && self.params.answerid == a) {
+                    $('.studentanswer tr:nth-of-type(1) > td div').attr('data-ally-richcontent', annotation);
+                } else {
+                    var answerWrapperId = 'answer_wrapper_' + a;
+                    var answerEl = $('#id_answerid_' + a);
+                    if (answerEl.data('annotated') == 1) {
+                        // We only want to wrap this once.
+                        var contentEls = answerEl.nextAll();
+                        answerEl.parent('label').append('<span id="answer_wrapper_' + a + '"></span>');
+                        $('#' +answerWrapperId).append(contentEls);
+                    }
+                    answerEl.data('annotated', 1);
+                }
+                $('#answer_wrapper_' + a).attr('data-ally-richcontent', annotation);
+            }
+
+            // Annotate answer responses.
+            var responses = mapping['lesson_answers_response'];
+            for (var r in responses) {
+                if (self.params.answerid && self.params.answerid == r) { // Yes answer ids are the same as response ids ;-).
+                    var annotation = responses[r];
+                    var responseWrapperId = 'response_wrapper_' + r;
+                    if (!$('.studentanswer tr.lastrow > td #' + responseWrapperId).length) {
+                        // We only want to wrap this once, hence above ! length check.
+                        var contentEls = $('.studentanswer tr.lastrow > td > br').nextAll();
+                        $('.studentanswer tr.lastrow > td > br').after('<span id="' + responseWrapperId + '"></span>');
+                        $('#' + responseWrapperId).append(contentEls);
+                    }
+
+                    $('#' + responseWrapperId).attr('data-ally-richcontent', annotation);
+                }
+
             }
         };
 
@@ -680,11 +720,13 @@ function($, Templates, Ally, ImageCover, Util) {
          * @param {boolean} canViewFeedback
          * @param {boolean} canDownload
          * @param {int} courseId
+         * @param {object} general params
          */
-        this.init = function(jwt, config, canViewFeedback, canDownload, courseId) {
+        this.init = function(jwt, config, canViewFeedback, canDownload, courseId, params) {
             self.canViewFeedback = canViewFeedback;
             self.canDownload = canDownload;
             self.courseId = courseId;
+            self.params = params;
             if (canViewFeedback || canDownload) {
                 debounceApplyPlaceHolders()
                     .done(function() {
