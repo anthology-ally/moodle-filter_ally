@@ -419,7 +419,16 @@ EOF;
                 'pushurl' => !empty($config->pushurl) ? $config->pushurl : null,
                 'clientid' => !empty($config->clientid) ? $config->clientid : null
             ];
-            $amdargs = [$jwt, $configvars, $canviewfeedback, $candownload, $COURSE->id];
+
+            $params = new stdClass();
+            if (strpos($PAGE->pagetype, 'mod-lesson') !== false) {
+                $pageid = optional_param('pageid', null, PARAM_INT);
+                $answerid = optional_param('answerid', null, PARAM_INT);
+                $params->answerid = $answerid;
+                $params->pageid = $pageid;
+            }
+
+            $amdargs = [$jwt, $configvars, $canviewfeedback, $candownload, $COURSE->id, $params];
             $page->requires->js_call_amd('filter_ally/main', 'init', $amdargs);
             $jsinitialised = true;
         }
@@ -505,6 +514,9 @@ EOF;
         // Some modules will not send a single div node or have several nodes for filtering.
         // We need to add a parent div when such setup is found.
         $doc = local_content::build_dom_doc($text);
+        if (!$doc) {
+            return $text;
+        }
         $bodynode = $doc->getElementsByTagName('body')->item(0);
         $shouldwrap = $bodynode->childNodes->length > 1;
         if (!$shouldwrap && $bodynode->childNodes->length === 1) {
@@ -561,6 +573,10 @@ EOF;
         $supportedcomponents = local_file::list_html_file_supported_components();
 
         $doc = local_content::build_dom_doc($text);
+        if (!$doc) {
+            return $text;
+        }
+
         $elements = [];
         $results = $doc->getElementsByTagName('a');
         foreach ($results as $result) {
