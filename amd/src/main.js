@@ -505,9 +505,15 @@ function($, Templates, Ally, ImageCover, Util) {
 
             // Annotate content.
             var content = mapping['chapters'];
-            for (var ch in content) {
+
+            if (self.params.chapterid) {
+                chapterId = self.params.chapterid;
+            } else {
                 var urlParams = new URLSearchParams(window.location.search);
                 var chapterId = urlParams.get('chapterid');
+            }
+
+            for (var ch in content) {
                 if (chapterId != ch) {
                     continue;
                 }

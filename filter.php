@@ -427,7 +427,21 @@ EOF;
                 $params->answerid = $answerid;
                 $params->pageid = $pageid;
             }
-
+            if (strpos($PAGE->pagetype, 'mod-book') !== false) {
+                $chapterid = optional_param('chapterid', null, PARAM_INT);
+                if ($chapterid === null) {
+                    $cmid = optional_param('id', null, PARAM_INT);
+                    if ($cmid) {
+                        list ($course, $cm) = get_course_and_cm_from_cmid($cmid);
+                        $bookid = $cm->instance;
+                        // Get first chapter id for book
+                        $sql = 'SELECT min(id) FROM {book_chapters} WHERE bookid = ?';
+                        $chapterid = $DB->get_field_sql($sql, [$bookid]);
+                    }
+                }
+                $params->chapterid = $chapterid;
+            }
+            
             $amdargs = [$jwt, $configvars, $canviewfeedback, $candownload, $COURSE->id, $params];
             $page->requires->js_call_amd('filter_ally/main', 'init', $amdargs);
             $jsinitialised = true;
