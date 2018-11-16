@@ -505,9 +505,15 @@ function($, Templates, Ally, ImageCover, Util) {
 
             // Annotate content.
             var content = mapping['chapters'];
-            for (var ch in content) {
+
+            if (self.params.chapterid) {
+                chapterId = self.params.chapterid;
+            } else {
                 var urlParams = new URLSearchParams(window.location.search);
                 var chapterId = urlParams.get('chapterid');
+            }
+
+            for (var ch in content) {
                 if (chapterId != ch) {
                     continue;
                 }
@@ -536,7 +542,11 @@ function($, Templates, Ally, ImageCover, Util) {
             var content = mapping['lesson_pages'];
             for (var p in content) {
                 var urlParams = new URLSearchParams(window.location.search);
-                var pageId = urlParams.get('pageid');
+                if (self.params.pageid) {
+                    var pageId = self.params.pageid;
+                } else {
+                    var pageId = urlParams.get('pageid');
+                }
                 if (pageId != p) {
                     continue;
                 }
@@ -554,12 +564,16 @@ function($, Templates, Ally, ImageCover, Util) {
             var answers = mapping['lesson_answers'];
             for (var a in answers) {
                 var annotation = answers[a];
+
+                // Wrap answers in labels.
+                $('#page-mod-lesson-view label[for="id_answerid_' + a + '"]').attr('data-ally-richcontent', annotation);
+
                 if (self.params.answerid && self.params.answerid == a) {
                     $('.studentanswer tr:nth-of-type(1) > td div').attr('data-ally-richcontent', annotation);
                 } else {
                     var answerWrapperId = 'answer_wrapper_' + a;
                     var answerEl = $('#id_answerid_' + a);
-                    if (answerEl.data('annotated') == 1) {
+                    if (answerEl.data('annotated') != 1) {
                         // We only want to wrap this once.
                         var contentEls = answerEl.nextAll();
                         answerEl.parent('label').append('<span id="answer_wrapper_' + a + '"></span>');

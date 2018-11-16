@@ -26,10 +26,7 @@ Feature: When the ally filter is enabled ally annotations are inserted when appr
 
   Background:
     Given the ally filter is enabled
-
-  @javascript
-  Scenario Outline: Module content is annotated and following HTML content URL for annotation works.
-    Given the following "courses" exist:
+    And the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
     And the following "users" exist:
@@ -40,7 +37,10 @@ Feature: When the ally filter is enabled ally annotations are inserted when appr
       | user     | course | role           |
       | student1 | C1     | student        |
       | teacher1 | C1     | teacher        |
-    And I log in as "teacher1"
+
+  @javascript
+  Scenario Outline: Module content is annotated and following HTML content URL for annotation works.
+    Given I log in as "teacher1"
     And I am on "Course 1" course homepage
     # Add padding to test viewport.
     And I create a <module> with html content "<br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br/><br>" in section 1
@@ -67,3 +67,38 @@ Feature: When the ally filter is enabled ally annotations are inserted when appr
   |label |
   |page  |
   |book  |
+  |lesson|
+
+  @javascript
+  Scenario: Book chapters are annotated.
+    Given I log in as "teacher1"
+    And I am on "Course 1" course homepage
+    And I create a book with html content "<p>Some content</p>" in section 1
+    And I add 2 chapters to "test book"
+    And I reload the page
+    And I open the book module
+    Then the current book chapter is annotated
+    And I log out
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I open the book module
+    Then the current book chapter is annotated
+
+  @javascript
+  Scenario: Lesson pages are annotated.
+    Given I log in as "teacher1"
+    And I am on "Course 1" course homepage
+    And I create a lesson with html content "<p>Some content</p>" in section 1
+    And I add 1 true false pages to lesson "test lesson"
+    And I reload the page
+    And I open the lesson module
+    Then the current lesson page is annotated
+    And the true false questions for lesson "test lesson" are annotated
+    And I log out
+    And I log in as "student1"
+    And I am on "Course 1" course homepage
+    And I open the lesson module
+    Then the current lesson page is annotated
+    And the true false questions for lesson "test lesson" are annotated
+
+

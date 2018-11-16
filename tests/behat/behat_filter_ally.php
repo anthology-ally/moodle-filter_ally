@@ -190,7 +190,8 @@ class behat_filter_ally extends behat_base {
             'name' => 'test '.$module,
             'intro' => $content,
             'introformat' => FORMAT_HTML,
-            'section' => $section
+            'section' => $section,
+            'showdescription' => $module === 'lesson' ? 1 : 0
         ];
 
         $mod = $gen->create_module($module, $data);
@@ -199,6 +200,163 @@ class behat_filter_ally extends behat_base {
             $cm = $DB->get_record('course_modules', ['id' => $mod->cmid]);
             $cm->showdescription = 1;
             $DB->update_record('course_modules', $cm);
+        }
+    }
+
+    /**
+     * @Given I open the :module module
+     * @param string $module
+     */
+    public function i_open_the_module($module) {
+        $xpath = <<<XPATH
+        //div[@class="activityinstance"]//span[contains(text(), 'test $module')]/../../a
+XPATH;
+
+        $this->execute('behat_general::i_click_on', [$xpath, 'xpath_element']);
+    }
+
+    /**
+     * @Given I add :chapters chapters to ":bookname"
+     * @param int $numchapters
+     * @param string $bookname
+     */
+    public function i_add_chapters_to_book($numchapters, $bookname) {
+        global $DB;
+
+        if ($numchapters < 1) {
+            throw new coding_exception('$numchapters cannot be less than 1');
+        }
+
+        $course = $this->get_current_course();
+        $book = $DB->get_record('book', ['course' => $course->id, 'name' => $bookname]);
+        $chaptercount = $DB->count_records('book_chapters', ['bookid' => $book->id]);
+
+        $gen = testing_util::get_data_generator();
+        $bookgenerator = $gen->get_plugin_generator('mod_book');
+
+        for ($c = 0; $c < $numchapters; $c++) {
+            $chpTitleNum = $chaptercount + $c + 1;
+            $data = [
+                'bookid' => $book->id,
+                'title' => $bookname.' chapter '.$chpTitleNum ,
+                'content' => 'Test content '.$chpTitleNum,
+                'contentformat' => FORMAT_HTML
+            ];
+
+            $bookgenerator->create_chapter($data);
+        }
+    }
+
+    private function get_lesson_instance_by_name_for_current_course($lessonname) {
+        global $DB;
+        $course = $this->get_current_course();
+        return $DB->get_record('lesson', ['course' => $course->id, 'name' => $lessonname]);
+    }
+
+    /**
+     * @Given I add :pages true false pages to lesson ":lessonname"
+     * @param int $numpages
+     * @param string $bookname
+     */
+    public function i_add_truefalse_pages_to_lesson($numpages, $lessonname) {
+        global $DB;
+
+        require_once(__DIR__ . '/../../../../mod/lesson/locallib.php');
+
+        if ($numpages < 1) {
+            throw new coding_exception('$numpages cannot be less than 1');
+        }
+
+        $course = $this->get_current_course();
+        $lesson = $this->get_lesson_instance_by_name_for_current_course($lessonname);
+        list ($course, $cm) = get_course_and_cm_from_instance($lesson->id, 'lesson');
+        $lesson->cmid = $cm->id;
+        $pagecount = $DB->count_records('lesson_pages', ['lessonid' => $lesson->id]);
+
+        $gen = testing_util::get_data_generator();
+        $lessongenerator = $gen->get_plugin_generator('mod_lesson');
+
+        for ($c = 0; $c < $numpages; $c++) {
+            $titleNum = $pagecount + $c + 1;
+
+            $lessonobj = new lesson($lesson);
+
+            $page = $lessongenerator->create_question_truefalse($lessonobj);
+            $page->contents = 'Test content '.$titleNum;
+            $page->contentsformat = FORMAT_HTML;
+            $page->title = $lessonname.' chapter '.$titleNum;
+
+            $DB->update_record('lesson_pages', $page);
+        }
+    }
+
+    /**
+     * @Given the current book chapter is annotated
+     */
+    public function book_current_chapter_is_annotated() {
+        $xpath = <<<XPATH
+            //section[@id="region-main"]//div[@role="main"]/div/div[@class="no-overflow"]
+XPATH;
+        $node = $this->find('xpath', $xpath);
+        $params = array('node' => $node);
+        $timeout = false;
+        $exception =  new ExpectationException('Annotation not found', $this->getSession()->getDriver());
+        $microsleep = false;
+
+        return $this->spin(
+            function($context, $args) {
+                $node = $args['node'];
+                $annotation = $node->getAttribute('data-ally-richcontent');
+                return strpos($annotation, 'book:book_chapter') !== false;
+            },
+            $params,
+            $timeout,
+            $exception,
+            $microsleep
+        );
+    }
+
+    /**
+     * @Given the current lesson page is annotated
+     */
+    public function lesson_current_page_is_annotated() {
+        $xpath = <<<XPATH
+            //body[@id="page-mod-lesson-view"]//form//fieldset//div[@class="contents"]/div[@data-ally-richcontent]
+XPATH;
+        $node = $this->find('xpath', $xpath);
+        $annotation = $node->getAttribute('data-ally-richcontent');
+
+        return strpos($annotation, 'lesson:lesson_page') !== false;
+    }
+
+    /**
+     * @Given the true false questions for lesson ":lessonname" are annotated
+     * @param string $lessonname
+     */
+    public function true_false_lesson_questions_annotated($lessonname) {
+        global $DB;
+
+        $lesson = $this->get_lesson_instance_by_name_for_current_course($lessonname);
+
+        $sql = <<<SQL
+        SELECT la.* FROM {lesson_pages} lp
+                    JOIN {lesson_answers} la ON la.pageid = lp.id
+                   WHERE lp.lessonid = ? AND lp.qtype = ?
+SQL;
+
+        $params = ['lessonid' => $lesson->id, 'qtype' => LESSON_PAGE_TRUEFALSE];
+
+        $tfanswers = $DB->get_records_sql($sql, $params);
+        foreach ($tfanswers as $answer) {
+            $id = $answer->id;
+            $xpath = <<<XPATH
+                //span[@id="answer_wrapper_{$id}"][@data-ally-richcontent]
+XPATH;
+            $node = $this->find('xpath', $xpath);
+            $annotation = $node->getAttribute('data-ally-richcontent');
+            if (strpos($annotation, 'lesson:lesson_answer') === false) {
+                throw new ExpectationException('Answer wrapper is not annotated', $this->getSession()->getDriver());
+            }
         }
     }
 
