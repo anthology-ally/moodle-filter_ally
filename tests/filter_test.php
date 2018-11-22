@@ -34,6 +34,9 @@ class filter_ally_testcase extends advanced_testcase {
         // We reset after every test because the filter modifies $CFG->additionalhtmlfooter.
         $this->resetAfterTest();
 
+        // Filter must be on.
+        filter_set_global_state('ally', TEXTFILTER_ON);
+
         require_once(__DIR__.'/../filter.php');
 
         $PAGE->set_url($CFG->wwwroot.'/course/view.php');

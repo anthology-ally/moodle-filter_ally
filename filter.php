@@ -46,6 +46,11 @@ class filter_ally extends moodle_text_filter {
     private static $fileidsbyurl = [];
 
     /**
+     * @var bool is the filter active in this context?
+     */
+    private $filteractive = false;
+
+    /**
      * Constants for identifying html element types and 'ally-'.$type.'-wrapper' usage.
      */
     const ANCHOR = 'anchor';
@@ -356,6 +361,16 @@ class filter_ally extends moodle_text_filter {
     public function setup($page, $context) {
         global $USER, $COURSE, $CFG, $PAGE, $DB;
 
+        // Make sure that the ally filter is active for the course, otherwise do not continue.
+        // Note - we have to do this for the course context, we can't do granular module contexts since
+        // a lot of the ally wrappers are applied via JS as opposed to via the filter - JS has no
+        // awareness of contexts.
+        $activefilters = filter_get_active_in_context(context_course::instance($COURSE->id));
+        if (!isset($activefilters['ally'])) {
+            return;
+        }
+        $this->filteractive = true;
+
         if ($page->pagelayout === 'embedded') {
             return;
         }
@@ -580,6 +595,10 @@ EOF;
      */
     public function filter($text, array $options = array()) {
         global $PAGE;
+
+        if (!$this->filteractive) {
+            return $text;
+        }
 
         $text = $this->apply_content_annotation($text);
 
