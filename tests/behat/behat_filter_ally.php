@@ -47,6 +47,35 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
+     * Enable or disable the ally filter for the current course.
+     * @param int $status
+     * @throws ExpectationException
+     * @throws coding_exception
+     */
+    private function ally_filter_status_course($status = TEXTFILTER_ON) {
+        $course = $this->get_current_course();
+        $context = context_course::instance($course->id);
+
+        filter_set_local_state('ally', $context->id, $status);
+    }
+
+    /**
+     * @Given the ally filter is enabled for course
+     * @throws coding_exception
+     */
+    public function the_ally_filter_is_enabled_for_course() {
+        $this->ally_filter_status_course();
+    }
+
+    /**
+     * @Given the ally filter is not enabled for course
+     * @throws coding_exception
+     */
+    public function the_ally_filter_is_not_enabled_for_course() {
+        $this->ally_filter_status_course(TEXTFILTER_OFF);
+    }
+
+    /**
      * Get current course;
      * @return stdClass | false
      * @throws \Behat\Mink\Exception\ExpectationException

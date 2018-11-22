@@ -61,7 +61,7 @@ Feature: When the ally filter is enabled ally place holders and annotations are 
     And the ally image cover area should exist for the "3rd" image
 
   @javascript
-  Scenario: Anchors linking to local files are processed.
+  Scenario Outline: Anchors linking to local files are processed where filter enabled in course.
     Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
@@ -75,24 +75,25 @@ Feature: When the ally filter is enabled ally place holders and annotations are 
       | teacher1 | C1     | teacher        |
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
+    And the ally filter is <enabledornot> for course
     And I allow guest access for current course
     And I create a label with random text files "test1.txt, test2.txt, test3.txt"
     When I reload the page
-    Then I should see the feedback place holder for the "1st" anchor
-    And I should see the feedback place holder for the "2nd" anchor
-    And I should see the feedback place holder for the "3rd" anchor
-    And I should see the download place holder for the "1st" anchor
-    And I should see the download place holder for the "2nd" anchor
-    And I should see the download place holder for the "3rd" anchor
+    Then I <shouldornot> see the feedback place holder for the "1st" anchor
+    And I <shouldornot> see the feedback place holder for the "2nd" anchor
+    And I <shouldornot> see the feedback place holder for the "3rd" anchor
+    And I <shouldornot> see the download place holder for the "1st" anchor
+    And I <shouldornot> see the download place holder for the "2nd" anchor
+    And I <shouldornot> see the download place holder for the "3rd" anchor
     And I log out
     And I log in as "student1"
     And I am on "Course 1" course homepage
     Then I should not see the feedback place holder for the "1st" anchor
     And I should not see the feedback place holder for the "2nd" anchor
     And I should not see the feedback place holder for the "3rd" anchor
-    And I should see the download place holder for the "1st" anchor
-    And I should see the download place holder for the "2nd" anchor
-    And I should see the download place holder for the "3rd" anchor
+    And I <shouldornot> see the download place holder for the "1st" anchor
+    And I <shouldornot> see the download place holder for the "2nd" anchor
+    And I <shouldornot> see the download place holder for the "3rd" anchor
     And I log out
     And I log in as "guest"
     And I am on "Course 1" course homepage
@@ -102,6 +103,11 @@ Feature: When the ally filter is enabled ally place holders and annotations are 
     And I should not see the download place holder for the "1st" anchor
     And I should not see the download place holder for the "2nd" anchor
     And I should not see the download place holder for the "3rd" anchor
+  Examples:
+    | shouldornot | enabledornot |
+    | should      | enabled      |
+    | should not  | not enabled  |
+
 
   @javascript
   Scenario: Course section html is annotated.
