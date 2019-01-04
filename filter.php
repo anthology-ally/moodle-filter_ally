@@ -455,13 +455,25 @@ EOF;
             if (strpos($PAGE->pagetype, 'mod-book') !== false) {
                 $chapterid = optional_param('chapterid', null, PARAM_INT);
                 if ($chapterid === null) {
-                    $cmid = optional_param('id', null, PARAM_INT);
+                    $cmid = optional_param('cmid', null, PARAM_INT);
+                    if ($cmid === null) {
+                        $cmid = optional_param('id', null, PARAM_INT);
+                    }
                     if ($cmid) {
-                        list ($course, $cm) = get_course_and_cm_from_cmid($cmid);
-                        $bookid = $cm->instance;
-                        // Get first chapter id for book.
-                        $sql = 'SELECT min(id) FROM {book_chapters} WHERE bookid = ?';
-                        $chapterid = $DB->get_field_sql($sql, [$bookid]);
+                        try {
+                            list ($course, $cm) = get_course_and_cm_from_cmid($cmid);
+                            $bookid = $cm->instance;
+                            // Get first chapter id for book.
+                            $sql = 'SELECT min(id) FROM {book_chapters} WHERE bookid = ?';
+                            $chapterid = $DB->get_field_sql($sql, [$bookid]);
+                        } catch (\moodle_exception $ex) {
+                            // Course module id not valid, component not identified correctly.
+                            $msg = $ex->getMessage();
+                            $msg .= '<br> CM id: '.$cmid;
+                            $msg .= '<br> Page type: '.$PAGE->pagetype;
+                            // Temporarily using this error type.
+                            \tool_ally\event\annotation_module_error::create_from_msg($msg)->trigger();
+                        }
                     }
                 }
                 $params->chapterid = $chapterid;
