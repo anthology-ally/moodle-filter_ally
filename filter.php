@@ -352,6 +352,72 @@ class filter_ally extends moodle_text_filter {
     }
 
     /**
+     * Get params for lesson module instance to pass into amd init.
+     * @return stdClass
+     * @throws coding_exception
+     * @throws dml_exception
+     * @throws moodle_exception
+     */
+    private function get_mod_lesson_params() {
+        global $DB;
+
+        $params = new stdClass;
+
+        $pageid = optional_param('pageid', null, PARAM_INT);
+        if ($pageid === null) {
+            $cmid = optional_param('id', null, PARAM_INT);
+            if ($cmid) {
+                list ($course, $cm) = get_course_and_cm_from_cmid($cmid);
+                $lessonid = $cm->instance;
+                // Get first page id for lesson.
+                $sql = 'SELECT min(id) FROM {lesson_pages} WHERE lessonid = ?';
+                $pageid = $DB->get_field_sql($sql, [$lessonid]);
+            }
+        }
+        $answerid = optional_param('answerid', null, PARAM_INT);
+        $params->answerid = $answerid;
+        $params->pageid = $pageid;
+        return $params;
+    }
+
+    /**
+     * Get params for book module instance to pass into amd init.
+     * @return stdClass
+     * @throws coding_exception
+     */
+    private function get_mod_book_params() {
+        global $DB, $PAGE;
+
+        $params = new stdClass;
+
+        $chapterid = optional_param('chapterid', null, PARAM_INT);
+        if ($chapterid === null) {
+            $cmid = optional_param('cmid', null, PARAM_INT);
+            if ($cmid === null) {
+                $cmid = optional_param('id', null, PARAM_INT);
+            }
+            if ($cmid) {
+                try {
+                    list ($course, $cm) = get_course_and_cm_from_cmid($cmid);
+                    $bookid = $cm->instance;
+                    // Get first chapter id for book.
+                    $sql = 'SELECT min(id) FROM {book_chapters} WHERE bookid = ?';
+                    $chapterid = $DB->get_field_sql($sql, [$bookid]);
+                } catch (\moodle_exception $ex) {
+                    // Course module id not valid, component not identified correctly.
+                    $msg = $ex->getMessage();
+                    $msg .= '<br> CM id: '.$cmid;
+                    $msg .= '<br> Page type: '.$PAGE->pagetype;
+                    // Temporarily using this error type.
+                    \tool_ally\event\annotation_module_error::create_from_msg($msg)->trigger();
+                }
+            }
+        }
+        $params->chapterid = $chapterid;
+        return $params;
+    }
+
+    /**
      * Set up the filter using settings provided in the admin settings page.
      * Also, get the file resource course module id -> file id mappings.
      *
@@ -437,46 +503,9 @@ EOF;
 
             $params = new stdClass();
             if (strpos($PAGE->pagetype, 'mod-lesson') !== false) {
-                $pageid = optional_param('pageid', null, PARAM_INT);
-                if ($pageid === null) {
-                    $cmid = optional_param('id', null, PARAM_INT);
-                    if ($cmid) {
-                        list ($course, $cm) = get_course_and_cm_from_cmid($cmid);
-                        $lessonid = $cm->instance;
-                        // Get first page id for lesson.
-                        $sql = 'SELECT min(id) FROM {lesson_pages} WHERE lessonid = ?';
-                        $pageid = $DB->get_field_sql($sql, [$lessonid]);
-                    }
-                }
-                $answerid = optional_param('answerid', null, PARAM_INT);
-                $params->answerid = $answerid;
-                $params->pageid = $pageid;
-            }
-            if (strpos($PAGE->pagetype, 'mod-book') !== false) {
-                $chapterid = optional_param('chapterid', null, PARAM_INT);
-                if ($chapterid === null) {
-                    $cmid = optional_param('cmid', null, PARAM_INT);
-                    if ($cmid === null) {
-                        $cmid = optional_param('id', null, PARAM_INT);
-                    }
-                    if ($cmid) {
-                        try {
-                            list ($course, $cm) = get_course_and_cm_from_cmid($cmid);
-                            $bookid = $cm->instance;
-                            // Get first chapter id for book.
-                            $sql = 'SELECT min(id) FROM {book_chapters} WHERE bookid = ?';
-                            $chapterid = $DB->get_field_sql($sql, [$bookid]);
-                        } catch (\moodle_exception $ex) {
-                            // Course module id not valid, component not identified correctly.
-                            $msg = $ex->getMessage();
-                            $msg .= '<br> CM id: '.$cmid;
-                            $msg .= '<br> Page type: '.$PAGE->pagetype;
-                            // Temporarily using this error type.
-                            \tool_ally\event\annotation_module_error::create_from_msg($msg)->trigger();
-                        }
-                    }
-                }
-                $params->chapterid = $chapterid;
+                $params = $this->get_mod_lesson_params();
+            } else if (strpos($PAGE->pagetype, 'mod-book') !== false && $PAGE->pagetype !== 'mod-book-edit') {
+                $params = $this->get_mod_book_params();
             }
 
             $amdargs = [$jwt, $configvars, $canviewfeedback, $candownload, $COURSE->id, $params];
