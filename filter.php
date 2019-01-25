@@ -30,6 +30,7 @@ use tool_ally\cache;
 use tool_ally\local_file;
 use tool_ally\local_content;
 use tool_ally\models\pluginfileurlprops;
+use tool_ally\logging\logger;
 
 /**
  * Filter for processing file links for Ally accessibility enhancements.
@@ -405,11 +406,8 @@ class filter_ally extends moodle_text_filter {
                     $chapterid = $DB->get_field_sql($sql, [$bookid]);
                 } catch (\moodle_exception $ex) {
                     // Course module id not valid, component not identified correctly.
-                    $msg = $ex->getMessage();
-                    $msg .= '<br> CM id: '.$cmid;
-                    $msg .= '<br> Page type: '.$PAGE->pagetype;
-                    // Temporarily using this error type.
-                    \tool_ally\event\annotation_module_error::create_from_msg($msg)->trigger();
+                    $context = ['_exception' => $ex];
+                    logger::get()->error('logger:cmidresolutionfailure', $context);
                 }
             }
         }
