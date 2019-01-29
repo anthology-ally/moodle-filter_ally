@@ -39,8 +39,10 @@ class filter_ally_jwthelper_testcase extends advanced_testcase {
      */
     protected function validate_token($token, $userid, $courseid, $roles) {
         global $CFG;
-        /* @noinspection PhpIncludeInspection */
-        require_once($CFG->dirroot.'/filter/ally/vendor/autoload.php');
+        if (!class_exists('\Firebase\JWT\JWT')) {
+            /* @noinspection PhpIncludeInspection */
+            require_once($CFG->dirroot . '/filter/ally/vendor/autoload.php');
+        }
 
         $secret = get_config('tool_ally', 'secret');
 
