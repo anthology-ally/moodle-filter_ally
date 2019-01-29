@@ -67,8 +67,10 @@ class jwthelper {
 
             $payload['return_url'] = $CFG->wwwroot;
 
-            /* @noinspection PhpIncludeInspection */
-            require_once($CFG->dirroot.'/filter/ally/vendor/autoload.php');
+            if (!class_exists('\Firebase\JWT\JWT')) {
+                /* @noinspection PhpIncludeInspection */
+                require_once($CFG->dirroot.'/filter/ally/vendor/autoload.php');
+            }
 
             try {
                 /* @noinspection PhpUnnecessaryFullyQualifiedNameInspection */
