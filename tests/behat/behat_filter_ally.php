@@ -233,56 +233,20 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
-     * Stolen from /Users/guy/Development/www/moodle_test/blocks/tests/privacy_test.php
-     * Get the block manager.
-     *
-     * @param array $regions The regions.
-     * @param context $context The context.
-     * @param string $pagetype The page type.
-     * @param string $subpage The sub page.
-     * @return block_manager
-     */
-    protected function get_block_manager($regions, $context, $pagetype = 'page-type', $subpage = '') {
-        global $CFG;
-        require_once($CFG->libdir.'/blocklib.php');
-        $page = new moodle_page();
-        $page->set_context($context);
-        $page->set_pagetype($pagetype);
-        $page->set_subpage($subpage);
-        $page->set_url(new moodle_url('/'));
-
-        $blockmanager = new block_manager($page);
-        $blockmanager->add_regions($regions, false);
-        $blockmanager->set_default_region($regions[0]);
-
-        return $blockmanager;
-    }
-
-    /**
      * @Given I add a html block with title :title and content :content
      * @param string $title
      * @param string $content
      */
     public function i_add_a_html_block_with_content($title, $content) {
-        global $DB;
-        // Note - we are not going to use behat_blocks::i_add_the_block because we don't want to test
-        // fhe block UI, we just want to add a block!
+        global $CFG;
+        require_once($CFG->dirroot.'/admin/tool/ally/tests/generator/lib.php');
         $course = $this->get_current_course();
         $context = context_course::instance($course->id);
-        $bm = $this->get_block_manager(['side-pre'], $context);
-        $bm->add_block('html', 'side-pre', 1, true, 'course-view-*'); // Wow - doesn't return anything useful like say, erm, the block id!
-        $blocks = $DB->get_records('block_instances', [], 'id DESC', 'id', 0, 1);
-        if (empty($blocks)) {
-            throw new coding_exception('Created a block but block instances empty!');
-        }
-        $block = reset($blocks);
-        $blockconfig = (object) [
-            'title' => $title,
-            'format' => FORMAT_HTML,
-            'text' => $content
-        ];
-        $block->configdata = base64_encode(serialize($blockconfig));
-        $DB->update_record('block_instances', $block);
+
+        $gen = testing_util::get_data_generator();
+        /** @var tool_ally_generator $allygen */
+        $allygen = $gen->get_plugin_generator('tool_ally');
+        $allygen->add_block($context, $title, $content);
     }
 
     /**
