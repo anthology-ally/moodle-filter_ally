@@ -647,10 +647,28 @@ function($, Templates, Ally, ImageCover, Util) {
         };
 
         /**
+         * Annotate html block.
+         * @param mapping
+         */
+        var annotateHtmlBlock = function(mapping) {
+            var dfd = $.Deferred();
+
+            var items = mapping.block_html;
+            for (var i in items) {
+                var ident = items[i];
+                var selector = '#inst' + i + '.block_html > .card-body > .card-text > .no-overflow';
+                $(selector).attr('data-ally-richcontent', ident);
+            }
+            dfd.resolve();
+            return dfd.promise();
+        };
+
+        /**
          * Apply place holders and add annotations to content.
          * @return {promise}
          */
         var applyPlaceHolders = function() {
+            M.util.js_pending('filter_ally_applyPlaceHolders');
             var dfd = $.Deferred();
 
             if (ally_module_maps === undefined || ally_section_maps === undefined) {
@@ -694,6 +712,10 @@ function($, Templates, Ally, ImageCover, Util) {
                 mapVar: {courseId: self.courseId},
                 method: annotateSnapCourseSummary
             },
+            {
+                mapVar: ally_annotation_maps,
+                method: annotateHtmlBlock
+            }
             ];
 
             $(document).ready(function() {
@@ -705,6 +727,7 @@ function($, Templates, Ally, ImageCover, Util) {
                     completed++;
                     if (completed === tasks.length) {
                         // All tasks completed.
+                        M.util.js_complete('filter_ally_applyPlaceHolders');
                         dfd.resolve();
                     }
                 };
