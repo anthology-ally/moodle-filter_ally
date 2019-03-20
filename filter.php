@@ -500,7 +500,7 @@ EOF;
             ];
 
             $params = new stdClass();
-            if (strpos($PAGE->pagetype, 'mod-lesson') !== false) {
+            if (strpos($PAGE->pagetype, 'mod-lesson-view') !== false) {
                 $params = $this->get_mod_lesson_params();
             } else if (strpos($PAGE->pagetype, 'mod-book') !== false && $PAGE->pagetype !== 'mod-book-edit') {
                 $params = $this->get_mod_book_params();
