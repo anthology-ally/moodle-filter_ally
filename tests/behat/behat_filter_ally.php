@@ -25,6 +25,7 @@
 require_once(__DIR__ . '/../../../../lib/behat/behat_base.php');
 
 use \Behat\Mink\Exception\ExpectationException;
+use \Behat\Mink\Element\NodeElement;
 use \Moodle\BehatExtension\Exception\SkippedException;
 use \tool_ally\local_content;
 use \tool_ally\models\component_content;
@@ -300,12 +301,12 @@ XPATH;
     }
 
     /**
-     * @Given I add :pages true false pages to lesson ":lessonname"
-     * @param int $numpages
-     * @param string $bookname
+     * @Given I add :pages content pages to lesson ":lessonname"
+     * @param $numpages
+     * @param $lessonname
      */
-    public function i_add_truefalse_pages_to_lesson($numpages, $lessonname) {
-        global $DB;
+    public function i_add_pages_to_lesson($numpages, $lessonname) {
+        global $DB, $CFG; // This CFG needs to be here for the require to work.
 
         require_once(__DIR__ . '/../../../../mod/lesson/locallib.php');
 
@@ -327,10 +328,57 @@ XPATH;
 
             $lessonobj = new lesson($lesson);
 
-            $page = $lessongenerator->create_question_truefalse($lessonobj);
+            $page = $lessongenerator->create_content($lessonobj);
             $page->contents = 'Test content '.$titlenum;
             $page->contentsformat = FORMAT_HTML;
-            $page->title = $lessonname.' chapter '.$titlenum;
+            $page->title = $lessonname.' content '.$titlenum;
+
+            $DB->update_record('lesson_pages', $page);
+        }
+    }
+
+    /**
+     * @Given I add :pages true false pages to lesson ":lessonname"
+     * @param int $numpages
+     * @param string $bookname
+     */
+    public function i_add_truefalse_pages_to_lesson($numpages, $lessonname) {
+        global $DB, $CFG; // This CFG needs to be here for the require to work.
+
+        require_once(__DIR__ . '/../../../../mod/lesson/locallib.php');
+
+        if ($numpages < 1) {
+            throw new coding_exception('$numpages cannot be less than 1');
+        }
+
+        $course = $this->get_current_course();
+        $lesson = $this->get_lesson_instance_by_name_for_current_course($lessonname);
+        list ($course, $cm) = get_course_and_cm_from_instance($lesson->id, 'lesson');
+        $lesson->cmid = $cm->id;
+        $pagecount = $DB->count_records('lesson_pages', ['lessonid' => $lesson->id]);
+
+        $gen = testing_util::get_data_generator();
+        $lessongenerator = $gen->get_plugin_generator('mod_lesson');
+
+        for ($c = 0; $c < $numpages; $c++) {
+            $titlenum = $pagecount + $c + 1;
+
+            $lessonobj = new lesson($lesson);
+
+            $record = [];
+            // The lesson generator doesn't add response text by default so we need to do that here.
+            $record['response_editor'][0] = array(
+                'text' => 'TRUE response for '.$titlenum,
+                'format' => FORMAT_HTML
+            );
+            $record['response_editor'][1] = array(
+                'text' => 'FALSE response for '.$titlenum,
+                'format' => FORMAT_HTML
+            );
+            $page = $lessongenerator->create_question_truefalse($lessonobj, $record);
+            $page->contents = 'Test true false question '.$titlenum;
+            $page->contentsformat = FORMAT_HTML;
+            $page->title = $lessonname.' question '.$titlenum;
 
             $DB->update_record('lesson_pages', $page);
         }
@@ -373,6 +421,149 @@ XPATH;
         $annotation = $node->getAttribute('data-ally-richcontent');
 
         return strpos($annotation, 'lesson:lesson_page') !== false;
+    }
+
+    /**
+     * @Given the lesson page content entitled ":title" is annotated and contains text ":text"
+     * @param string $title
+     */
+    public function lesson_page_content_annotated($title, $exptext) {
+        global $DB;
+        $id = $DB->get_field('lesson_pages', 'id', ['title' => $title]);
+        if (!$id) {
+            throw new ExpectationException('No lesson page content with title '.$title, $this->getSession());
+        }
+        $annotation = 'lesson:lesson_pages:contents:'.$id;
+        $xpath = <<<XPATH
+            //*[@data-ally-richcontent="$annotation"]
+XPATH;
+        $node = $this->find('xpath', $xpath);
+        $text = $node->getText();
+        if (stripos($text, $exptext) === false) {
+            $msg = 'Annotation mismatch for element with title "'.$title.'" - element contained text "'.$text.'"';
+            $msg .= ' Expected "'.$exptext.'"';
+            throw new ExpectationException($msg, $this->getSession());
+        }
+    }
+
+    private function lesson_or_answer_content_annotated($content, $type = 'answer') {
+        global $DB;
+        $select = $DB->sql_like($type, ':content');
+        $params = ['content' => $content];
+        // Note responses also live in the answers table.
+        $id = $DB->get_field_select('lesson_answers', 'id', $select, $params);
+        if (!$id) {
+            throw new ExpectationException('No lesson '.$type.' found with content: '.$content, $this->getSession());
+        }
+        $annotation = 'lesson:lesson_answers:'.$type.':'.$id;
+        $xpath = <<<XPATH
+            //*[@data-ally-richcontent="$annotation"]
+XPATH;
+        $node = $this->find('xpath', $xpath);
+        $text = $node->getText();
+        if (stripos($text, $content) === false) {
+            $msg = 'Annotation mismatch for '.$type.' containing content "'.$content
+                .'" - element contained text "'.$text.'"'
+                .' Expected "'.$content.'"';
+            throw new ExpectationException($msg, $this->getSession());
+        }
+    }
+
+    /**
+     * @Given the lesson answer containing content ":content" is annotated
+     */
+    public function lesson_answer_content_annotated($content) {
+        $this->lesson_or_answer_content_annotated($content);
+    }
+
+    /**
+     * @Given the lesson response containing content ":content" is annotated
+     */
+    public function lesson_response_content_annotated($content) {
+        $this->lesson_or_answer_content_annotated($content, 'response');
+    }
+
+
+    /**
+     * Checks that the provided node is visible.
+     *
+     * @throws ExpectationException
+     * @param NodeElement $node
+     * @param int $timeout
+     * @param null|ExpectationException $exception
+     * @return bool
+     */
+    protected function is_node_visible(NodeElement $node,
+                                       $timeout = self::EXTENDED_TIMEOUT,
+                                       ExpectationException $exception = null) {
+
+        // If an exception isn't specified then don't throw an error if visibility can't be evaluated.
+        $dontthrowerror = empty($exception);
+
+        // Exception for timeout checking visibility.
+        $msg = 'Something went wrong whilst checking visibility';
+        $exception = new ExpectationException($msg, $this->getSession());
+
+        $visible = false;
+
+        try {
+            $visible = $this->spin(
+                function ($context, $args) {
+                    if ($args->isVisible()) {
+                        return true;
+                    }
+                    return false;
+                },
+                $node,
+                $timeout,
+                $exception,
+                true
+            );
+        } catch (Exception $e) {
+            if (!$dontthrowerror) {
+                throw $exception;
+            }
+        }
+        return $visible;
+    }
+
+    /**
+     * Clicks link with specified id|title|alt|text.
+     *
+     * @When I follow visible link ":link" _ally_
+     * @throws ElementNotFoundException Thrown by behat_base::find
+     * @param string $link
+     */
+    public function click_visible_link($link) {
+        $linknode = $this->find_link($link);
+        if (!$linknode) {
+            $msg = 'The "' . $link . '" link could not be found';
+            throw new ExpectationException($msg, $this->getSession());
+        }
+
+        // See if the first node is visible and if so click it.
+        if ($this->is_node_visible($linknode, self::REDUCED_TIMEOUT)) {
+            $linknode->click();
+            return;
+        }
+
+        /** @var NodeElement[] $linknodes */
+        $linknodes = $this->find_all('named_partial', ['link', behat_context_helper::escape($link)]);
+
+        // Cycle through all nodes and if just one of them is visible break loop.
+        foreach ($linknodes as $node) {
+            if ($node === $linknode) {
+                // We've already tested the first node, skip it.
+                continue;
+            }
+            if ($node->isVisible()) {
+                $node->click();
+                return;
+            }
+        }
+
+        // Oh dear, none of the links were visible.
+        throw new ExpectationException('At least one node should be visible for the xpath "'.$xpath.'"', $this->getSession());
     }
 
     /**
