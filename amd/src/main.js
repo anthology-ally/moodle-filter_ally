@@ -22,8 +22,9 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'core/templates', 'filter_ally/ally', 'filter_ally/imagecover', 'filter_ally/util'],
-function($, Templates, Ally, ImageCover, Util) {
+
+define(['jquery', 'core/templates', 'core/str', 'filter_ally/ally', 'filter_ally/imagecover', 'filter_ally/util'],
+function($, Templates, Strings, Ally, ImageCover, Util) {
     return new function() {
 
         var self = this;
@@ -32,6 +33,33 @@ function($, Templates, Ally, ImageCover, Util) {
         self.canDownload = false;
         self.initialised = false;
         self.params = {};
+
+        /**
+         * Get nodes by xpath.
+         * @param xpath
+         * @returns {Array}
+         */
+        var getNodesByXpath = function(xpath) {
+            var expression = window.document.createExpression(xpath);
+            var result = expression.evaluate(window.document, XPathResult.ANY_TYPE);
+            var nodes = [];
+            do {
+                var node = result.iterateNext();
+                nodes.push(node);
+            } while (node);
+            return nodes;
+        };
+
+        /**
+         * Get single node by xpath.
+         * @param xpath
+         * @returns {Node}
+         */
+        var getNodeByXpath = function(xpath) {
+            var expression = window.document.createExpression(xpath);
+            var result = expression.evaluate(window.document, XPathResult.FIRST_ORDERED_NODE_TYPE);
+            return result.singleNodeValue;
+        };
 
         /**
          * Render template and insert result in appropriate place.
@@ -197,9 +225,9 @@ function($, Templates, Ally, ImageCover, Util) {
                 .done(function() {
                     var unwrappedlinks = '.foldertree > .filemanager span:not(.filter-ally-wrapper) > a[href*="pluginfile.php"]';
                     placeHoldSelector(unwrappedlinks, folderFileMapping)
-                       .done(function() {
-                          dfd.resolve();
-                       });
+                        .done(function() {
+                            dfd.resolve();
+                        });
                 });
             return dfd.promise();
         };
@@ -241,7 +269,7 @@ function($, Templates, Ally, ImageCover, Util) {
         var urlEncodeFilePath = function(filePath) {
             var parts = filePath.split('/');
             for (var p in parts) {
-               parts[p] = encodeURIComponent(parts[p]);
+                parts[p] = encodeURIComponent(parts[p]);
             }
             var encoded = parts.join('/');
             return encoded;
@@ -285,7 +313,7 @@ function($, Templates, Ally, ImageCover, Util) {
          */
         var placeHoldLessonAnswersContent = function(pageAnswersMap) {
             return placeHoldLessonGeneral(pageAnswersMap,
-                    '.studentanswer table tr:nth-child(1) '); // Space at end of selector intended.
+                '.studentanswer table tr:nth-child(1) '); // Space at end of selector intended.
         };
 
         /**
@@ -295,7 +323,7 @@ function($, Templates, Ally, ImageCover, Util) {
          */
         var placeHoldLessonResponsesContent = function(pageResponsesMap) {
             return placeHoldLessonGeneral(pageResponsesMap,
-                    '.studentanswer table tr.lastrow '); // Space at end of selector intended.
+                '.studentanswer table tr.lastrow '); // Space at end of selector intended.
         };
 
         /**
@@ -320,7 +348,6 @@ function($, Templates, Ally, ImageCover, Util) {
                 .then(function() {
                     dfd.resolve();
                 });
-
             return dfd.promise();
         };
 
@@ -348,7 +375,7 @@ function($, Templates, Ally, ImageCover, Util) {
                 var pathHash = moduleFileMapping[moduleId]['content'];
                 if ($('body').hasClass('theme-snap')) {
                     var moduleEl = $('#module-' + moduleId + ':not(.snap-native) .activityinstance ' +
-                            '.snap-asset-link a:first-of-type');
+                        '.snap-asset-link a:first-of-type');
                 } else {
                     var moduleEl = $('#module-' + moduleId + ' .activityinstance a:first-of-type');
                 }
@@ -434,7 +461,7 @@ function($, Templates, Ally, ImageCover, Util) {
                 var post = 'p' + d;
                 var annotation = discussions[d];
                 var postSelector = "#page-mod-forum-discuss a#" + post +
-                        ' + div.firstpost div.posting.fullpost';
+                    ' + div.firstpost div.posting.fullpost';
                 var contentSelector = postSelector + ' > *:not(.attachedimages):not([data-ally-richcontent])';
                 $(postSelector).prepend("<div data-ally-richcontent='" + annotation + "'></div>");
                 $(contentSelector).detach().appendTo(postSelector + ' > div[data-ally-richcontent]');
@@ -548,66 +575,119 @@ function($, Templates, Ally, ImageCover, Util) {
             // Annotate content.
             var content = mapping['lesson_pages'];
             for (var p in content) {
-                var urlParams = new URLSearchParams(window.location.search);
-                if (self.params.pageid) {
-                    var pageId = self.params.pageid;
+                if (document.body.id === "page-mod-lesson-edit") {
+                    var xpath = '//a[@id="lesson-' + p + '"]//ancestor::table//tbody/tr/td/div[contains(@class, "no-overflow")]';
+                    var annotation = content[p];
+                    var node = getNodeByXpath(xpath);
+                    $(node).attr('data-ally-richcontent', annotation);
                 } else {
-                    var pageId = urlParams.get('pageid');
-                }
-                if (pageId != p) {
-                    continue;
-                }
-                var annotation = content[p];
-                var selectors = [
-                    '#page-mod-lesson-view #region-main .box.contents > .no-overflow', // Regular page.
-                    '#page-mod-lesson-view #region-main form > fieldset > .fcontainer > .contents .no-overflow', // Question page.
-                    'li.snap-native.modtype_page#module-' + p + ' .pagemod-content'
-                ];
+                    // Try get page from form.
+                    var node = getNodeByXpath('//form[contains(@action, "continue.php")]//input[@name="pageid"]');
+                    if (node) {
+                        var pageId = $(node).val();
+                    } else {
+                        var urlParams = new URLSearchParams(window.location.search);
+                        var pageId = urlParams.get('pageid');
+                    }
 
-                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+                    if (pageId != p) {
+                        continue;
+                    }
+                    var annotation = content[p];
+                    var selectors = [
+                        // Regular page.
+                        '#page-mod-lesson-view #region-main .box.contents > .no-overflow',
+                        // Question page.
+                        '#page-mod-lesson-view #region-main form > fieldset > .fcontainer > .contents .no-overflow',
+                        // Lesson page.
+                        'li.snap-native.modtype_page#module-' + p + ' .pagemod-content'
+                    ];
+
+                    $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+                }
             }
 
             // Annotate answer answers.
-            var answers = mapping['lesson_answers'];
-            for (var a in answers) {
-                var annotation = answers[a];
+            Strings.get_strings([
+                {key:'answer', component:'mod_lesson'},
+                {key:'response', component:'mod_lesson'}
+            ]).then(function(strings) {
+                var answerLabel = strings[0];
+                var responseLabel = strings[1];
+                var answers = mapping['lesson_answers'];
 
-                // Wrap answers in labels.
-                $('#page-mod-lesson-view label[for="id_answerid_' + a + '"]').attr('data-ally-richcontent', annotation);
-
-                if (self.params.answerid && self.params.answerid == a) {
-                    $('.studentanswer tr:nth-of-type(1) > td div').attr('data-ally-richcontent', annotation);
-                } else {
-                    var answerWrapperId = 'answer_wrapper_' + a;
-                    var answerEl = $('#id_answerid_' + a);
-                    if (answerEl.data('annotated') != 1) {
-                        // We only want to wrap this once.
-                        var contentEls = answerEl.nextAll();
-                        answerEl.parent('label').append('<span id="answer_wrapper_' + a + '"></span>');
-                        $('#' +answerWrapperId).append(contentEls);
+                var processAnswerResponse = function(pageId, i, label, annotation) {
+                    var xpath = '//a[@id="lesson-' + pageId + '"]//ancestor::table' +
+                        '//td/label[contains(text(),"' + label + ' ' + i + '")]/ancestor::tr/td[2]';
+                    var nodes = getNodesByXpath(xpath);
+                    for (var n in nodes) {
+                        var node = nodes[n];
+                        $(node).attr('data-ally-richcontent', annotation);
                     }
-                    answerEl.data('annotated', 1);
-                }
-                $('#answer_wrapper_' + a).attr('data-ally-richcontent', annotation);
-            }
+                };
 
-            // Annotate answer responses.
-            var responses = mapping['lesson_answers_response'];
-            for (var r in responses) {
-                if (self.params.answerid && self.params.answerid == r) { // Yes answer ids are the same as response ids ;-).
+                for (var a in answers) {
+                    // increment anum so that we can get the answer number.
+                    // Note, we can trust that this is correct because you can't order answers and the code in the lesson component
+                    // orders answers by id.
+                    var annotation = answers[a];
+
+                    var tmpArr = a.split('_');
+                    var pageId = tmpArr[0];
+                    var ansId = tmpArr[1];
+                    var anum = tmpArr[2];
+
+                    // Process answers when on lesson edit page.
+                    if (document.body.id === "page-mod-lesson-edit") {
+                        processAnswerResponse(pageId, anum, answerLabel, annotation);
+                    } else {
+                        // Wrap answers in labels.
+                        $('#page-mod-lesson-view label[for="id_answerid_' + ansId + '"]').attr('data-ally-richcontent', annotation);
+
+                        if (self.params.answerid && self.params.answerid == ansId) {
+                            $('.studentanswer tr:nth-of-type(1) > td div').attr('data-ally-richcontent', annotation);
+                        } else {
+                            var answerWrapperId = 'answer_wrapper_' + ansId;
+                            var answerEl = $('#id_answerid_' + ansId);
+                            if (answerEl.data('annotated') != 1) {
+                                // We only want to wrap this once.
+                                var contentEls = answerEl.nextAll();
+                                answerEl.parent('label').append('<span id="answer_wrapper_' + ansId + '"></span>');
+                                $('#' + answerWrapperId).append(contentEls);
+                            }
+                            answerEl.data('annotated', 1);
+                        }
+                        $('#answer_wrapper_' + a).attr('data-ally-richcontent', annotation);
+                    }
+                }
+
+                // Annotate answer responses.
+                var responses = mapping['lesson_answers_response'];
+                for (var r in responses) {
                     var annotation = responses[r];
-                    var responseWrapperId = 'response_wrapper_' + r;
-                    if (!$('.studentanswer tr.lastrow > td #' + responseWrapperId).length) {
-                        // We only want to wrap this once, hence above ! length check.
-                        var contentEls = $('.studentanswer tr.lastrow > td > br').nextAll();
-                        $('.studentanswer tr.lastrow > td > br').after('<span id="' + responseWrapperId + '"></span>');
-                        $('#' + responseWrapperId).append(contentEls);
+
+                    var tmpArr = r.split('_');
+                    var pageId = tmpArr[0];
+                    var respId = tmpArr[1];
+                    var rnum = tmpArr[2];
+
+                    if (document.body.id === "page-mod-lesson-edit") {
+                        processAnswerResponse(pageId, rnum, responseLabel, annotation);
+                    } else if (self.params.answerid && self.params.answerid == respId) {
+                        // Just incase you are wondering, yes answer ids ^ are the same as response ids ;-).
+                        var responseWrapperId = 'response_wrapper_' + respId;
+                        if (!$('.studentanswer tr.lastrow > td #' + responseWrapperId).length) {
+                            // We only want to wrap this once, hence above ! length check.
+                            var contentEls = $('.studentanswer tr.lastrow > td > br').nextAll();
+                            $('.studentanswer tr.lastrow > td > br').after('<span id="' + responseWrapperId + '"></span>');
+                            $('#' + responseWrapperId).append(contentEls);
+                        }
+
+                        $('#' + responseWrapperId).attr('data-ally-richcontent', annotation);
                     }
 
-                    $('#' + responseWrapperId).attr('data-ally-richcontent', annotation);
                 }
-
-            }
+            });
         };
 
         /**
@@ -722,8 +802,7 @@ function($, Templates, Ally, ImageCover, Util) {
             {
                 mapVar: ally_annotation_maps,
                 method: annotateHtmlBlock
-            }
-            ];
+            }];
 
             $(document).ready(function() {
                 var completed = 0;
@@ -758,20 +837,12 @@ function($, Templates, Ally, ImageCover, Util) {
         }, 1000);
 
         /**
-         * Init function.
+         * Initialise JS stage two.
          * @param jwt
          * @param {object} config
-         * @param {boolean} canViewFeedback
-         * @param {boolean} canDownload
-         * @param {int} courseId
-         * @param {object} general params
          */
-        this.init = function(jwt, config, canViewFeedback, canDownload, courseId, params) {
-            self.canViewFeedback = canViewFeedback;
-            self.canDownload = canDownload;
-            self.courseId = courseId;
-            self.params = params;
-            if (canViewFeedback || canDownload) {
+        this.initStageTwo = function(jwt, config) {
+            if (self.canViewFeedback || self.canDownload) {
                 debounceApplyPlaceHolders()
                     .done(function() {
                         ImageCover.init();
@@ -789,6 +860,58 @@ function($, Templates, Ally, ImageCover, Util) {
                     debounceApplyPlaceHolders();
                 });
             }
+        };
+
+        /**
+         * Init function.
+         * @param jwt
+         * @param {object} config
+         * @param {boolean} canViewFeedback
+         * @param {boolean} canDownload
+         * @param {int} courseId
+         * @param {object} general params
+         */
+        this.init = function(jwt, config, canViewFeedback, canDownload, courseId, params) {
+
+            self.canViewFeedback = canViewFeedback;
+            self.canDownload = canDownload;
+            self.courseId = courseId;
+            self.params = params;
+
+            var pluginJSURL = function(path) {
+                return M.cfg.wwwroot + "/pluginfile.php/" + M.cfg.contextid + "/filter_ally/" + path;
+            };
+
+            var polyfills = {};
+            if (!document.evaluate) {
+                polyfills['filter_ally/wgxpath'] = pluginJSURL("vendorjs/wgxpath.install");
+            }
+            if (typeof(URLSearchParams) === 'undefined') {
+                polyfills['filter_ally/urlsearchparams'] = [
+                    'https://cdnjs.cloudflare.com/ajax/libs/url-search-params/1.1.0/url-search-params.amd.js',
+                    pluginJSURL('vendorjs/url-search-params.amd') // CDN fallback.
+                ];
+            }
+            if (polyfills !== {}) {
+                // Polyfill document.evaluate.
+                require.config(
+                    {
+                        enforceDefine: false,
+                        paths: polyfills
+                    }
+                );
+                var requires = Object.keys(polyfills);
+
+                require(requires, function() {
+                    if (typeof(URLSearchParams) === 'undefined') {
+                        window.URLSearchParams = arguments[1]; // second arg in require (which is URLSearchParams)
+                    }
+                    self.initStageTwo(jwt, config);
+                });
+
+                return;
+            }
+            self.initStageTwo(jwt, config);
         };
     };
 });
