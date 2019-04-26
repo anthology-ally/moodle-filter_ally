@@ -77,6 +77,9 @@ function($, Templates, Ally, ImageCover, Util) {
             var c = 0;
 
             var length = $(selector).length;
+            if (!length) {
+                dfd.resolve();
+            }
             $(selector).each(function() {
 
                 /**
@@ -252,12 +255,16 @@ function($, Templates, Ally, ImageCover, Util) {
          */
         var placeHoldLessonGeneral = function(map, selectorPrefix) {
             var dfd = $.Deferred();
-            for (var c in map) {
-                var path = urlEncodeFilePath(c);
-                var sel = selectorPrefix + 'img[src*="'+path+'"], ' + selectorPrefix + 'a[href*="'+path+'"]';
-                placeHoldSelector(sel, map).done(function() {
-                    dfd.resolve();
-                });
+            if (map.length === 0) {
+                dfd.resolve();
+            } else {
+                for (var c in map) {
+                    var path = urlEncodeFilePath(c);
+                    var sel = selectorPrefix + 'img[src*="' + path + '"], ' + selectorPrefix + 'a[href*="' + path + '"]';
+                    placeHoldSelector(sel, map).done(function() {
+                        dfd.resolve();
+                    });
+                }
             }
             return dfd.promise();
         };
