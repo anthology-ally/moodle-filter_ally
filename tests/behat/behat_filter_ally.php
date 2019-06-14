@@ -270,7 +270,10 @@ class behat_filter_ally extends behat_base {
         $course = $this->get_current_course();
         $context = context_course::instance($course->id);
         $bm = $this->get_block_manager(['side-pre'], $context);
-        $bm->add_block('html', 'side-pre', 1, true, 'course-view-*'); // Wow - doesn't return anything useful like say, erm, the block id!
+
+        // Wow - the following doesn't return anything useful like say, erm, the block id!
+        $bm->add_block('html', 'side-pre', 1, true, 'course-view-*');
+
         $blocks = $DB->get_records('block_instances', [], 'id DESC', 'id', 0, 1);
         if (empty($blocks)) {
             throw new coding_exception('Created a block but block instances empty!');
