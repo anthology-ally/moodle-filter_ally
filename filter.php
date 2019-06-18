@@ -188,7 +188,7 @@ class filter_ally extends moodle_text_filter {
      * @throws moodle_exception
      */
     protected function map_folder_file_paths_to_pathhash() {
-        global $PAGE;
+        global $PAGE, $DB, $COURSE;
         $map = [];
 
         if ($PAGE->pagetype === 'mod-folder-view') {
@@ -200,18 +200,13 @@ class filter_ally extends moodle_text_filter {
             unset($course);
             /** @var cm_info $cm */
             $cm;
-            $fs = get_file_storage();
-            $files = $fs->get_area_files($cm->context->id, 'mod_folder', 'content');
-            foreach ($files as $file) {
-                if ($file->is_directory()) {
-                    continue;
-                }
-                $fullpath = $cm->context->id.'/mod_folder/content/'.
-                    $file->get_itemid().'/'.
-                    $file->get_filepath().
-                    $file->get_filename();
-                $fullpath = str_replace('//', '/', $fullpath);
-                $map[$fullpath] = $file->get_pathnamehash();
+            $map = $this->get_cm_file_map($cm, 'mod_folder', 'content');
+        } else if ((stripos($PAGE->pagetype, 'course-view') === 0) || $PAGE->pagetype === 'site-index') {
+            $folders = $DB->get_records('folder', ['course' => $COURSE->id]);
+            $map = [];
+            foreach ($folders as $folder) {
+                list ($course, $cm) = get_course_and_cm_from_instance($folder->id, 'folder');
+                $map = array_merge($map, $this->get_cm_file_map($cm, 'mod_folder', 'content'));
             }
         }
 
