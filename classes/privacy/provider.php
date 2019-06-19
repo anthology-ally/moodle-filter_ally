@@ -26,7 +26,9 @@ namespace filter_ally\privacy;
 
 use core_privacy\local\metadata\collection;
 use core_privacy\local\request\approved_contextlist;
+use core_privacy\local\request\approved_userlist;
 use core_privacy\local\request\contextlist;
+use core_privacy\local\request\userlist;
 
 defined('MOODLE_INTERNAL') || die();
 
@@ -36,7 +38,9 @@ defined('MOODLE_INTERNAL') || die();
  * @copyright Copyright (c) 2018 Blackboard Inc. (http://www.blackboard.com)
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements \core_privacy\local\metadata\provider, \core_privacy\local\request\plugin\provider {
+class provider implements \core_privacy\local\metadata\provider,
+    \core_privacy\local\request\plugin\provider,
+    \core_privacy\local\request\core_userlist_provider {
     use \core_privacy\local\legacy_polyfill;
 
     public static function _get_metadata(collection $collection) {
@@ -61,5 +65,11 @@ class provider implements \core_privacy\local\metadata\provider, \core_privacy\l
     }
 
     public static function _delete_data_for_user(approved_contextlist $contextlist) {
+    }
+
+    public static function get_users_in_context(userlist $userlist) {
+    }
+
+    public static function delete_data_for_users(approved_userlist $userlist) {
     }
 }
