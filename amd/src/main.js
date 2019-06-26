@@ -81,12 +81,15 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
 
             Templates.render('filter_ally/wrapper', data)
                 .done(function(result) {
-                    $(targetEl).after(result);
-                    // We are inserting the module element next to the target as opposed to replacing the
-                    // target as we want to ensure any listeners attributed to the module element persist.
-                    $('#content-target-' + pathHash).after(targetEl);
-                    $('#content-target-' + pathHash).remove();
+                    var presentWrappers = $(targetEl).next().find('span[data-file-id="'+ pathHash +'"]');
+                    if (presentWrappers.length == 0) {
+                        $(targetEl).after(result);
 
+                        // We are inserting the module element next to the target as opposed to replacing the
+                        // target as we want to ensure any listeners attributed to the module element persist.
+                        $('#content-target-' + pathHash).after(targetEl);
+                        $('#content-target-' + pathHash).remove();
+                    }
                     dfd.resolve();
                 });
 
