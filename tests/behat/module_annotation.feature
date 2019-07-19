@@ -84,22 +84,4 @@ Feature: When the ally filter is enabled ally annotations are inserted when appr
     And I open the book module
     Then the current book chapter is annotated
 
-  @javascript @wip
-  Scenario: Lesson pages are annotated.
-    And I skip because "This seems to be working but it is breaking the build, coverage is found in lesson_annotation feature file"
-    Given I log in as "teacher1"
-    And I am on "Course 1" course homepage
-    And I create a lesson with html content "<p>Some content</p>" in section 1
-    And I add 1 true false pages to lesson "test lesson"
-    And I reload the page
-    And I open the lesson module
-    Then the current lesson page is annotated
-    And the true false questions for lesson "test lesson" are annotated
-    And I log out
-    And I log in as "student1"
-    And I am on "Course 1" course homepage
-    And I open the lesson module
-    Then the current lesson page is annotated
-    And the true false questions for lesson "test lesson" are annotated
-
 
