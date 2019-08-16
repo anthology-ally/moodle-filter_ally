@@ -746,7 +746,11 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
             var items = mapping.block_html;
             for (var i in items) {
                 var ident = items[i];
-                var selector = '#inst' + i + '.block_html > .card-body > .card-text > .no-overflow';
+                var selectors = [
+                    '#inst' + i + '.block_html > .card-body > .card-text > .no-overflow',
+                    '#inst' + i + '.block_html > .content > .no-overflow'
+                ];
+                var selector = selectors.join(',');
                 $(selector).attr('data-ally-richcontent', ident);
             }
             dfd.resolve();

@@ -1053,13 +1053,24 @@ XPATH;
      */
     public function html_block_with_title_is_annotated($title) {
         $this->wait_for_pending_js();
-        $selector = <<<XPATH
+        $selectors = [];
+        // Boost theme selector.
+        $selectors[] = <<<XPATH
             //section[contains(@class, 'block_html')]
             //div//h5[contains(text(), '$title')]
             /ancestor::section[contains(@class, 'block_html')]
             //div[contains(@class, 'card-text')]
             //div[@data-ally-richcontent]
 XPATH;
+        // Clean theme selector
+        $selectors[] = <<<XPATH
+            //div//h2[contains(@id, 'instance')][contains(text(), '$title')]
+            /ancestor::div[contains(@class, 'block_html')]
+            //div[contains(@class, 'content')]
+            //div[@data-ally-richcontent]
+XPATH;
+
+        $selector = implode('|', $selectors);
         $node = $this->find('xpath', $selector);
         if (empty($node)) {
             throw new ExpectationException(
