@@ -39,8 +39,10 @@ Feature: When the ally filter is enabled ally annotations are inserted when appr
       | teacher1 | C1     | teacher        |
 
   @javascript
-  Scenario: Block html is annotated and following HTML content URL for annotation works.
-    Given I log in as "admin"
+  Scenario Outline: Block html is annotated and following HTML content URL for annotation works.
+    Given the following config values are set as admin:
+      | theme | <theme> |
+    And I log in as "admin"
     And I am on "Course 1" course homepage
     And I add a html block with title "Some block" and content "<p>Some content</p>"
     When I reload the page
@@ -52,3 +54,9 @@ Feature: When the ally filter is enabled ally annotations are inserted when appr
     And I am on "Course 1" course homepage
     And I wait until the page is ready
     And html block with title "Some block" is annotated
+
+  Examples:
+  | theme |
+  | clean |
+  | boost |
+  # Note - we could test for snap here too but if we did that it'd break the tests on non standard moodle installs.
