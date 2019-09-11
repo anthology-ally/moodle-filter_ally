@@ -1062,7 +1062,7 @@ XPATH;
             //div[contains(@class, 'card-text')]
             //div[@data-ally-richcontent]
 XPATH;
-        // Clean theme selector
+        // Clean theme selector.
         $selectors[] = <<<XPATH
             //div//h2[contains(@id, 'instance')][contains(text(), '$title')]
             /ancestor::div[contains(@class, 'block_html')]
