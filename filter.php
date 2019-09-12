@@ -132,7 +132,7 @@ class filter_ally extends moodle_text_filter {
         } else if (in_array($PAGE->pagetype, ['mod-forum-view', 'mod-forum-discuss'])) {
             $cmid = optional_param('id', false, PARAM_INT);
             if ($cmid) {
-                list($course, $cm) = get_course_and_cm_from_cmid($cmid);
+                list($course, $cm) = get_course_and_cm_from_cmid($cmid, 'forum', $COURSE);
                 unset($course);
             } else {
                 $forumid = optional_param('forum', false, PARAM_INT);
@@ -165,7 +165,7 @@ class filter_ally extends moodle_text_filter {
      * @throws moodle_exception
      */
     protected function map_assignment_file_paths_to_pathhash() {
-        global $PAGE;
+        global $PAGE, $COURSE;
         $map = [];
 
         if ($PAGE->pagetype === 'mod-assign-view') {
@@ -173,7 +173,7 @@ class filter_ally extends moodle_text_filter {
             if ($cmid === false) {
                 return $map;
             }
-            list($course, $cm) = get_course_and_cm_from_cmid($cmid);
+            list($course, $cm) = get_course_and_cm_from_cmid($cmid, 'assign', $COURSE);
             unset($course);
             $map = $this->get_cm_file_map($cm, 'mod_assign', 'introattachment');
         }
@@ -196,7 +196,7 @@ class filter_ally extends moodle_text_filter {
             if ($cmid === false) {
                 return $map;
             }
-            list($course, $cm) = get_course_and_cm_from_cmid($cmid);
+            list($course, $cm) = get_course_and_cm_from_cmid($cmid, 'folder', $COURSE);
             unset($course);
             /** @var cm_info $cm */
             $cm;
@@ -220,7 +220,7 @@ class filter_ally extends moodle_text_filter {
      * @throws moodle_exception
      */
     protected function map_glossary_file_paths_to_pathhash() {
-        global $PAGE;
+        global $PAGE, $COURSE;
         $map = [];
 
         if ($PAGE->pagetype === 'mod-glossary-view') {
@@ -228,7 +228,7 @@ class filter_ally extends moodle_text_filter {
             if ($cmid === false) {
                 return $map;
             }
-            list($course, $cm) = get_course_and_cm_from_cmid($cmid);
+            list($course, $cm) = get_course_and_cm_from_cmid($cmid, 'glossary', $COURSE);
             unset($course);
             $map = $this->get_cm_file_map($cm, 'mod_glossary', 'attachment');
         }
@@ -308,7 +308,7 @@ class filter_ally extends moodle_text_filter {
      * @throws moodle_exception
      */
     protected function map_lesson_file_paths_to_pathhash() {
-        global $PAGE;
+        global $PAGE, $COURSE;
         $map = [];
 
         if ($PAGE->pagetype === 'mod-lesson-view' || $PAGE->pagetype === 'mod-lesson-continue') {
@@ -316,7 +316,7 @@ class filter_ally extends moodle_text_filter {
             if ($cmid === false) {
                 return $map;
             }
-            list($course, $cm) = get_course_and_cm_from_cmid($cmid);
+            list($course, $cm) = get_course_and_cm_from_cmid($cmid, 'lesson', $COURSE);
             unset($course);
             $map['page_contents'] = $this->get_cm_file_map($cm, 'mod_lesson', 'page_contents');
             $map['page_answers'] = $this->get_cm_file_map($cm, 'mod_lesson', 'page_answers');
@@ -355,7 +355,7 @@ class filter_ally extends moodle_text_filter {
      * @throws moodle_exception
      */
     private function get_mod_lesson_params() {
-        global $DB;
+        global $DB, $COURSE;
 
         $params = new stdClass;
 
@@ -363,7 +363,7 @@ class filter_ally extends moodle_text_filter {
         if ($pageid === null) {
             $cmid = optional_param('id', null, PARAM_INT);
             if ($cmid) {
-                list ($course, $cm) = get_course_and_cm_from_cmid($cmid);
+                list ($course, $cm) = get_course_and_cm_from_cmid($cmid, 'lesson', $COURSE);
                 $lessonid = $cm->instance;
                 // Get first page id for lesson.
                 $sql = 'SELECT min(id) FROM {lesson_pages} WHERE lessonid = ?';
@@ -382,7 +382,7 @@ class filter_ally extends moodle_text_filter {
      * @throws coding_exception
      */
     private function get_mod_book_params() {
-        global $DB, $PAGE;
+        global $DB, $COURSE;
 
         $params = new stdClass;
 
@@ -394,7 +394,8 @@ class filter_ally extends moodle_text_filter {
             }
             if ($cmid) {
                 try {
-                    list ($course, $cm) = get_course_and_cm_from_cmid($cmid);
+                    list ($course, $cm) = get_course_and_cm_from_cmid($cmid, 'book', $COURSE);
+                    unset($course);
                     $bookid = $cm->instance;
                     // Get first chapter id for book.
                     $sql = 'SELECT min(id) FROM {book_chapters} WHERE bookid = ?';
