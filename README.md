@@ -54,12 +54,12 @@ The download icon allows students to download accessible versions.
 When clicked, a modal appears where a student can select the alternative version they wish to download.
 
 ## Uninstall
-Remove all the tool_ally, filter_ally and report_allylti plugins from the code.
- 
-Then you must go to:
- [yourmoodledir]/admin/plugins.php#plugin_type_cell_tool
- 
-Search for the removed plugins and click on uninstall.
+1. Remove the `tool_ally`, `filter_ally` and `report_allylti` plugins from the Moodle folder:
+   * [yourmoodledir]/admin/tool/ally
+   * [yourmoodledir]/filter/ally
+   * [yourmoodledir]/report/allylti
+2. Access the plugin uninstall page: Site Administration > Plugins > Plugins overview
+3. Look for the removed plugins and click on uninstall for each plugin. 
 
 ## License for Ally filter
 
