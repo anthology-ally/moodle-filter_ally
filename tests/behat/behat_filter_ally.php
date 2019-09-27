@@ -101,33 +101,24 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
-     * @Given /^I create a label with fixture images "(?P<images_string>[^"]*)"$/
-     * @param string $images (csv)
+     * Add a set of fixture images to the text of a component.
+     * @param $text
+     * @param array $images
+     * @param $component
+     * @param $filearea
+     * @param $contextid
+     * @return string
+     * @throws coding_exception
+     * @throws file_exception
+     * @throws stored_file_creation_exception
      */
-    public function i_create_label_with_sample_images($images) {
-        global $CFG, $DB;
-
-        $gen = testing_util::get_data_generator();
+    private function add_fixture_images_to_text($text, array $images, $component, $filearea, $contextid) {
+        global $CFG;
 
         $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
-        $images = explode(',', $images);
-
-        $labeltext = '<h2>A test label</h2>';
-
-        $voidtype = '/>';
-
-        $course = $this->get_current_course();
-
-        $data = (object) [
-            'course' => $course->id,
-            'name' => 'test label',
-            'intro' => 'pre file inserts',
-            'introformat' => FORMAT_HTML
-        ];
-
-        $label = $gen->create_module('label', $data);
 
         $i = 0;
+        $voidtype = '>';
         foreach ($images as $image) {
             $image = trim($image);
             $i ++;
@@ -139,16 +130,42 @@ class behat_filter_ally extends behat_base {
             }
 
             // Add actual file there.
-            $filerecord = ['component' => 'mod_label', 'filearea' => 'intro',
-                'contextid' => context_module::instance($label->cmid)->id, 'itemid' => 0,
+            $filerecord = ['component' => $component, 'filearea' => $filearea,
+                'contextid' => $contextid, 'itemid' => 0,
                 'filename' => $image, 'filepath' => '/'];
             $fs = get_file_storage();
             $fs->create_file_from_pathname($filerecord, $fixturepath);
             $path = '@@PLUGINFILE@@/' . $image;
-            $labeltext .= 'Some text before the image';
-            $labeltext .= '<img src="' . $path . '" alt="test file ' . $i . '" ' . $voidtype;
-            $labeltext .= 'Some text after the image';
+            $text .= 'Some text before the image';
+            $text .= '<img src="' . $path . '" alt="test file ' . $i . '" ' . $voidtype;
+            $text .= 'Some text after the image';
         }
+        return $text;
+    }
+
+    /**
+     * @Given /^I create a label with fixture images "(?P<images_string>[^"]*)"$/
+     * @param string $images (csv)
+     */
+    public function i_create_label_with_sample_images($images) {
+        global $DB;
+
+        $gen = testing_util::get_data_generator();
+        $images = explode(',', $images);
+        $labeltext = '<h2>A test label</h2>';
+
+        $course = $this->get_current_course();
+
+        $data = (object) [
+            'course' => $course->id,
+            'name' => 'test label',
+            'intro' => 'pre file inserts',
+            'introformat' => FORMAT_HTML
+        ];
+
+        $label = $gen->create_module('label', $data);
+        $contextid = context_module::instance($label->cmid)->id;
+        $labeltext = $this->add_fixture_images_to_text($labeltext, $images, 'mod_label', 'intro', $contextid);
 
         $label = $DB->get_record('label', ['id' => $label->id]);
         $label->intro = $labeltext;
@@ -260,11 +277,14 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
-     * @Given I add a html block with title :title and content :content
-     * @param string $title
-     * @param string $content
+     * @param $title
+     * @param $content
+     * @throws ExpectationException
+     * @throws coding_exception
+     * @throws dml_exception
+     * @return stdClass
      */
-    public function i_add_a_html_block_with_content($title, $content) {
+    private function add_html_block($title, $content) {
         global $DB;
         // Note - we are not going to use behat_blocks::i_add_the_block because we don't want to test
         // fhe block UI, we just want to add a block!
@@ -285,6 +305,37 @@ class behat_filter_ally extends behat_base {
             'format' => FORMAT_HTML,
             'text' => $content
         ];
+        $block->configdata = base64_encode(serialize($blockconfig));
+        $DB->update_record('block_instances', $block);
+        return $block;
+    }
+
+    /**
+     * @Given I add a html block with title :title and content :content
+     * @param string $title
+     * @param string $content
+     */
+    public function i_add_a_html_block_with_content($title, $content) {
+        $this->add_html_block($title, $content);
+    }
+
+    /**
+     * @Given I add a html block with title ":title" with fixture images ":images"
+     * @param string $title
+     * @param string $content
+     */
+    public function i_add_a_html_block_with_fixture_images($title, $images) {
+        global $DB;
+
+        $block = $this->add_html_block($title, '');
+        $images = explode(',', $images);
+
+        $blockconfig = unserialize(base64_decode($block->configdata));
+        $blocktext = $blockconfig->text;
+        $contextid = context_block::instance($block->id)->id;
+        $blocktext = $this->add_fixture_images_to_text($blocktext, $images, 'block_html', 'content', $contextid);
+
+        $blockconfig->text = $blocktext;
         $block->configdata = base64_encode(serialize($blockconfig));
         $DB->update_record('block_instances', $block);
     }

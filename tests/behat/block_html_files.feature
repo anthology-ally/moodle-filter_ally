@@ -17,12 +17,12 @@
 #
 # @package    filter_ally
 # @author     Guy Thomas
-# @copyright  Copyright (c) 2018 Blackboard Inc.
+# @copyright  Copyright (c) 2019 Blackboard Inc.
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 
 @filter @filter_ally
-Feature: When the ally filter is enabled ally annotations are inserted when appropriate into block_html content.
+Feature: When the ally filter is enabled files inside blockhtml are wrapped and have place hodlers for ally icons.
 
   Background:
     Given the ally filter is enabled
@@ -39,24 +39,32 @@ Feature: When the ally filter is enabled ally annotations are inserted when appr
       | teacher1 | C1     | teacher        |
 
   @javascript
-  Scenario Outline: Block html is annotated and following HTML content URL for annotation works.
+  Scenario Outline: Block html is wrapped and has appropriate placeholders.
     Given the following config values are set as admin:
       | theme | <theme> |
-    And I log in as "admin"
+    And I log in as "teacher1"
     And I am on "Course 1" course homepage
-    And I add a html block with title "Some block" and content "<p>Some content</p>"
+    And I add a html block with title "Some block" with fixture images "bpd_bikes_640px.jpg, testgif_small.gif, testpng_small.png"
     When I reload the page
-    And I should see "Some content"
     And I wait until the page is ready
-    And html block with title "Some block" is annotated
+    Then I should see the feedback place holder for the "1st" image
+    And I should see the feedback place holder for the "2nd" image
+    And I should see the feedback place holder for the "3rd" image
+    And the ally image cover area should exist for the "1st" image
+    And the ally image cover area should exist for the "2nd" image
+    And the ally image cover area should exist for the "3rd" image
     And I log out
     And I log in as "student1"
     And I am on "Course 1" course homepage
-    And I wait until the page is ready
-    And html block with title "Some block" is annotated
+    Then I should not see the feedback place holder for the "1st" image
+    And I should not see the feedback place holder for the "2nd" image
+    And I should not see the feedback place holder for the "3rd" image
+    And the ally image cover area should exist for the "1st" image
+    And the ally image cover area should exist for the "2nd" image
+    And the ally image cover area should exist for the "3rd" image
 
   Examples:
-  | theme   |
+  | theme |
+  | boost |
   | classic |
-  | boost   |
   # Note - we could test for snap here too but if we did that it'd break the tests on non standard moodle installs.
