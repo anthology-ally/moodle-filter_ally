@@ -530,7 +530,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
 
         /**
          * Add annotations to book.
-         * @param array mapping
+         * @param {array} mapping
          */
         var annotateBook = function(mapping) {
             var intros = mapping['intros'];
@@ -541,26 +541,25 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 ['li.snap-native.modtype_book#module-{{i}} .contentafterlink > .summary-text .no-overflow']);
 
             // Annotate content.
-            var content = mapping['chapters'];
+            var content = mapping['chapters'], chapterId;
 
             if (self.params.chapterid) {
                 chapterId = self.params.chapterid;
             } else {
                 var urlParams = new URLSearchParams(window.location.search);
-                var chapterId = urlParams.get('chapterid');
+                chapterId = urlParams.get('chapterid');
             }
 
-            for (var ch in content) {
+            $.each(content, function(ch, annotation) {
                 if (chapterId != ch) {
-                    continue;
+                    return;
                 }
-                var annotation = content[ch];
                 var selectors = [
                     '#page-mod-book-view #region-main .box.generalbox.book_content > .no-overflow',
                     'li.snap-native.modtype_page#module-' + ch + ' .pagemod-content'
                 ];
                 $(selectors.join(',')).attr('data-ally-richcontent', annotation);
-            }
+            });
         };
 
         /**
