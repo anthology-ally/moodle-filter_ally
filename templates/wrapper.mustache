@@ -41,7 +41,7 @@
 <span class="filter-ally-wrapper ally-image-wrapper">
     {{{html}}}
     <span class="ally-image-cover" data-file-id="{{fileid}}"></span>
-    <span class="ally-actions">
+    <span class="ally-actions" aria-hidden="true">
         {{#canviewfeedback}}
             <span class="ally-feedback" data-file-id="{{fileid}}" data-file-url="{{url}}"></span>
         {{/canviewfeedback}}
@@ -51,7 +51,7 @@
 {{^isimage}}
 <span class="filter-ally-wrapper ally-anchor-wrapper">
     {{{html}}}
-    <span class="ally-actions">
+    <span class="ally-actions" aria-hidden="true">
         {{#canviewfeedback}}
         <span class="ally-feedback" data-file-id="{{fileid}}" data-file-url="{{url}}"></span>
         {{/canviewfeedback}}
