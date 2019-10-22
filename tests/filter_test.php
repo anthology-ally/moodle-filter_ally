@@ -101,7 +101,6 @@ class filter_ally_testcase extends advanced_testcase {
         $this->assertEmpty($map);
 
         $PAGE->set_pagetype('mod-assign-view');
-        $PAGE->set_course($course);
         $_GET['id'] = $assign->cmid;
         $map = phpunit_util::call_internal_method(
             $this->filter, 'map_assignment_file_paths_to_pathhash', [], 'filter_ally'
@@ -156,7 +155,6 @@ class filter_ally_testcase extends advanced_testcase {
         $this->assertEmpty($map);
 
         $PAGE->set_pagetype('mod-folder-view');
-        $PAGE->set_course($course);
         $_GET['id'] = $assign->cmid;
         $map = phpunit_util::call_internal_method(
             $this->filter, 'map_folder_file_paths_to_pathhash', [], 'filter_ally'
