@@ -28,6 +28,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
 
   @javascript
   Scenario Outline: Forum attachments are processed appropriately.
+    Given I skip because "Ally decorator is not present"
     Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
@@ -114,6 +115,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
 
   @javascript
   Scenario Outline: Social format attachments are processed appropriately.
+    Given I skip because "Ally decorator is not present"
     Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | social |
