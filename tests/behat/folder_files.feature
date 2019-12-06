@@ -19,7 +19,7 @@
 # @copyright  Copyright (c) 2017 Blackboard Inc.
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-@filter @filter_ally
+@filter @filter_ally @_file_upload
 Feature: When the ally filter is enabled ally place holders are inserted when appropriate for files in mod folder.
 
   Background:
