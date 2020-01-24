@@ -56,7 +56,7 @@ Feature: When the ally filter is enabled ally annotations are inserted when appr
     And html block with title "Some block" is annotated
 
   Examples:
-  | theme |
-  | clean |
-  | boost |
+  | theme   |
+  | classic |
+  | boost   |
   # Note - we could test for snap here too but if we did that it'd break the tests on non standard moodle installs.
