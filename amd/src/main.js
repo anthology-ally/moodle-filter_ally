@@ -413,7 +413,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 var ident = buildContentIdent('course', 'course_sections', 'summary', sectionId);
 
                 var selectors = [
-                    '#' + s + ' > .content > div[class*="summary"] > .no-overflow',
+                    '#' + s + ' > .content div[class*="summary"] > .no-overflow',
                     'body.theme-snap #' + s + ' > .content > .summary > div > .no-overflow' // Snap.
                 ];
 
