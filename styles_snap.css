@@ -37,3 +37,7 @@
         margin: 0.3em 0;
     }
 }
+
+.filter-ally-wrapper .ally-actions.ally-actions-tile .ally-feedback {
+    margin-bottom: 0!important;
+}
