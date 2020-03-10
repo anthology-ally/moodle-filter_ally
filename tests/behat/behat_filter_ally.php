@@ -533,9 +533,10 @@ XPATH;
      * @return bool
      */
     protected function is_node_visible(NodeElement $node,
-                                       $timeout = self::EXTENDED_TIMEOUT,
+                                       $timeout = null,
                                        ExpectationException $exception = null) {
 
+        $timeout = $timeout == null ? behat_base::get_extended_timeout() : $timeout;
         // If an exception isn't specified then don't throw an error if visibility can't be evaluated.
         $dontthrowerror = empty($exception);
 
@@ -581,7 +582,7 @@ XPATH;
         }
 
         // See if the first node is visible and if so click it.
-        if ($this->is_node_visible($linknode, self::REDUCED_TIMEOUT)) {
+        if ($this->is_node_visible($linknode, behat_base::get_reduced_timeout())) {
             $linknode->click();
             return;
         }
