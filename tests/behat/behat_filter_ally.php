@@ -436,11 +436,15 @@ XPATH;
         $exception = new ExpectationException('Annotation not found', $this->getSession()->getDriver());
         $microsleep = false;
 
+        $annotationids = [
+            'book:book:intro',
+            'book:book_chapters:content',
+        ];
         return $this->spin(
-            function($context, $args) {
+            function($context, $args) use ($annotationids) {
                 $node = $args['node'];
                 $annotation = $node->getAttribute('data-ally-richcontent');
-                return strpos($annotation, 'book:book_chapter') !== false;
+                return preg_match('(' . implode('|', $annotationids) . ')', $annotation) === 1;
             },
             $params,
             $timeout,
