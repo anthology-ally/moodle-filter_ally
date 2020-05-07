@@ -60,6 +60,14 @@ define(['jquery', 'filter_ally/util'], function($, Util) {
 
         this.init = function() {
             $(document).ready(applySizing);
+            var targetNode = document;
+            var observerOptions = {
+                childList: true,
+                attributes: true,
+                subtree: true
+            };
+            var observer = new MutationObserver(applySizing);
+            observer.observe(targetNode, observerOptions);
         };
     };
 });
