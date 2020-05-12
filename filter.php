@@ -205,6 +205,9 @@ class filter_ally extends moodle_text_filter {
             $folders = $DB->get_records('folder', ['course' => $COURSE->id]);
             $map = [];
             foreach ($folders as $folder) {
+                if (empty($folder->name)) {
+                    continue;
+                }
                 list ($course, $cm) = get_course_and_cm_from_instance($folder->id, 'folder');
                 $map = array_merge($map, $this->get_cm_file_map($cm, 'mod_folder', 'content'));
             }
