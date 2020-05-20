@@ -66,8 +66,17 @@ define(['jquery', 'filter_ally/util'], function($, Util) {
                 attributes: true,
                 subtree: true
             };
-            var observer = new MutationObserver(applySizing);
-            observer.observe(targetNode, observerOptions);
+            /**
+             *  By using the an event combined with a mutation observer that disconnects itself,
+             *  we can manage to have a mutation observer that works after page content lazy loaded by loaded in snap.
+            * */
+            $(document).on('snap-course-content-loaded', function() {
+                var observer = new MutationObserver(() => {
+                    applySizing();
+                    observer.disconnect();
+                });
+                observer.observe(targetNode, observerOptions);
+            });
         };
     };
 });
