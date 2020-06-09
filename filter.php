@@ -855,7 +855,8 @@ EOF;
      */
     public static function start_annotating($courseid) {
         if (self::is_annotating($courseid)) {
-            throw new coding_exception('Can\'t start annotating this course. Ally filter is already annotating course with id: ' . $courseid);
+            throw new coding_exception('Can\'t start annotating this course.'
+                    . ' Ally filter is already annotating course with id: ' . $courseid);
         }
         self::$isannotating[$courseid] = true;
     }
@@ -865,7 +866,8 @@ EOF;
      */
     public static function end_annotating($courseid) {
         if (!self::is_annotating($courseid)) {
-            throw new coding_exception('Can\'t end annotating this course. Ally filter was not annotating course with id: ' . $courseid);
+            throw new coding_exception('Can\'t end annotating this course.'
+                . ' Ally filter was not annotating course with id: ' . $courseid);
         }
         unset(self::$isannotating[$courseid]);
     }
