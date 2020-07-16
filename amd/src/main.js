@@ -191,7 +191,8 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
          */
         var placeHoldForumModule = function(forumFileMapping) {
             var dfd = $.Deferred();
-            placeHoldSelector('.forumpost .attachedimages img[src*="pluginfile.php"]', forumFileMapping)
+            placeHoldSelector('.forumpost .attachedimages img[src*="pluginfile.php"], ' +
+                '.forumpost .body-content-container a[href*="pluginfile.php"]', forumFileMapping)
                 .done(function(){
                     dfd.resolve();
                 });
