@@ -793,11 +793,11 @@ EOF;
         $fs = get_file_storage();
         $fs->create_file_from_string($filerecord, 'Test content');
 
-        // Should still be empty when a non image file has been added (only image files are mapped).
+        // Add an file.
         $map = phpunit_util::call_internal_method(
             $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], 'filter_ally'
         );
-        $this->assertEmpty($map);
+        $this->assertNotEmpty($map);
 
         // Add an image file.
         $testfile = 'testpng_small.png';
