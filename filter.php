@@ -259,9 +259,14 @@ class filter_ally extends moodle_text_filter {
         $contextsbymoduleid = [];
         $moduleidsbycontext = [];
         foreach ($modules as $modid => $module) {
-            if ($module->uservisible) {
-                $contextsbymoduleid[$module->id] = $module->context->id;
-                $moduleidsbycontext[$module->context->id] = $module->id;
+            try {
+                if ($module->uservisible) {
+                    $contextsbymoduleid[$module->id] = $module->context->id;
+                    $moduleidsbycontext[$module->context->id] = $module->id;
+                }
+            } catch (\Exception $ex) {
+                $context = ['_exception' => $ex];
+                logger::get()->error('logger:cmvisibilityresolutionfailure', $context);
             }
         }
 
