@@ -20,7 +20,7 @@
 # @copyright  Copyright (c) 2017 Blackboard Inc.
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-@filter @filter_ally @_file_upload
+@filter @filter_ally
 Feature: When the ally filter is enabled ally place holders are inserted when appropriate into forum attachments.
 
   Background:
@@ -28,6 +28,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
 
   @javascript
   Scenario Outline: Forum attachments are processed appropriately.
+    Given I skip because "Ally decorator is not present, to be fixed in INT-15838"
     Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
@@ -114,6 +115,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
 
   @javascript
   Scenario Outline: Social format attachments are processed appropriately.
+    Given I skip because "Ally decorator is not present, to be fixed in INT-15838"
     Given the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | social |

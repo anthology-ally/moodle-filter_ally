@@ -157,7 +157,7 @@ class filter_ally extends moodle_text_filter {
         }
 
         if (!empty($cm)) {
-            $map = $this->get_cm_file_map($cm, 'mod_forum', 'attachment');
+            $map = $this->get_cm_file_map($cm, 'mod_forum', 'attachment', 'image%');
         }
 
         return $map;
