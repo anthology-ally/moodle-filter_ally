@@ -857,16 +857,18 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                         try {
                             var selector = $('.foldertree > .filemanager');
                             var targetNode = selector[0];
-                            var observerConfig = { attributes: true, childList: true, subtree: true };
-                            var callback = function(mutationsList) {
-                                mutationsList.filter( function (mutation) {
-                                    return mutation.type === 'childList';
-                                }).forEach( function () {
-                                    placeHoldFolderModule(ally_module_maps.folder_files);
-                                });
-                            };
-                            var observer = new MutationObserver(callback);
-                            observer.observe(targetNode, observerConfig);
+                            if (targetNode) {
+                                var observerConfig = { attributes: true, childList: true, subtree: true };
+                                var callback = function(mutationsList) {
+                                    mutationsList.filter( function (mutation) {
+                                        return mutation.type === 'childList';
+                                    }).forEach( function () {
+                                        placeHoldFolderModule(ally_module_maps.folder_files);
+                                    });
+                                };
+                                var observer = new MutationObserver(callback);
+                                observer.observe(targetNode, observerConfig);
+                            }
                         } catch (error) {
                             setInterval(function() {
                                 placeHoldFolderModule(ally_module_maps.folder_files);
