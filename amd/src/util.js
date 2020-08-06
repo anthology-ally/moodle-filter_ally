@@ -38,15 +38,35 @@ define(['jquery'], function($) {
             var dfd = $.Deferred();
             var i = 0;
 
-            setInterval(function() {
-                i = !i ? 0 : i + 1;
+            // Maintains a handle to the interval timer, so it can be cleaned up when the element is removed.
+            var intervalHandle = null;
+
+            /*!
+             * The function that will be used to try the evaluation repeatedly.
+             */
+            var loop = function() {
+                i++;
                 if (i > maxIterations) {
                     dfd.reject();
+                    if (intervalHandle) {
+                        // Cleanup the interval.
+                        clearInterval(intervalHandle);
+                        intervalHandle = null;
+                    }
+                    return;
                 }
                 if (evaluateFunction()) {
                     dfd.resolve();
+                    if (intervalHandle) {
+                        // Cleanup the interval.
+                        clearInterval(intervalHandle);
+                        intervalHandle = null;
+                    }
+                    return;
                 }
-            }, 200);
+            };
+
+            intervalHandle = setInterval(loop, 200);
 
             return dfd.promise();
         };
