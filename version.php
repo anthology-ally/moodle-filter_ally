@@ -26,7 +26,7 @@ defined('MOODLE_INTERNAL') || die();
 
 /** @var stdClass $plugin */
 $plugin->component = 'filter_ally';
-$plugin->release   = '3.7.3';
+$plugin->release   = '3.7.4';
 $plugin->version   = 2018080801;
 $plugin->requires  = 2019052000;
 $plugin->maturity  = MATURITY_STABLE;
