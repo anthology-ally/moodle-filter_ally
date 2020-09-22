@@ -267,7 +267,7 @@ class filter_ally extends moodle_text_filter {
                     $contextsbymoduleid[$module->id] = $module->context->id;
                     $moduleidsbycontext[$module->context->id] = $module->id;
                 }
-            } catch (\Exception $ex) {
+            } catch (Throwable $ex) {
                 $context = ['_exception' => $ex];
                 logger::get()->error('logger:cmvisibilityresolutionfailure', $context);
             }
