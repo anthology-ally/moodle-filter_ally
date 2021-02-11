@@ -778,6 +778,12 @@ XPATH;
             $path = "//div[contains(@id, 'folder_tree0')]//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
             $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')][$anchorx]";
             $path .= "//*[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
+        } else if ($type === 'file in subfolder') {
+            $path = "//div[contains(@id, 'folder_tree0')]//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
+            $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')]";
+            $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
+            $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')][$anchorx]";
+            $path .= "//*[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
         } else if ($type === 'glossary attachment') {
             $path = "//td[contains(concat(' ', @class, ' '), ' entry ')]";
             $path .= "//div[contains(concat(' ', @class, ' '), ' attachments ')]";
@@ -813,7 +819,7 @@ XPATH;
 
     /**
      * @Given /^I should see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" \
-     * (anchor|file resource|assignment file|file in folder|glossary attachment)$/
+     * (anchor|file resource|assignment file|file in folder|file in subfolder|glossary attachment)$/
      * @param string $anchorx
      * @param string $type
      */
@@ -825,7 +831,7 @@ XPATH;
 
     /**
      * @Given /^I should not see the feedback place holder for the "(\d*)(?:st|nd|rd|th)" \
-     * (anchor|file resource|assignment file|file in folder|glossary attachment)$/
+     * (anchor|file resource|assignment file|file in folder|file in subfolder|glossary attachment)$/
      * @param string $anchorx
      */
     public function i_should_not_see_feedback_for_anchor_x($anchorx, $type) {
@@ -835,7 +841,7 @@ XPATH;
 
     /**
      * @Given /^I should see the download place holder for the "(\d*)(?:st|nd|rd|th)" \
-     * (anchor|file resource|assignment file|file in folder|glossary attachment)$/
+     * (anchor|file resource|assignment file|file in folder|file in subfolder|glossary attachment)$/
      * @param string $anchorx
      */
     public function i_should_see_download_for_anchor_x($anchorx, $type) {
@@ -846,7 +852,7 @@ XPATH;
 
     /**
      * @Given /^I should not see the download place holder for the "(\d*)(?:st|nd|rd|th)" \
-     * (anchor|file resource|assignment file|file in folder|glossary attachment)$/
+     * (anchor|file resource|assignment file|file in folder|file in subfolder|glossary attachment)$/
      * @param string $anchorx
      */
     public function i_should_not_see_download_for_anchor_x($anchorx, $type) {
