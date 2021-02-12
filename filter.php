@@ -96,11 +96,17 @@ class filter_ally extends moodle_text_filter {
             if ($file->is_directory()) {
                 continue;
             }
-            $fullpath = $cm->context->id.'/'.$component.'/'.$filearea.'/'.
-                $file->get_itemid().'/'.
-                $file->get_filepath().'/'.
-                $file->get_filename();
-            $fullpath = str_replace('///', '/', $fullpath);
+
+            // Use the logic from moodle_url::make_pluginfile_url() to generate matching URL path.
+            $path = [];
+            $path[] = $cm->context->id;
+            $path[] = $component;
+            $path[] = $filearea;
+            if ($file->get_itemid() !== null) {
+                $path[] = $file->get_itemid();
+            }
+            $fullpath = implode('/', $path) . $file->get_filepath() . $file->get_filename();
+
             $map[$fullpath] = $file->get_pathnamehash();
         }
         return $map;

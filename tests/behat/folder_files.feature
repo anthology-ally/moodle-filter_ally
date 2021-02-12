@@ -53,30 +53,39 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I follow "Test folder name"
     And I press "Edit"
     And I upload "theme/snap/tests/fixtures/test_text_file.txt" file to "Files" filemanager
+    And I upload "theme/snap/tests/fixtures/testgif.gif" file to "Files" filemanager
+    And I create "Folder" folder in "Files" filemanager
+    And I open "Folder" folder from "Files" filemanager
     And I upload "theme/snap/tests/fixtures/testpng.png" file to "Files" filemanager
     And I press "Save changes"
-    Then I should see the feedback place holder for the "1st" file in folder
+    Then I should see the feedback place holder for the "1st" file in subfolder
     And I should see the feedback place holder for the "2nd" file in folder
-    And I should see the download place holder for the "1st" file in folder
+    And I should see the feedback place holder for the "3rd" file in folder
+    And I should see the download place holder for the "1st" file in subfolder
     And I should see the download place holder for the "2nd" file in folder
+    And I should see the download place holder for the "3rd" file in folder
     And I log out
     And I log in as "student1"
     And <coursestep>
     And I should see "Test folder name"
     And I follow "Test folder name"
-    And I should not see the feedback place holder for the "1st" file in folder
+    And I should not see the feedback place holder for the "1st" file in subfolder
     And I should not see the feedback place holder for the "2nd" file in folder
-    And I should see the download place holder for the "1st" file in folder
+    And I should not see the feedback place holder for the "3rd" file in folder
+    And I should see the download place holder for the "1st" file in subfolder
     And I should see the download place holder for the "2nd" file in folder
+    And I should see the download place holder for the "3rd" file in folder
     And I log out
     And I log in as "guest"
     And <coursestep>
     And I should see "Test folder name"
     And I follow "Test folder name"
-    And I should not see the feedback place holder for the "1st" file in folder
+    And I should not see the feedback place holder for the "1st" file in subfolder
     And I should not see the feedback place holder for the "2nd" file in folder
-    And I should not see the download place holder for the "1st" file in folder
+    And I should not see the feedback place holder for the "3rd" file in folder
+    And I should not see the download place holder for the "1st" file in subfolder
     And I should not see the download place holder for the "2nd" file in folder
+    And I should not see the download place holder for the "3rd" file in folder
   Examples:
   | course               | coursestep                         | slasharguments |
   | C1                   | I am on "Course 1" course homepage | 1              |
@@ -105,26 +114,35 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I open "Inline folder name" actions menu
     And I click on "Edit settings" "link" in the "Inline folder name" activity
     And I upload "theme/snap/tests/fixtures/test_text_file.txt" file to "Files" filemanager
+    And I upload "theme/snap/tests/fixtures/testgif.gif" file to "Files" filemanager
+    And I create "Folder" folder in "Files" filemanager
+    And I open "Folder" folder from "Files" filemanager
     And I upload "theme/snap/tests/fixtures/testpng.png" file to "Files" filemanager
     And I press "Save and return to course"
-    Then I should see the feedback place holder for the "1st" file in folder
+    Then I should see the feedback place holder for the "1st" file in subfolder
     And I should see the feedback place holder for the "2nd" file in folder
-    And I should see the download place holder for the "1st" file in folder
+    And I should see the feedback place holder for the "3rd" file in folder
+    And I should see the download place holder for the "1st" file in subfolder
     And I should see the download place holder for the "2nd" file in folder
+    And I should see the download place holder for the "3rd" file in folder
     And I log out
     And I log in as "student1"
     And <coursestep>
-    Then I should see the download place holder for the "1st" file in folder
+    Then I should not see the feedback place holder for the "1st" file in subfolder
+    And I should not see the feedback place holder for the "2nd" file in folder
+    And I should not see the feedback place holder for the "3rd" file in folder
+    And I should see the download place holder for the "1st" file in subfolder
     And I should see the download place holder for the "2nd" file in folder
-    And I should not see the feedback place holder for the "2nd" file in folder
-    And I should not see the feedback place holder for the "2nd" file in folder
+    And I should see the download place holder for the "3rd" file in folder
     And I log out
     And I log in as "guest"
     And <coursestep>
-    And I should not see the feedback place holder for the "1st" file in folder
+    And I should not see the feedback place holder for the "1st" file in subfolder
     And I should not see the feedback place holder for the "2nd" file in folder
-    And I should not see the download place holder for the "1st" file in folder
+    And I should not see the feedback place holder for the "3rd" file in folder
+    And I should not see the download place holder for the "1st" file in subfolder
     And I should not see the download place holder for the "2nd" file in folder
+    And I should not see the download place holder for the "3rd" file in folder
   Examples:
   | course               | coursestep                         | slasharguments |
   | C1                   | I am on "Course 1" course homepage | 1              |
