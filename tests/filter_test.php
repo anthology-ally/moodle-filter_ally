@@ -28,7 +28,7 @@ class filter_ally_testcase extends advanced_testcase {
 
     public $filter;
 
-    public function setUp() {
+    public function setUp(): void {
         global $PAGE, $CFG;
 
         // We reset after every test because the filter modifies $CFG->additionalhtmlfooter.
