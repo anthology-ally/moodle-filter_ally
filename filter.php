@@ -16,9 +16,9 @@
 
 /**
  * Filter for processing file links for Ally accessibility enhancements.
- * @author    Guy Thomas <osdev@blackboard.com>
+ * @author    Guy Thomas
  * @package   filter_ally
- * @copyright Copyright (c) 2017 Blackboard Inc.
+ * @copyright Copyright (c) 2017 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
@@ -34,9 +34,9 @@ use tool_ally\logging\logger;
 
 /**
  * Filter for processing file links for Ally accessibility enhancements.
- * @author    Guy Thomas <osdev@blackboard.com>
+ * @author    Guy Thomas
  * @package   filter_ally
- * @copyright Copyright (c) 2017 Blackboard Inc.
+ * @copyright Copyright (c) 2017 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class filter_ally extends moodle_text_filter {

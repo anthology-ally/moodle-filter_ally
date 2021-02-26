@@ -18,7 +18,7 @@
  *
  * @package   filter_ally
  * @author    Guy Thomas / Branden Visser
- * @copyright Copyright (c) 2017 Blackboard Inc.
+ * @copyright Copyright (c) 2017 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 define(['jquery'], function($) {
