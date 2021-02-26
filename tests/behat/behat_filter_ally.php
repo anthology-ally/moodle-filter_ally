@@ -16,8 +16,8 @@
 
 /**
  * Ally filter context
- * @author    Guy Thomas <osdev@blackboard.com>
- * @copyright Copyright (c) 2017 Blackboard Inc.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2017 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -33,8 +33,8 @@ use \tool_ally\models\component_content;
 /**
  * Ally filter context
  *
- * @author    Guy Thomas <osdev@blackboard.com>
- * @copyright Copyright (c) 2017 Blackboard Inc.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2017 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @category  test
  * @package   filter_ally
