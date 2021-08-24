@@ -965,6 +965,19 @@ XPATH;
         $coursesection->summaryformat = $format;
         $coursesection->summary = $summary;
         $DB->update_record('course_sections', $coursesection);
+
+        // Trigger an event for course section update - just like is done by core when a course
+        // section is updated. This ensures caches are updated appropriately during testing just
+        // as they are in normal use.
+        $event = \core\event\course_section_updated::create(
+            array(
+                'objectid' => $coursesection->id,
+                'courseid' => $course,
+                'context' => context_course::instance($course),
+                'other' => array('sectionnum' => $coursesection->section)
+            )
+        );
+        $event->trigger();
     }
 
     /**
