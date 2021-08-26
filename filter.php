@@ -49,7 +49,7 @@ class filter_ally extends moodle_text_filter {
     /**
      * @var bool is the filter active in this context?
      */
-    private $filteractive = false;
+    private $filteractive = null;
 
     /**
      * @var array course ids for which we are currently annotating.
@@ -449,9 +449,12 @@ class filter_ally extends moodle_text_filter {
         // Note - we have to do this for the course context, we can't do granular module contexts since
         // a lot of the ally wrappers are applied via JS as opposed to via the filter - JS has no
         // awareness of contexts.
-        $activefilters = filter_get_active_in_context(context_course::instance($COURSE->id));
-        if (!isset($activefilters['ally'])) {
-            return;
+        if ($this->filteractive === null) {
+            $activefilters = filter_get_active_in_context(context_course::instance($COURSE->id));
+            if (!isset($activefilters['ally'])) {
+                $this->filteractive = false;
+                return;
+            }
         }
         $this->filteractive = true;
 
