@@ -130,7 +130,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | slasharguments      | <slasharguments> |
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
-    And I add a new discussion to "Course 1" forum with:
+    And I add a new discussion to "Social forum" forum with:
       | Subject | Teacher discussion |
       | Message | This is the body |
       | Attachment | lib/tests/fixtures/empty.txt |
