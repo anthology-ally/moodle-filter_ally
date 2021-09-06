@@ -455,6 +455,8 @@ class filter_ally extends moodle_text_filter {
                 $this->filteractive = false;
                 return;
             }
+        } else if ($this->filteractive === false) {
+            return;
         }
         $this->filteractive = true;
 
