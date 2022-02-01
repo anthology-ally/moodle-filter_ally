@@ -16,7 +16,7 @@
  *
  * Library to add image covers to prevent seizure inducing images from showing.
  *
- * @package   filter_ally
+ * @package
  * @author    Guy Thomas
  * @copyright Copyright (c) 2016 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later

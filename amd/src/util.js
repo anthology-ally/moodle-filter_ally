@@ -16,7 +16,7 @@
  *
  * Utility lib.
  *
- * @package   filter_ally
+ * @package
  * @author    Guy Thomas / Branden Visser
  * @copyright Copyright (c) 2017 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -27,8 +27,8 @@ define(['jquery'], function($) {
         /**
          * When evaluateFunction returns true.
          * @author Guy Thomas
-         * @param evaluateFunction
-         * @param maxIterations
+         * @param {function} evaluateFunction
+         * @param {integer} maxIterations
          * @returns {promise} jQuery promise
          */
         this.whenTrue = function(evaluateFunction, maxIterations) {
@@ -135,7 +135,7 @@ define(['jquery'], function($) {
 
         /**
          * Builds an object which contains all the parameters passed in a URL.
-         * @param url URL which has parameters
+         * @param {string} url URL which has parameters
          * @returns {Object}
          */
         this.getQuery = function(url) {
@@ -151,9 +151,9 @@ define(['jquery'], function($) {
         /**
          * Taken from underscore.js - debounce function to prevent function spamming on event triggers.
          * Modified by GThomas to implement deferred.
-         * @param function func
-         * @param int wait
-         * @param boolean immediate
+         * @param {function} func
+         * @param {int} wait
+         * @param {boolean} immediate
          * @returns Deferred
          */
         this.debounce = function (func, wait, immediate) {
