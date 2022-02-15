@@ -52,11 +52,11 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should see "Test folder name"
     And I follow "Test folder name"
     And I press "Edit"
-    And I upload "theme/snap/tests/fixtures/test_text_file.txt" file to "Files" filemanager
-    And I upload "theme/snap/tests/fixtures/testgif.gif" file to "Files" filemanager
+    And I upload "filter/ally/tests/fixtures/test_text_file.txt" file to "Files" filemanager
+    And I upload "filter/ally/tests/fixtures/testgif.gif" file to "Files" filemanager
     And I create "Folder" folder in "Files" filemanager
     And I open "Folder" folder from "Files" filemanager
-    And I upload "theme/snap/tests/fixtures/testpng.png" file to "Files" filemanager
+    And I upload "filter/ally/tests/fixtures/testpng.png" file to "Files" filemanager
     And I press "Save changes"
     Then I should see the feedback place holder for the "1st" file in subfolder
     And I should see the feedback place holder for the "2nd" file in folder
@@ -89,9 +89,9 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
   Examples:
   | course               | coursestep                         | slasharguments |
   | C1                   | I am on "Course 1" course homepage | 1              |
-  | Acceptance test site | I am on site homepage              | 1              |
+  | C1                   | I am on "Course 1" course homepage | 1              |
   | C1                   | I am on "Course 1" course homepage | 0              |
-  | Acceptance test site | I am on site homepage              | 0              |
+  | C1                   | I am on "Course 1" course homepage | 0              |
 
   @javascript
   Scenario Outline: Folder files are processed appropriately when viewed inline on course page
@@ -113,11 +113,11 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I turn editing mode on
     And I open "Inline folder name" actions menu
     And I click on "Edit settings" "link" in the "Inline folder name" activity
-    And I upload "theme/snap/tests/fixtures/test_text_file.txt" file to "Files" filemanager
-    And I upload "theme/snap/tests/fixtures/testgif.gif" file to "Files" filemanager
+    And I upload "filter/ally/tests/fixtures/test_text_file.txt" file to "Files" filemanager
+    And I upload "filter/ally/tests/fixtures/testgif.gif" file to "Files" filemanager
     And I create "Folder" folder in "Files" filemanager
     And I open "Folder" folder from "Files" filemanager
-    And I upload "theme/snap/tests/fixtures/testpng.png" file to "Files" filemanager
+    And I upload "filter/ally/tests/fixtures/testpng.png" file to "Files" filemanager
     And I press "Save and return to course"
     Then I should see the feedback place holder for the "1st" file in subfolder
     And I should see the feedback place holder for the "2nd" file in folder
