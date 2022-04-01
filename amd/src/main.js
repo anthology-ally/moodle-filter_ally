@@ -377,14 +377,14 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                     dfd.resolve();
                 }
             };
-
             for (var moduleId in moduleFileMapping) {
                 var pathHash = moduleFileMapping[moduleId]['content'];
-                if ($('body').hasClass('theme-snap')) {
+                if ($('body').hasClass('theme-snap') && !$('body').hasClass('format-tiles')) {
                     var moduleEl = $('#module-' + moduleId + ':not(.snap-native) .activityinstance ' +
-                        '.snap-asset-link a:first-of-type');
+                        '.snap-asset-link a:first-of-type:not(.clickable-region)');
                 } else {
-                    var moduleEl = $('#module-' + moduleId + ' .activityinstance a:first-of-type');
+                    var moduleEl = $('#module-' + moduleId + ' .activityinstance ' +
+                        'a:first-of-type:not(.clickable-region,.editing_move)');
                 }
                 var processed = moduleEl.find('.filter-ally-wrapper');
                 if (processed.length > 0) {
