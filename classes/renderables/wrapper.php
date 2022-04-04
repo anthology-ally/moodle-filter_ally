@@ -23,8 +23,6 @@
 
 namespace filter_ally\renderables;
 
-defined('MOODLE_INTERNAL') || die();
-
 class wrapper implements \renderable {
     public $html;
     public $fileid;

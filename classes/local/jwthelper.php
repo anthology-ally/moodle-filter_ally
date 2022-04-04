@@ -24,8 +24,6 @@
 
 namespace filter_ally\local;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Class jwthelper
  * @package filter_ally

@@ -21,8 +21,6 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 use filter_ally\renderables\wrapper;
 
 class filter_ally_renderer extends plugin_renderer_base {
