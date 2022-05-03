@@ -475,7 +475,30 @@ class filter_ally extends moodle_text_filter {
 
         // This only requires execution once per request.
         static $jsinitialised = false;
-        if (!$jsinitialised) {
+
+        if (!empty($CFG->filter_ally_enable_gotafe_patch)) {
+            $jsinit = !$jsinitialised && $COURSE->id > 1;
+        } else {
+            $jsinit = !$jsinitialised;
+        }
+
+        if (!empty($CFG->filter_ally_enable_setup_debuger)) {
+            if (!$jsinitialised) {
+                $log = [
+                    'time' => time(),
+                    'url' => $PAGE->url->out(),
+                    'userid' => $USER->id,
+                    'courseid' => $COURSE->id,
+                    'pagetype' => $PAGE->pagetype,
+                    'pagelayout' => $PAGE->pagelayout,
+                    'context' => $context,
+                    'stacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)
+                ];
+                logger::get()->info('logger:filtersetupdebugger', $log);
+            }
+        }
+
+        if ($jsinit) {
 
             $sectionmap = $this->map_sections_to_ids();
             $sectionjson = json_encode($sectionmap);
