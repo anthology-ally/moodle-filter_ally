@@ -464,7 +464,9 @@ class filter_ally extends moodle_text_filter {
             return;
         }
 
-        if ($PAGE->pagetype === 'admin-setting-additionalhtml' || $PAGE->pagetype === 'admin-search') {
+        if ($PAGE->pagetype === 'admin-setting-additionalhtml' ||
+            $PAGE->pagetype === 'admin-settings' ||
+            $PAGE->pagetype === 'admin-search') {
             return;
         }
 
@@ -475,14 +477,13 @@ class filter_ally extends moodle_text_filter {
 
         // This only requires execution once per request.
         static $jsinitialised = false;
-
-        if (!empty($CFG->filter_ally_enable_gotafe_patch)) {
-            $jsinit = !$jsinitialised && $COURSE->id > 1;
-        } else {
+        if (!empty($CFG->filter_ally_disable_check_pagetype) || $PAGE->pagetype === 'site-index') {
             $jsinit = !$jsinitialised;
+        } else {
+            $jsinit = !$jsinitialised && $COURSE->id > 1;
         }
 
-        if (!empty($CFG->filter_ally_enable_setup_debuger)) {
+        if (!empty($CFG->filter_ally_enable_setup_debuger) && $this->is_course_page()) {
             if (!$jsinitialised) {
                 $log = [
                     'time' => time(),
@@ -491,7 +492,6 @@ class filter_ally extends moodle_text_filter {
                     'courseid' => $COURSE->id,
                     'pagetype' => $PAGE->pagetype,
                     'pagelayout' => $PAGE->pagelayout,
-                    'context' => $context,
                     'stacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)
                 ];
                 logger::get()->info('logger:filtersetupdebugger', $log);
