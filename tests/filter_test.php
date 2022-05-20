@@ -44,16 +44,10 @@ class filter_test extends \advanced_testcase {
     public function test_restrictions_pagetype() {
         global $PAGE, $CFG, $COURSE;
 
-        $this->call_filter_setup();
-        $this->assertStringNotContainsString('ally_section_maps', $CFG->additionalhtmlfooter);
-
-        $CFG->additionalhtmlfooter = '';
-        $PAGE->set_pagetype('site-index');
-        $this->call_filter_setup();
-        $this->assertStringContainsString('ally_section_maps', $CFG->additionalhtmlfooter);
-
         $CFG->additionalhtmlfooter = '';
         $course = $this->getDataGenerator()->create_course([]);
+        $PAGE->set_pagetype('course-view');
+        $PAGE->set_url('/course/view.php', ['id' => $course->id]);
         $COURSE = $course;
         $this->call_filter_setup();
         $this->assertStringContainsString('ally_section_maps', $CFG->additionalhtmlfooter);
