@@ -37,11 +37,20 @@ class filter_test extends \advanced_testcase {
         filter_set_global_state('ally', TEXTFILTER_ON);
 
         require_once(__DIR__.'/../filter.php');
-
         $PAGE->set_url($CFG->wwwroot.'/course/view.php');
-        $context = \context_system::instance();
-        $this->filter = new \filter_ally($context, []);
-        $this->filter->setup($PAGE, $context);
+        $this->filter = $this->call_filter_setup();
+    }
+
+    public function test_restrictions_pagetype() {
+        global $PAGE, $CFG, $COURSE;
+
+        $CFG->additionalhtmlfooter = '';
+        $course = $this->getDataGenerator()->create_course([]);
+        $PAGE->set_pagetype('course-view');
+        $PAGE->set_url('/course/view.php', ['id' => $course->id]);
+        $COURSE = $course;
+        $this->call_filter_setup();
+        $this->assertStringContainsString('ally_section_maps', $CFG->additionalhtmlfooter);
     }
 
     public function test_is_course_page() {
@@ -865,5 +874,13 @@ EOF;
         $datalessfilteredtext = $this->filter->filter($datalesstext); // This should add the file ids to the data less spans.
 
         $this->assertEquals($filteredtext, $datalessfilteredtext);
+    }
+
+    private function call_filter_setup(): \filter_ally {
+        global $PAGE;
+        $context = \context_system::instance();
+        $filter = new \filter_ally($context, []);
+        $filter->setup($PAGE, $context);
+        return $filter;
     }
 }

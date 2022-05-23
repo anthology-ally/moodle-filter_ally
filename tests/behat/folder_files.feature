@@ -89,9 +89,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
   Examples:
   | course               | coursestep                         | slasharguments |
   | C1                   | I am on "Course 1" course homepage | 1              |
-  | Acceptance test site | I am on site homepage              | 1              |
   | C1                   | I am on "Course 1" course homepage | 0              |
-  | Acceptance test site | I am on site homepage              | 0              |
 
   @javascript
   Scenario Outline: Folder files are processed appropriately when viewed inline on course page
