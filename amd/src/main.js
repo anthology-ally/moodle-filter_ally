@@ -458,7 +458,6 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
          * @param {array} forumMapping
          */
         var annotateForums = function(forumMapping) {
-
             // Annotate introductions.
             var intros = forumMapping['intros'];
             annotateModuleIntros(intros, 'forum');
@@ -468,11 +467,11 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
             for (var d in discussions) {
                 var post = 'p' + d;
                 var annotation = discussions[d];
-                var postSelector = "#page-mod-forum-discuss a#" + post +
-                    ' + div.firstpost div.posting.fullpost';
-                var contentSelector = postSelector + ' > *:not(.attachedimages):not([data-ally-richcontent])';
-                $(postSelector).prepend("<div data-ally-richcontent='" + annotation + "'></div>");
-                $(contentSelector).detach().appendTo(postSelector + ' > div[data-ally-richcontent]');
+                var selectors = [
+                    "#page-mod-forum-discuss #" + post +
+                    ' div.forumpost div.no-overflow'
+                ];
+                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
             }
         };
 

@@ -1020,6 +1020,18 @@ XPATH;
     }
 
     /**
+     * @Given Forum should be annotated
+     */
+    public function forum_is_annotated() {
+        $selector = '#page-mod-forum-discuss #region-main .forumpost .no-overflow[data-ally-richcontent]';
+        $node = $this->find('css', $selector);
+        if (empty($node)) {
+            throw new ExpectationException(
+                'Failed to find annotation', $this->getSession());
+        }
+    }
+
+    /**
      * @Given /^section (?P<section_number>\d*) html is not annotated$/
      */
     public function section_is_not_annotated($section) {
