@@ -15,11 +15,9 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 namespace filter_ally;
 
-class jwthelper_test extends \advanced_testcase {
+use Firebase\JWT\Key;
 
-    public function setUp(): void {
-        $this->markTestSkipped('Failing after 4.0 merge. To be reviewed in INT-18144');
-    }
+class jwthelper_test extends \advanced_testcase {
 
     protected function config_set_ok() {
         set_config('secret', 'WAzk9ohDeK', 'tool_ally');
@@ -50,7 +48,8 @@ class jwthelper_test extends \advanced_testcase {
         $secret = get_config('tool_ally', 'secret');
 
         /* @noinspection PhpUnnecessaryFullyQualifiedNameInspection */
-        $payload = \Firebase\JWT\JWT::decode($token, $secret, ['HS256']);
+
+        $payload = \Firebase\JWT\JWT::decode($token, new Key($secret, 'HS256'));
 
         $this->assertObjectHasAttribute('return_url', $payload);
         $this->assertObjectHasAttribute('iat', $payload);
