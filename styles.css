@@ -103,3 +103,9 @@ body.behat-site .filter-ally-wrapper.ally-image-wrapper .ally-actions .ally-feed
     visibility: visible;
     z-index: 2;
 }
+
+@media (min-width: 767px) {
+    body:not(.snap-resource-card) .mform .form-group:has(.ally-score-meter-container.ally-add-tooltip) {
+        margin-top: 3rem!important; /* Avoid overlap with ally score indicator */
+    }
+}
