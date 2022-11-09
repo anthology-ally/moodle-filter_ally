@@ -75,7 +75,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I log out
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
-    And I follow "Test forum name"
+    And I click on "Test forum name" "link" in the ".activityname" "css_element"
     And I follow "Teacher discussion"
     And I should see the feedback place holder for the post entitled "Teacher discussion" by "Teacher 1"
     And I should see the download place holder for the post entitled "Teacher discussion" by "Teacher 1"
@@ -238,7 +238,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I log out
     And I log in as "teacher1"
     And I am on "Course 1" course homepage
-    And I follow "Test forum name"
+    And I click on "Test forum name" "link" in the ".activityname" "css_element"
     And I follow "Teacher discussion"
     Then Forum should be annotated
 
