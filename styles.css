@@ -109,3 +109,9 @@ body.behat-site .filter-ally-wrapper.ally-image-wrapper .ally-actions .ally-feed
         margin-top: 3rem!important; /* Avoid overlap with ally score indicator */
     }
 }
+
+/* Allow the clickable Ally icons to be clicked, on the activities of a Course section. */
+body.path-course li.activity span.ally-actions {
+    position: relative;
+    z-index: 1;
+}
