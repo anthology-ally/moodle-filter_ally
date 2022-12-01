@@ -111,7 +111,7 @@ body.behat-site .filter-ally-wrapper.ally-image-wrapper .ally-actions .ally-feed
 }
 
 /* Allow the clickable Ally icons to be clicked, on the activities of a Course section. */
-body.path-course li.activity span.ally-actions {
+body.path-course li.activity.modtype_resource span.ally-actions {
     position: relative;
     z-index: 1;
 }
