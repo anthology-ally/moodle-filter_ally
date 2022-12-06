@@ -295,7 +295,7 @@ class behat_filter_ally extends behat_base {
      */
     public function i_open_the_module($module) {
         $xpath = <<<XPATH
-        //div[@class="activityinstance"]//span[contains(text(), 'test $module')]/../../a
+        //div[contains(@class,"activity-instance")]//span[contains(text(), 'test $module')]/../../a
 XPATH;
 
         $this->execute('behat_general::i_click_on', [$xpath, 'xpath_element']);
@@ -1006,7 +1006,7 @@ XPATH;
      * @Given /^section (?P<section_number>\d*) html is annotated$/
      */
     public function section_is_annotated($section) {
-        $selector = '#section-'.$section.' > .content > div[class*="summary"] > .no-overflow[data-ally-richcontent]';
+        $selector = '#section-'.$section.' > .content div[class*="summarytext"] .no-overflow[data-ally-richcontent]';
         $node = $this->find('css', $selector);
         if (empty($node)) {
             throw new ExpectationException(
@@ -1035,7 +1035,7 @@ XPATH;
      * @Given /^section (?P<section_number>\d*) html is not annotated$/
      */
     public function section_is_not_annotated($section) {
-        $selector = '#section-'.$section.' > .content > div[class*="summary"] > .no-overflow';
+        $selector = '#section-'.$section.' > .content div[class*="summarytext"] .no-overflow';
         $node = $this->find('css', $selector);
 
         if ($node->hasAttribute('data-ally-richcontent')) {

@@ -36,7 +36,7 @@ Feature: When the ally filter is enabled ally annotations are inserted when appr
     And the following "course enrolments" exist:
       | user     | course | role           |
       | student1 | C1     | student        |
-      | teacher1 | C1     | teacher        |
+      | teacher1 | C1     | editingteacher |
 
   @javascript
   Scenario Outline: Module content is annotated and following HTML content URL for annotation works.
@@ -77,11 +77,12 @@ Feature: When the ally filter is enabled ally annotations are inserted when appr
     And I add 2 chapters to "test book"
     And I reload the page
     And I open the book module
+    # Refresh cache.
+    And I navigate to "Settings" in current page administration
+    And I press "Save and display"
     Then the current book chapter is annotated
     And I log out
     And I log in as "student1"
     And I am on "Course 1" course homepage
     And I open the book module
     Then the current book chapter is annotated
-
-
