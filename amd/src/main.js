@@ -421,10 +421,9 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 var ident = buildContentIdent('course', 'course_sections', 'summary', sectionId);
 
                 var selectors = [
-                    '#' + s + ' > .content div[class*="summary"] > .no-overflow',
+                    '#' + s + ' > .content div[class*="summarytext"] .no-overflow',
                     'body.theme-snap #' + s + ' > .content > .summary > div > .no-overflow' // Snap.
                 ];
-
                 $(selectors.join(',')).attr('data-ally-richcontent', ident);
             }
 
@@ -444,7 +443,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 var selectors = [
                     'body.path-mod-' + module + '.cmid-' + i + ' #intro > .no-overflow',
                     // We need to be specific here for non course pages to skip this.
-                    'li.activity.modtype_' + module + '#module-' + i + ' .contentafterlink > .no-overflow > .no-overflow',
+                    'li.activity.modtype_' + module + '#module-' + i + ' .description .no-overflow > .no-overflow',
                     'li.snap-activity.modtype_' + module + '#module-' + i + ' .contentafterlink > .no-overflow'
                 ];
                 if (additionalSelectors) {
