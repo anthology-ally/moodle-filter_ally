@@ -888,6 +888,27 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                     }
                     debounceApplyPlaceHolders();
                 });
+                // For Snap theme.
+                if ($('body.theme-snap').length) {
+                    $(document).ajaxComplete(function(event, xhr, settings) {
+                        // Search ally server response.
+                        if (settings.url.includes('ally.js')) {
+                            setTimeout(function() {
+                                // Show score icons that are hidden, see INT-18688.
+                                $('.ally-feedback.ally-active.ally-score-indicator-embedded span').each(function () {
+                                    if (this.style.display == 'none') {
+                                        this.style.display = 'block';
+                                        if (this.getAttribute('class') == 'ally-scoreindicator-container') {
+                                            this.style.display = 'inline-block';
+                                            this.children[0].style.display = 'inline-block';
+                                        }
+                                    }
+                                });
+                            }, 5000);
+                            $(document).off('ajaxComplete');
+                        }
+                    });
+                }
             }
         };
 
