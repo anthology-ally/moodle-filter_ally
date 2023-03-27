@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * @copyright  Copyright (c) 2022 Open LMS (https://www.openlms.net)
+ * @copyright  Copyright (c) 2023 Open LMS (https://www.openlms.net)
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -25,8 +25,8 @@ $string['pluginname'] = 'Ally';
 $string['filtername'] = 'Ally';
 $string['ally:viewfeedback'] = 'Ally-feedback bekijken';
 $string['ally:viewdownload'] = 'Ally-downloadknop weergeven';
-$string['privacy:metadata:jwt:courseid'] = 'De ID van de cursus waarin de gebruiker het bestand bewerkt.';
+$string['privacy:metadata:jwt:courseid'] = 'De id van de cursus waarin de gebruiker het bestand bewerkt.';
 $string['privacy:metadata:jwt:externalpurpose'] = 'Geef Ally gegevens om het bewerken van bestanden mogelijk te maken om de toegankelijkheid te verbeteren.';
 $string['privacy:metadata:jwt:locale'] = 'De landinstelling van de gebruiker, zodat de gebruikersinterface van Ally wordt weergegeven in de meest geschikte taal.';
 $string['privacy:metadata:jwt:roles'] = 'De cursusrollen van de gebruiker om de toegang te valideren.';
-$string['privacy:metadata:jwt:userid'] = 'De gebruikers-ID van de gebruiker om de toegang te valideren.';
+$string['privacy:metadata:jwt:userid'] = 'De gebruikers-id van de gebruiker om de toegang te valideren.';
