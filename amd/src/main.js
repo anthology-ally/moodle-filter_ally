@@ -382,9 +382,6 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 if ($('body').hasClass('theme-snap') && !$('body').hasClass('format-tiles')) {
                     var moduleEl = $('#module-' + moduleId + ':not(.snap-native) .activityinstance ' +
                         '.snap-asset-link a:first-of-type:not(.clickable-region)');
-                } else if ($('body').hasClass('format-tiles')) {
-                    var moduleEl = $('#module-' + moduleId + ' .activityinstance ' +
-                        'a:first-of-type:not(.clickable-region,.editing_move)');
                 } else {
                     var moduleEl = $('#module-' + moduleId + ' .activity-instance ' +
                         'a:first-of-type:not(.clickable-region,.editing_move)');
