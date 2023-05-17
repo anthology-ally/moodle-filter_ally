@@ -10,11 +10,13 @@ on:
         options:
         - 'MOODLE_400_STABLE'
         - 'MOODLE_401_STABLE'
-        default: 'MOODLE_400_STABLE'
+        - 'MOODLE_402_STABLE'
+        default: 'MOODLE_401_STABLE'
       phpversion:
         type: choice
         description: Select PHP version
         options:
+        - '7.4'
         - '8.0'
         - '8.1'
         - '8.2'
