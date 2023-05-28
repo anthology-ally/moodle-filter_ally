@@ -57,7 +57,7 @@ jobs:
       fail-fast: false
       matrix:
         php: ["${{ inputs.phpversion || '8.0' }}"]
-        moodle-branch: ["${{ inputs.moodlebranch || 'MOODLE_400_STABLE' }}"]
+        moodle-branch: ["${{ inputs.moodlebranch || 'MOODLE_401_STABLE' }}"]
         database: [mariadb]
 
     steps:

@@ -18,15 +18,28 @@
  *
  * @package
  * @author    Guy Thomas
- * @copyright Copyright (c) 2016 Open LMS
+ * @copyright Copyright (c) 2016 Open LMS / 2023 Anthology Group
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+import $ from 'jquery';
+import Log from 'core/log';
 
-define(['jquery', 'core/log'], function($, log) {
-    return new function() {
-        var _config = null;
-        var _token = null;
-        var _baseUrl = null;
+class Ally {
+    #config = null;
+    #token = null;
+    #baseUrl = null;
+
+    /**
+     * Initialize the AMD module with the necessary data
+     * @param  {String} jwt    The JWT token
+     * @param  {Object} config The Ally configuration containing the Ally client id and admin URL
+     */
+    init = function(jwt, config) {
+        if (!config.adminurl) {
+            // Do not localise - just a debug message.
+            Log.info('The Ally admin tool is not configured with a Launch URL. Aborting JS load.');
+            return;
+        }
 
         /**
          * Get the base URL for a given url.
@@ -36,11 +49,11 @@ define(['jquery', 'core/log'], function($, log) {
          * @param  {String} url A full URL
          * @return {String} The base URL of the given `url`.
          */
-        var getBaseUrl = function(url) {
-            var parser = document.createElement('a');
+        const getBaseUrl = (url) => {
+            const parser = document.createElement('a');
             parser.href = url;
 
-            var baseUrl = parser.protocol + '//' + parser.hostname;
+            let baseUrl = parser.protocol + '//' + parser.hostname;
             if (parser.port) {
                 baseUrl += ':' + parser.port;
             }
@@ -48,52 +61,42 @@ define(['jquery', 'core/log'], function($, log) {
             return baseUrl;
         };
 
-        /**
-         * Initialize the AMD module with the necessary data
-         * @param  {String} jwt    The JWT token
-         * @param  {Object} config The Ally configuration containing the Ally client id and admin URL
-         */
-        this.init = function(jwt, config) {
-            _token = jwt;
-            _config = config;
-            if (!config.adminurl) {
-                // Do not localise - just a debug message.
-                log.info('The Ally admin tool is not configured with a Launch URL. Aborting JS load.');
-                return;
-            }
-            _baseUrl = getBaseUrl(config.adminurl);
+        this.#token = jwt;
+        this.#config = config;
+        this.#baseUrl = getBaseUrl(config.adminurl);
 
-            // Load up the Ally script.
-            // Note - this is not to be cached as it is just a loader script.
-            // The target script below loads up the latest version of the amd module which does get cached.
-            $.getScript(_baseUrl + '/integration/moodlerooms/ally.js')
-                .fail(function() {
-                    log.error('Failed to load Ally JS');
-                });
-        };
-
-        /**
-         * Get the JWT token that can be used to authenticate the current user
-         * @return {String} The JWT token
-         */
-        this.token = function() {
-            return _token;
-        };
-
-        /**
-         * Get the Ally configuration containing the Ally client id and base URL
-         * @return {Object} The Ally configuration
-         */
-        this.config = function() {
-            return _config;
-        };
-
-        /**
-         * Get the Ally base URL
-         * @return {String} The Ally base URL
-         */
-        this.getAllyBaseUrl = function() {
-            return _baseUrl;
-        };
+        // Load up the Ally script.
+        // Note - this is not to be cached as it is just a loader script.
+        // The target script below loads up the latest version of the amd module which does get cached.
+        $.getScript(this.#baseUrl + '/integration/moodlerooms/ally.js')
+            .fail(function() {
+                Log.error('Failed to load Ally JS');
+            });
     };
-});
+
+    /**
+     * Get the JWT token that can be used to authenticate the current user
+     * @return {String} The JWT token
+     */
+    token = function() {
+        return this.#token;
+    };
+
+    /**
+     * Get the Ally configuration containing the Ally client id and base URL
+     * @return {Object} The Ally configuration
+     */
+    config = function() {
+        return this.#config;
+    };
+
+    /**
+     * Get the Ally base URL
+     * @return {String} The Ally base URL
+     */
+    getAllyBaseUrl = function() {
+        return this.#baseUrl;
+    };
+}
+
+export default new Ally();

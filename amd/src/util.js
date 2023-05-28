@@ -18,161 +18,167 @@
  *
  * @package
  * @author    Guy Thomas / Branden Visser
- * @copyright Copyright (c) 2017 Open LMS
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Group
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-define(['jquery'], function($) {
-    return new function() {
+import $ from 'jquery';
+
+class Util {
+
+    /**
+     * When evaluateFunction returns true.
+     * @author Guy Thomas
+     * @param {function} evaluateFunction
+     * @param {integer} maxIterations
+     * @returns {promise} jQuery promise
+     */
+    whenTrue(evaluateFunction, maxIterations) {
+
+        maxIterations = !maxIterations ? 10 : maxIterations;
+
+        const dfd = $.Deferred();
+        let i = 0;
+
+        // Maintains a handle to the interval timer, so it can be cleaned up when the element is removed.
+        let intervalHandle = null;
 
         /**
-         * When evaluateFunction returns true.
-         * @author Guy Thomas
-         * @param {function} evaluateFunction
-         * @param {integer} maxIterations
-         * @returns {promise} jQuery promise
+         * The function that will be used to try the evaluation repeatedly.
          */
-        this.whenTrue = function(evaluateFunction, maxIterations) {
+        const loop = function() {
+            i++;
+            if (i > maxIterations) {
+                dfd.reject();
+                if (intervalHandle) {
+                    // Cleanup the interval.
+                    clearInterval(intervalHandle);
+                    intervalHandle = null;
+                }
+                return;
+            }
+            if (evaluateFunction()) {
+                dfd.resolve();
+                if (intervalHandle) {
+                    // Cleanup the interval.
+                    clearInterval(intervalHandle);
+                    intervalHandle = null;
+                }
+                return;
+            }
+        };
 
-            maxIterations = !maxIterations ? 10 : maxIterations;
+        intervalHandle = setInterval(loop, 200);
 
-            var dfd = $.Deferred();
-            var i = 0;
+        return dfd.promise();
+    }
 
-            // Maintains a handle to the interval timer, so it can be cleaned up when the element is removed.
-            var intervalHandle = null;
+    /**
+     * Listen for the offset/size of a given element to change. Whenever it changes, invoke the given function.
+     * @author Branden Visser
+     * @param  {jQuery}     $el                     The element to watch
+     * @param  {Function}   callback                The function that is invoked when the coords change
+     * @param  {Object}     callback.coords         The new set of coords
+     * @param  {Number}     callback.coords.top     The top offset of the element
+     * @param  {Number}     callback.coords.right   The right offset of the element
+     * @param  {Number}     callback.coords.bottom  The bottom offset of the element
+     * @param  {Number}     callback.coords.left    The left offset of the element
+     * @api private
+     */
+    onCoordsChange($el, callback) {
 
-            /*!
-             * The function that will be used to try the evaluation repeatedly.
-             */
-            var loop = function() {
-                i++;
-                if (i > maxIterations) {
-                    dfd.reject();
+        // Maintains the last known set of coords
+        let lastCoords = {};
+
+        // Maintains a handle to the interval timer, so it can be cleaned up when the element is removed
+        let intervalHandle = null;
+
+        /**
+         * The function that is continuously run to determine if there was a change in coords
+         */
+        const _loop = () => {
+            const offset = $el.offset();
+            const width = $el.width();
+            const height = $el.height();
+
+            const currCoords = {
+                'top': offset.top,
+                'right': offset.left + width,
+                'bottom': offset.top + height,
+                'left': offset.left
+            };
+
+            // Only continue if the coordinates have changed. Otherwise we do nothing
+            if (currCoords.top !== lastCoords.top || currCoords.right !== lastCoords.right ||
+                currCoords.bottom !== lastCoords.bottom || currCoords.left !== lastCoords.left) {
+                // Set the new set of coords
+                lastCoords = currCoords;
+
+                // First ensure the element is still on the DOM. If not, we're going to clean everything up here
+                if (!$.contains(document.documentElement, $el[0])) {
                     if (intervalHandle) {
-                        // Cleanup the interval.
                         clearInterval(intervalHandle);
                         intervalHandle = null;
                     }
                     return;
                 }
-                if (evaluateFunction()) {
-                    dfd.resolve();
-                    if (intervalHandle) {
-                        // Cleanup the interval.
-                        clearInterval(intervalHandle);
-                        intervalHandle = null;
-                    }
-                    return;
-                }
-            };
 
-            intervalHandle = setInterval(loop, 200);
-
-            return dfd.promise();
+                // Finally, run the callback and exit.
+                callback(lastCoords);
+                return;
+            }
         };
 
-        /**
-         * Listen for the offset/size of a given element to change. Whenever it changes, invoke the given function.
-         * @author Branden Visser
-         * @param  {jQuery}     $el                     The element to watch
-         * @param  {Function}   callback                The function that is invoked when the coords change
-         * @param  {Object}     callback.coords         The new set of coords
-         * @param  {Number}     callback.coords.top     The top offset of the element
-         * @param  {Number}     callback.coords.right   The right offset of the element
-         * @param  {Number}     callback.coords.bottom  The bottom offset of the element
-         * @param  {Number}     callback.coords.left    The left offset of the element
-         * @api private
-         */
-        this.onCoordsChange = function($el, callback) {
+        // Start the interval timer
+        intervalHandle = setInterval(_loop, 200);
 
-            // Maintains the last known set of coords
-            var lastCoords = {};
+        // Perform an immediate initial run
+        _loop();
+    }
 
-            // Maintains a handle to the interval timer, so it can be cleaned up when the element is removed
-            var intervalHandle = null;
+    /**
+     * Builds an object which contains all the parameters passed in a URL.
+     * @param {string} url URL which has parameters
+     * @returns {Object}
+     */
+    getQuery(url) {
+        const query = {};
 
-            /*!
-             * The function that is continuously run to determine if there was a change in coords
-             */
-            var _loop = function() {
-                var offset = $el.offset();
-                var width = $el.width();
-                var height = $el.height();
+        url.replace(/[?&](.+?)=([^&#]*)/g, function(_, key, value) {
+            query[key] = decodeURI(value).replace(/\+/g, ' ');
+        });
 
-                var currCoords = {
-                    'top': offset.top,
-                    'right': offset.left + width,
-                    'bottom': offset.top + height,
-                    'left': offset.left
-                };
+        return query;
+    }
 
-                // Only continue if the coordinates have changed. Otherwise we do nothing
-                if (currCoords.top !== lastCoords.top || currCoords.right !== lastCoords.right ||
-                    currCoords.bottom !== lastCoords.bottom || currCoords.left !== lastCoords.left) {
-                    // Set the new set of coords
-                    lastCoords = currCoords;
-
-                    // First ensure the element is still on the DOM. If not, we're going to clean everything up here
-                    if (!$.contains(document.documentElement, $el[0])) {
-                        if (intervalHandle) {
-                            clearInterval(intervalHandle);
-                            intervalHandle = null;
-                        }
-                        return;
-                    }
-
-                    // Finally, run the callback
-                    return callback(lastCoords);
-                }
-            };
-
-            // Start the interval timer
-            intervalHandle = setInterval(_loop, 200);
-
-            // Perform an immediate initial run
-            _loop();
-        };
-
-        /**
-         * Builds an object which contains all the parameters passed in a URL.
-         * @param {string} url URL which has parameters
-         * @returns {Object}
-         */
-        this.getQuery = function(url) {
-            var query = {};
-
-            url.replace(/[?&](.+?)=([^&#]*)/g, function (_, key, value) {
-                query[key] = decodeURI(value).replace(/\+/g, ' ');
-            });
-
-            return query;
-        };
-
-        /**
-         * Taken from underscore.js - debounce function to prevent function spamming on event triggers.
-         * Modified by GThomas to implement deferred.
-         * @param {function} func
-         * @param {int} wait
-         * @param {boolean} immediate
-         * @returns Deferred
-         */
-        this.debounce = function (func, wait, immediate) {
-            var timeout;
-            return function() {
-                var dfd = $.Deferred();
-                var context = this, args = arguments;
-                var later = function() {
-                    timeout = null;
-                    if (!immediate) { dfd.resolve(func.apply(context, args)); }
-                };
-                var callNow = immediate && !timeout;
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-                if (callNow) {
+    /**
+     * Taken from underscore.js - debounce function to prevent function spamming on event triggers.
+     * Modified by GThomas to implement deferred.
+     * @param {function} func
+     * @param {int} wait
+     * @param {boolean} immediate
+     * @returns {Promise}
+     */
+    debounce(func, wait, immediate) {
+        let timeout;
+        return function() {
+            const dfd = $.Deferred();
+            const context = this,
+                args = arguments;
+            const later = function() {
+                timeout = null;
+                if (!immediate) {
                     dfd.resolve(func.apply(context, args));
                 }
-                return dfd;
             };
+            const callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+            if (callNow) {
+                dfd.resolve(func.apply(context, args));
+            }
+            return dfd;
         };
-    };
-});
+    }
+}
+
+export default new Util();
