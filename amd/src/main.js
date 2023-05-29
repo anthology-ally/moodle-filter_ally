@@ -18,957 +18,947 @@
  *
  * @package
  * @author    Guy Thomas
- * @copyright Copyright (c) 2016 Open LMS / 2023 Anthology Group
+ * @copyright Copyright (c) 2016 Open LMS
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-/* eslint-disable camelcase */
 
-import $ from 'jquery';
-import Templates from 'core/templates';
-import {get_strings as getStrings} from 'core/str';
-import Ally from 'filter_ally/ally';
-import ImageCover from 'filter_ally/imagecover';
-import Util from 'filter_ally/util';
+define(['jquery', 'core/templates', 'core/str', 'filter_ally/ally', 'filter_ally/imagecover', 'filter_ally/util'],
+function($, Templates, Strings, Ally, ImageCover, Util) {
+    return new function() {
 
-class Main {
-    #canViewFeedback = false;
-    #canDownload = false;
-    #courseId;
-    #initialised = false;
-    #params = {};
+        var self = this;
 
-    /**
-     * Get nodes by xpath.
-     * @param {string} xpath
-     * @returns {Array}
-     */
-    #getNodesByXpath(xpath) {
-        const expression = window.document.createExpression(xpath);
-        const result = expression.evaluate(window.document, XPathResult.ANY_TYPE);
-        const nodes = [];
-        let node;
-        do {
-            node = result.iterateNext();
-            nodes.push(node);
-        } while (node);
-        return nodes;
-    }
-
-    /**
-     * Get single node by xpath.
-     * @param {string} xpath
-     * @returns {Node}
-     */
-    #getNodeByXpath(xpath) {
-        const expression = window.document.createExpression(xpath);
-        const result = expression.evaluate(window.document, XPathResult.FIRST_ORDERED_NODE_TYPE);
-        return result.singleNodeValue;
-    }
-
-    /**
-     * Render template and insert result in appropriate place.
-     * @param {object} data
-     * @param {string} pathHash
-     * @param {node} targetEl
-     * @returns {promise}
-     */
-    #renderTemplate(data, pathHash, targetEl) {
-        const dfd = $.Deferred();
-
-        if ($(targetEl).parents('.filter-ally-wrapper').length) {
-            // This has already been processed.
-            dfd.resolve();
-            return dfd.promise();
-        }
-
-        // Too expensive to do at module level - this is a course level capability.
-        data.canviewfeedback = this.#canViewFeedback;
-        data.candownload = this.#canDownload;
-        data.html = '<span id="content-target-' + pathHash + '"></span>';
-
-        Templates.render('filter_ally/wrapper', data)
-            .done((result) => {
-                const presentWrappers = $(targetEl).next().find('span[data-file-id="' + pathHash + '"]');
-                if (presentWrappers.length == 0) {
-                    $(targetEl).after(result);
-
-                    // We are inserting the module element next to the target as opposed to replacing the
-                    // target as we want to ensure any listeners attributed to the module element persist.
-                    $('#content-target-' + pathHash).after(targetEl);
-                    $('#content-target-' + pathHash).remove();
-                }
-                dfd.resolve();
-            });
-
-        return dfd.promise();
-    }
-
-    /**
-     * Place holder items that are matched by selector.
-     * @param {string} selector
-     * @param {string} map
-     * @returns {promise}
-     */
-    #placeHoldSelector(selector, map) {
-        const dfd = $.Deferred();
-        const length = $(selector).length;
-        let c = 0;
-
-        if (!length) {
-            dfd.resolve();
-        }
-        $(selector).each((idx, el) => {
-
-            /**
-             * Check that all selectors have been processed.
-             */
-            const checkComplete = () => {
-                if (c === length) {
-                    dfd.resolve();
-                }
-            };
-
-            let url,
-                type;
-
-            if ($(el).prop("tagName").toLowerCase() === 'a') {
-                url = $(el).attr('href');
-                type = 'a';
-            } else {
-                url = $(el).attr('src');
-                type = 'img';
-            }
-            let regex;
-            if (url.indexOf('?') > -1) {
-                regex = /pluginfile.php\/(\d*)\/(.*)(\?)/;
-            } else {
-                regex = /pluginfile.php\/(\d*)\/(.*)/;
-            }
-            const match = url.match(regex);
-            let pathHash;
-            if (match) {
-                let path = match[1] + '/' + match[2];
-                path = decodeURIComponent(path);
-                pathHash = map[path];
-            }
-
-            if (pathHash === undefined) {
-                // Maybe 'slasharguments' setting is disabled for this host.
-                // Let's see if the file URI is found in the URL query.
-                const query = Util.getQuery(url);
-                if (query.file) {
-                    const filePath = decodeURIComponent(query.file);
-                    regex = /\/(\d*)\/(.*)/;
-
-                    const match = filePath.match(regex);
-                    if (match) {
-                        let path = match[1] + '/' + match[2];
-                        path = decodeURIComponent(path);
-                        pathHash = map[path];
-                    }
-                }
-            }
-
-            // Pathhash was definitely not found :( .
-            if (pathHash === undefined) {
-                c++;
-                checkComplete();
-                return;
-            }
-
-            const data = {
-                isimage: type === 'img',
-                fileid: pathHash,
-                url: url
-            };
-
-            this.#renderTemplate(data, pathHash, $(el))
-                .done(() => {
-                    c++;
-                    checkComplete();
-                });
-        });
-        return dfd.promise();
-    }
-
-    /**
-     * Add place holders for forum module image attachments (note, regular files are covered by php).
-     * @param {array} forumFileMapping
-     * @returns {promise}
-     */
-    #placeHoldForumModule(forumFileMapping) {
-        const dfd = $.Deferred();
-        this.#placeHoldSelector('.forumpost .attachedimages img[src*="pluginfile.php"], ' +
-            '.forumpost .body-content-container a[href*="pluginfile.php"]', forumFileMapping)
-            .done(() => {
-                dfd.resolve();
-            });
-        return dfd.promise();
-    }
-
-    /**
-     * Add place holders for assign module additional files.
-     * @param {array} assignFileMapping
-     * @returns {promise}
-     */
-    #placeHoldAssignModule(assignFileMapping) {
-        const dfd = $.Deferred();
-        Util.whenTrue(() => {
-            return $('div[id*="assign_files_tree"] .ygtvitem').length > 0;
-        }, 10)
-            .done(() => {
-                this.#placeHoldSelector('div[id*="assign_files_tree"] a[href*="pluginfile.php"]', assignFileMapping);
-                dfd.resolve();
-            });
-        return dfd.promise();
-    }
-
-    /**
-     * Add place holders for folder module files.
-     * @param {array} folderFileMapping
-     * @returns {promise}
-     */
-    #placeHoldFolderModule(folderFileMapping) {
-        const dfd = $.Deferred();
-        Util.whenTrue(() => {
-            return $('.foldertree > .filemanager .ygtvitem').length > 0;
-        }, 10)
-            .done(() => {
-                const unwrappedlinks = '.foldertree > .filemanager span:not(.filter-ally-wrapper) > a[href*="pluginfile.php"]';
-                this.#placeHoldSelector(unwrappedlinks, folderFileMapping)
-                    .done(() => {
-                        dfd.resolve();
-                    });
-            });
-        return dfd.promise();
-    }
-
-    /**
-     * Add place holders for glossary module files.
-     * @param {array} glossaryFileMapping
-     * @returns {promise}
-     */
-    #placeHoldGlossaryModule(glossaryFileMapping) {
-        const dfd = $.Deferred();
-
-        // Glossary attachment markup is terrible!
-        // The first thing we need to do is rewrite the glossary attachments so that they are encapsulated.
-        $('.entry .attachments > br').each((idx, el) => {
-            const mainAnchor = $(el).prev('a[href*="pluginfile.php"]');
-            mainAnchor.addClass('ally-glossary-attachment');
-            const iconAnchor = $(mainAnchor).prev('a[href*="pluginfile.php"]');
-            $(el).after('<div class="ally-glossary-attachment-row"></div>');
-            const container = $(el).next('.ally-glossary-attachment-row');
-            container.append(iconAnchor);
-            container.append(mainAnchor);
-            $(el).remove();
-        });
-
-        const unwrappedlinks = '.entry .attachments .ally-glossary-attachment';
-        this.#placeHoldSelector(unwrappedlinks, glossaryFileMapping)
-            .done(() => {
-                dfd.resolve();
-            });
-        return dfd.promise();
-    }
-
-    /**
-     * Encode a file path so that it can be used to find things by uri.
-     * @param {string} filePath
-     * @returns {string}
-     */
-    urlEncodeFilePath(filePath) {
-        const parts = filePath.split('/');
-        for (let p in parts) {
-            parts[p] = encodeURIComponent(parts[p]);
-        }
-        const encoded = parts.join('/');
-        return encoded;
-    }
-
-    /**
-     * General function for finding lesson component file elements and then add mapping.
-     * @param {array} map
-     * @param {string} selectorPrefix
-     * @returns {Promise}
-     */
-    #placeHoldLessonGeneral(map, selectorPrefix) {
-        const dfd = $.Deferred();
-        if (map.length === 0) {
-            dfd.resolve();
-        } else {
-            for (let c in map) {
-                const path = this.urlEncodeFilePath(c);
-                const sel = selectorPrefix + 'img[src*="' + path + '"], ' + selectorPrefix + 'a[href*="' + path + '"]';
-                this.#placeHoldSelector(sel, map).done(() => {
-                    dfd.resolve();
-                });
-            }
-        }
-        return dfd.promise();
-    }
-
-    /**
-     * Placehold lesson page contents.
-     * @param {array} pageContentsMap
-     * @returns {Promise}
-     */
-    #placeHoldLessonPageContents(pageContentsMap) {
-        return this.#placeHoldLessonGeneral(pageContentsMap, '');
-    }
-
-    /**
-     * Placehold lesson answers.
-     * @param {array} pageAnswersMap
-     * @returns {Promise}
-     */
-    #placeHoldLessonAnswersContent(pageAnswersMap) {
-        return this.#placeHoldLessonGeneral(pageAnswersMap,
-            '.studentanswer table tr:nth-child(1) '); // Space at end of selector intended.
-    }
-
-    /**
-     * Placehold lesson responses.
-     * @param {array} pageResponsesMap
-     * @returns {Promise}
-     */
-    #placeHoldLessonResponsesContent(pageResponsesMap) {
-        return this.#placeHoldLessonGeneral(pageResponsesMap,
-            '.studentanswer table tr.lastrow '); // Space at end of selector intended.
-    }
-
-    /**
-     * Add place holders for lesson module files.
-     * @param {array} lessonFileMapping
-     * @returns {Promise}
-     */
-    async #placeHoldLessonModule(lessonFileMapping) {
-        const pageContentsMap = lessonFileMapping.page_contents;
-        const pageAnswersMap = lessonFileMapping.page_answers;
-        const pageResponsesMap = lessonFileMapping.page_responses;
-
-        await this.#placeHoldLessonPageContents(pageContentsMap);
-        await this.#placeHoldLessonAnswersContent(pageAnswersMap);
-        await this.#placeHoldLessonResponsesContent(pageResponsesMap);
-    }
-
-    /**
-     * Add place holders for resource module.
-     * @param {object} moduleFileMapping
-     * @returns {promise}
-     */
-    #placeHoldResourceModule(moduleFileMapping) {
-        const dfd = $.Deferred();
-        let c = 0;
+        self.canViewFeedback = false;
+        self.canDownload = false;
+        self.initialised = false;
+        self.params = {};
 
         /**
-         * Once all modules processed, resolve promise for this function.
+         * Get nodes by xpath.
+         * @param {string} xpath
+         * @returns {Array}
          */
-        const checkAllProcessed = () => {
-            c++;
-            // All resource modules have been dealt with.
-            if (c >= Object.keys(moduleFileMapping).length) {
+        var getNodesByXpath = function(xpath) {
+            var expression = window.document.createExpression(xpath);
+            var result = expression.evaluate(window.document, XPathResult.ANY_TYPE);
+            var nodes = [];
+            do {
+                var node = result.iterateNext();
+                nodes.push(node);
+            } while (node);
+            return nodes;
+        };
+
+        /**
+         * Get single node by xpath.
+         * @param {string} xpath
+         * @returns {Node}
+         */
+        var getNodeByXpath = function(xpath) {
+            var expression = window.document.createExpression(xpath);
+            var result = expression.evaluate(window.document, XPathResult.FIRST_ORDERED_NODE_TYPE);
+            return result.singleNodeValue;
+        };
+
+        /**
+         * Render template and insert result in appropriate place.
+         * @param {object} data
+         * @param {string} pathHash
+         * @param {node} targetEl
+         * @return {promise}
+         */
+        var renderTemplate = function(data, pathHash, targetEl) {
+            var dfd = $.Deferred();
+
+            if ($(targetEl).parents('.filter-ally-wrapper').length) {
+                // This has already been processed.
+                dfd.resolve();
+                return dfd.promise();
+            }
+
+            // Too expensive to do at module level - this is a course level capability.
+            data.canviewfeedback = self.canViewFeedback;
+            data.candownload = self.canDownload;
+            data.html = '<span id="content-target-' + pathHash + '"></span>';
+
+            Templates.render('filter_ally/wrapper', data)
+                .done(function(result) {
+                    var presentWrappers = $(targetEl).next().find('span[data-file-id="'+ pathHash +'"]');
+                    if (presentWrappers.length == 0) {
+                        $(targetEl).after(result);
+
+                        // We are inserting the module element next to the target as opposed to replacing the
+                        // target as we want to ensure any listeners attributed to the module element persist.
+                        $('#content-target-' + pathHash).after(targetEl);
+                        $('#content-target-' + pathHash).remove();
+                    }
+                    dfd.resolve();
+                });
+
+            return dfd.promise();
+        };
+
+        /**
+         * Place holder items that are matched by selector.
+         * @param {string} selector
+         * @param {string} map
+         * @return {promise}
+         */
+        var placeHoldSelector = function(selector, map) {
+            var dfd = $.Deferred();
+
+            var c = 0;
+
+            var length = $(selector).length;
+            if (!length) {
                 dfd.resolve();
             }
-        };
-        for (let moduleId in moduleFileMapping) {
-            const pathHash = moduleFileMapping[moduleId].content;
-            let moduleEl;
-            if ($('body').hasClass('theme-snap') && !$('body').hasClass('format-tiles')) {
-                moduleEl = $('#module-' + moduleId + ':not(.snap-native) .activityinstance ' +
-                    '.snap-asset-link a:first-of-type:not(.clickable-region)');
-            } else if ($('body').hasClass('format-tiles')) {
-                moduleEl = $('#module-' + moduleId + ' .activityinstance ' +
-                    'a:first-of-type:not(.clickable-region,.editing_move)');
-            } else {
-                moduleEl = $('#module-' + moduleId + ' .activity-instance ' +
-                    'a:first-of-type:not(.clickable-region,.editing_move)');
-            }
-            const processed = moduleEl.find('.filter-ally-wrapper');
-            if (processed.length > 0) {
-                checkAllProcessed(); // Already processed.
-                continue;
-            }
-            const data = {
-                isimage: false,
-                fileid: pathHash,
-                url: $(moduleEl).attr('href')
-            };
-            this.#renderTemplate(data, pathHash, moduleEl)
-                .done(checkAllProcessed);
-        }
-        return dfd.promise();
-    }
+            $(selector).each(function() {
 
-    buildContentIdent(component, table, field, id) {
-        return [component, table, field, id].join(':');
-    }
+                /**
+                 * Check that all selectors have been processed.
+                 */
+                var checkComplete = function() {
+                    if (c === length) {
+                        dfd.resolve();
+                    }
+                };
+                var url,
+                    type;
 
-    /**
-     * Add annotations to sections content.
-     * @param {array} sectionMapping
-     * @returns {Promise}
-     */
-    #annotateSections(sectionMapping) {
-        const dfd = $.Deferred();
-
-        for (let s in sectionMapping) {
-            const sectionId = sectionMapping[s];
-            const ident = this.buildContentIdent('course', 'course_sections', 'summary', sectionId);
-
-            const selectors = [
-                '#' + s + ' > .content div[class*="summarytext"] .no-overflow',
-                'body.theme-snap #' + s + ' > .content > .summary > div > .no-overflow' // Snap.
-            ];
-            $(selectors.join(',')).attr('data-ally-richcontent', ident);
-        }
-
-        dfd.resolve();
-        return dfd.promise();
-    }
-
-    /**
-     * Annotate module introductions.
-     * @param {array} introMapping
-     * @param {string} module
-     * @param {array} additionalSelectors
-     */
-    annotateModuleIntros(introMapping, module, additionalSelectors) {
-        for (let i in introMapping) {
-            const annotation = introMapping[i];
-            const selectors = [
-                'body.path-mod-' + module + '.cmid-' + i + ' #intro > .no-overflow',
-                // We need to be specific here for non course pages to skip this.
-                'li.activity.modtype_' + module + '#module-' + i + ' .description .no-overflow > .no-overflow',
-                'li.snap-activity.modtype_' + module + '#module-' + i + ' .contentafterlink > .no-overflow'
-            ];
-            if (additionalSelectors) {
-                for (let a in additionalSelectors) {
-                    selectors.push(additionalSelectors[a].replace('{{i}}', i));
-                }
-            }
-            $(selectors.join(',')).attr('data-ally-richcontent', annotation);
-        }
-    }
-
-    /**
-     * Add annotations to forums.
-     * @param {array} forumMapping
-     */
-    annotateForums(forumMapping) {
-        // Annotate introductions.
-        const intros = forumMapping.intros;
-        this.annotateModuleIntros(intros, 'forum');
-
-        // Annotate discussions.
-        const discussions = forumMapping.posts;
-        for (let d in discussions) {
-            const post = 'p' + d;
-            const annotation = discussions[d];
-            const selectors = [
-                "#page-mod-forum-discuss #" + post +
-                ' div.forumpost div.no-overflow'
-            ];
-            $(selectors.join(',')).attr('data-ally-richcontent', annotation);
-        }
-    }
-
-    /**
-     * Add annotations to Open Forums.
-     * @param {array} forumMapping
-     */
-    annotateMRForums(forumMapping) {
-
-        // Annotate introductions.
-        const intros = forumMapping.intros;
-        this.annotateModuleIntros(intros, 'hsuforum', ['#hsuforum-header .hsuforum_introduction > .no-overflow']);
-
-        const discussions = forumMapping.posts;
-        for (let d in discussions) {
-            const annotation = discussions[d];
-            const postSelector = 'article[id="p' + d + '"] div.posting';
-            $(postSelector).attr('data-ally-richcontent', annotation);
-        }
-    }
-
-    /**
-     * Add annotations to glossary.
-     * @param {array} mapping
-     */
-    annotateGlossary(mapping) {
-        // Annotate introductions.
-        const intros = mapping.intros;
-        this.annotateModuleIntros(intros, 'glossary');
-
-        // Annotate entries.
-        const entries = mapping.entries;
-        for (let e in entries) {
-            const annotation = entries[e];
-            const entryFooter = $('.entrylowersection .commands a[href*="id=' + e + '"]');
-            const entry = $(entryFooter).parents('.glossarypost').find('.entry .no-overflow');
-            $(entry).attr('data-ally-richcontent', annotation);
-        }
-    }
-
-    /**
-     * Add annotations to page.
-     * @param {array} mapping
-     */
-    annotatePage(mapping) {
-        const intros = mapping.intros;
-        this.annotateModuleIntros(intros, 'page', ['li.snap-native.modtype_page#module-{{i}} .contentafterlink > .summary-text']);
-
-        // Annotate content.
-        const content = mapping.content;
-        for (let c in content) {
-            const annotation = content[c];
-            const selectors = [
-                '#page-mod-page-view #region-main .box.generalbox > .no-overflow',
-                'li.snap-native.modtype_page#module-' + c + ' .pagemod-content'
-            ];
-            $(selectors.join(',')).attr('data-ally-richcontent', annotation);
-        }
-    }
-
-    /**
-     * Add annotations to book.
-     * @param {array} mapping
-     */
-    annotateBook(mapping) {
-        const intros = mapping.intros;
-
-        // For book, the only place the intro shows is on the course page when you select "display description on course page"
-        // in the module settings.
-        this.annotateModuleIntros(intros, 'book',
-            ['li.snap-native.modtype_book#module-{{i}} .contentafterlink > .summary-text .no-overflow']);
-
-        // Annotate content.
-        const content = mapping.chapters;
-        let chapterId;
-
-        if (this.#params.chapterid) {
-            chapterId = this.#params.chapterid;
-        } else {
-            const urlParams = new URLSearchParams(window.location.search);
-            chapterId = urlParams.get('chapterid');
-        }
-
-        $.each(content, (ch, annotation) => {
-            if (chapterId != ch) {
-                return;
-            }
-            const selectors = [
-                '#page-mod-book-view #region-main .box.generalbox.book_content > .no-overflow',
-                'li.snap-native.modtype_page#module-' + ch + ' .pagemod-content'
-            ];
-            $(selectors.join(',')).attr('data-ally-richcontent', annotation);
-        });
-    }
-
-    /**
-     * Add annotations to lesson.
-     * @param {array} mapping
-     */
-    async annotateLesson(mapping) {
-        const intros = mapping.intros;
-
-        // For lesson, the only place the intro shows is on the course page when you select "display description on course page"
-        // in the module settings.
-        this.annotateModuleIntros(intros, 'lesson',
-            ['li.snap-native.modtype_lesson#module-{{i}} .contentafterlink > .summary-text .no-overflow']);
-
-        // Annotate content.
-        const content = mapping.lesson_pages;
-        let pageId;
-        for (let p in content) {
-            if (document.body.id === "page-mod-lesson-edit") {
-                const xpath = '//a[@id="lesson-' + p + '"]//ancestor::table//tbody/tr/td/div[contains(@class, "no-overflow")]';
-                const annotation = content[p];
-                const node = this.#getNodeByXpath(xpath);
-                $(node).attr('data-ally-richcontent', annotation);
-            } else {
-                // Try get page from form.
-                const node = this.#getNodeByXpath('//form[contains(@action, "continue.php")]//input[@name="pageid"]');
-                if (node) {
-                    pageId = $(node).val();
+                if ($(this).prop("tagName").toLowerCase() === 'a') {
+                    url = $(this).attr('href');
+                    type = 'a';
                 } else {
-                    const urlParams = new URLSearchParams(window.location.search);
-                    pageId = urlParams.get('pageid');
+                    url = $(this).attr('src');
+                    type = 'img';
+                }
+                var regex;
+                if (url.indexOf('?') > -1) {
+                    regex = /pluginfile.php\/(\d*)\/(.*)(\?)/;
+                } else {
+                    regex = /pluginfile.php\/(\d*)\/(.*)/;
+                }
+                var match = url.match(regex);
+                var pathHash;
+                if (match) {
+                    var path = match[1] + '/' + match[2];
+                    path = decodeURIComponent(path);
+                    pathHash = map[path];
                 }
 
-                if (pageId != p) {
+                if (pathHash === undefined) {
+                    // Maybe 'slasharguments' setting is disabled for this host.
+                    // Let's see if the file URI is found in the URL query.
+                    var query = Util.getQuery(url);
+                    if (query.file) {
+                        var filePath = decodeURIComponent(query.file);
+                        regex = /\/(\d*)\/(.*)/;
+
+                        match = filePath.match(regex);
+                        if (match) {
+                            path = match[1] + '/' + match[2];
+                            path = decodeURIComponent(path);
+                            pathHash = map[path];
+                        }
+                    }
+                }
+
+                // Pathhash was definitely not found :( .
+                if (pathHash === undefined) {
+                    c++;
+                    checkComplete();
+                    return;
+                }
+
+                var data = {
+                    isimage: type === 'img',
+                    fileid: pathHash,
+                    url: url
+                };
+
+                renderTemplate(data, pathHash, $(this))
+                    .done(function(){
+                        c++;
+                        checkComplete();
+                    });
+            });
+            return dfd.promise();
+        };
+
+        /**
+         * Add place holders for forum module image attachments (note, regular files are covered by php).
+         * @param {array} forumFileMapping
+         * @return {promise}
+         */
+        var placeHoldForumModule = function(forumFileMapping) {
+            var dfd = $.Deferred();
+            placeHoldSelector('.forumpost .attachedimages img[src*="pluginfile.php"], ' +
+                '.forumpost .body-content-container a[href*="pluginfile.php"]', forumFileMapping)
+                .done(function(){
+                    dfd.resolve();
+                });
+            return dfd.promise();
+        };
+
+        /**
+         * Add place holders for assign module additional files.
+         * @param {array} assignFileMapping
+         * @return {promise}
+         */
+        var placeHoldAssignModule = function(assignFileMapping) {
+            var dfd = $.Deferred();
+            Util.whenTrue(function() {
+                return $('div[id*="assign_files_tree"] .ygtvitem').length > 0;
+            }, 10)
+                .done(function() {
+                    placeHoldSelector('div[id*="assign_files_tree"] a[href*="pluginfile.php"]', assignFileMapping);
+                    dfd.resolve();
+                });
+            return dfd.promise();
+        };
+
+        /**
+         * Add place holders for folder module files.
+         * @param {array} folderFileMapping
+         * @return {promise}
+         */
+        var placeHoldFolderModule = function(folderFileMapping) {
+            var dfd = $.Deferred();
+            Util.whenTrue(function() {
+                return $('.foldertree > .filemanager .ygtvitem').length > 0;
+            }, 10)
+                .done(function() {
+                    var unwrappedlinks = '.foldertree > .filemanager span:not(.filter-ally-wrapper) > a[href*="pluginfile.php"]';
+                    placeHoldSelector(unwrappedlinks, folderFileMapping)
+                        .done(function() {
+                            dfd.resolve();
+                        });
+                });
+            return dfd.promise();
+        };
+
+        /**
+         * Add place holders for glossary module files.
+         * @param {array} glossaryFileMapping
+         * @return {promise}
+         */
+        var placeHoldGlossaryModule = function(glossaryFileMapping) {
+            var dfd = $.Deferred();
+
+            // Glossary attachment markup is terrible!
+            // The first thing we need to do is rewrite the glossary attachments so that they are encapsulated.
+            $('.entry .attachments > br').each(function() {
+                var mainAnchor = $(this).prev('a[href*="pluginfile.php"]');
+                mainAnchor.addClass('ally-glossary-attachment');
+                var iconAnchor = $(mainAnchor).prev('a[href*="pluginfile.php"]');
+                $(this).after('<div class="ally-glossary-attachment-row"></div>');
+                var container = $(this).next('.ally-glossary-attachment-row');
+                container.append(iconAnchor);
+                container.append(mainAnchor);
+                $(this).remove();
+            });
+
+            var unwrappedlinks = '.entry .attachments .ally-glossary-attachment';
+            placeHoldSelector(unwrappedlinks, glossaryFileMapping)
+                .done(function() {
+                    dfd.resolve();
+                });
+            return dfd.promise();
+        };
+
+        /**
+         * Encode a file path so that it can be used to find things by uri.
+         * @param {string} filePath
+         * @returns {string}
+         */
+        var urlEncodeFilePath = function(filePath) {
+            var parts = filePath.split('/');
+            for (var p in parts) {
+                parts[p] = encodeURIComponent(parts[p]);
+            }
+            var encoded = parts.join('/');
+            return encoded;
+        };
+
+        /**
+         * General function for finding lesson component file elements and then add mapping.
+         * @param {array} map
+         * @param {string} selectorPrefix
+         * @return promise
+         */
+        var placeHoldLessonGeneral = function(map, selectorPrefix) {
+            var dfd = $.Deferred();
+            if (map.length === 0) {
+                dfd.resolve();
+            } else {
+                for (var c in map) {
+                    var path = urlEncodeFilePath(c);
+                    var sel = selectorPrefix + 'img[src*="' + path + '"], ' + selectorPrefix + 'a[href*="' + path + '"]';
+                    placeHoldSelector(sel, map).done(function() {
+                        dfd.resolve();
+                    });
+                }
+            }
+            return dfd.promise();
+        };
+
+        /**
+         * Placehold lesson page contents.
+         * @param {array} pageContentsMap
+         * @returns promise
+         */
+        var placeHoldLessonPageContents = function(pageContentsMap) {
+            return placeHoldLessonGeneral(pageContentsMap, '');
+        };
+
+        /**
+         * Placehold lesson answers.
+         * @param {array} pageAnswersMap
+         * @returns promise
+         */
+        var placeHoldLessonAnswersContent = function(pageAnswersMap) {
+            return placeHoldLessonGeneral(pageAnswersMap,
+                '.studentanswer table tr:nth-child(1) '); // Space at end of selector intended.
+        };
+
+        /**
+         * Placehold lesson responses.
+         * @param {array} pageResponsesMap
+         * @returns promise
+         */
+        var placeHoldLessonResponsesContent = function(pageResponsesMap) {
+            return placeHoldLessonGeneral(pageResponsesMap,
+                '.studentanswer table tr.lastrow '); // Space at end of selector intended.
+        };
+
+        /**
+         * Add place holders for lesson module files.
+         * @param {array} lessonFileMapping
+         * @return {promise}
+         */
+        var placeHoldLessonModule = function(lessonFileMapping) {
+            var dfd = $.Deferred();
+
+            var pageContentsMap = lessonFileMapping.page_contents;
+            var pageAnswersMap = lessonFileMapping.page_answers;
+            var pageResponsesMap = lessonFileMapping.page_responses;
+
+            placeHoldLessonPageContents(pageContentsMap)
+                .then(function() {
+                    return placeHoldLessonAnswersContent(pageAnswersMap);
+                })
+                .then(function() {
+                    return placeHoldLessonResponsesContent(pageResponsesMap);
+                })
+                .then(function() {
+                    dfd.resolve();
+                });
+            return dfd.promise();
+        };
+
+        /**
+         * Add place holders for resource module.
+         * @param {object} moduleFileMapping
+         * @return {promise}
+         */
+        var placeHoldResourceModule = function(moduleFileMapping) {
+            var dfd = $.Deferred();
+            var c = 0;
+
+            /**
+             * Once all modules processed, resolve promise for this function.
+             */
+            var checkAllProcessed = function() {
+                c++;
+                // All resource modules have been dealt with.
+                if (c >= Object.keys(moduleFileMapping).length) {
+                    dfd.resolve();
+                }
+            };
+            for (var moduleId in moduleFileMapping) {
+                var pathHash = moduleFileMapping[moduleId]['content'];
+                if ($('body').hasClass('theme-snap') && !$('body').hasClass('format-tiles')) {
+                    var moduleEl = $('#module-' + moduleId + ':not(.snap-native) .activityinstance ' +
+                        '.snap-asset-link a:first-of-type:not(.clickable-region)');
+                } else {
+                    var moduleEl = $('#module-' + moduleId + ' .activity-instance ' +
+                        'a:first-of-type:not(.clickable-region,.editing_move)');
+                }
+                var processed = moduleEl.find('.filter-ally-wrapper');
+                if (processed.length > 0) {
+                    checkAllProcessed(); // Already processed.
                     continue;
                 }
-                const annotation = content[p];
-                const selectors = [
-                    // Regular page.
-                    '#page-mod-lesson-view #region-main .box.contents > .no-overflow',
-                    // Question page.
-                    '#page-mod-lesson-view #region-main form > fieldset > .fcontainer > .contents .no-overflow',
-                    // Lesson page.
-                    'li.snap-native.modtype_page#module-' + p + ' .pagemod-content'
-                ];
-
-                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+                var data = {
+                    isimage: false,
+                    fileid: pathHash,
+                    url: $(moduleEl).attr('href')
+                };
+                renderTemplate(data, pathHash, moduleEl)
+                    .done(checkAllProcessed);
             }
-        }
+            return dfd.promise();
+        };
 
-        // Annotate answer answers.
-        const strings = await getStrings([
-            {key: 'answer', component: 'mod_lesson'},
-            {key: 'response', component: 'mod_lesson'}
-        ]);
+        var buildContentIdent = function(component, table, field, id) {
+            return [component, table, field, id].join(':');
+        };
 
-        const answerLabel = strings[0];
-        const responseLabel = strings[1];
-        const answers = mapping.lesson_answers;
+        /**
+         * Add annotations to sections content.
+         * @param {array} sectionMapping
+         */
+        var annotateSections = function(sectionMapping) {
+            var dfd = $.Deferred();
 
-        const processAnswerResponse = (pageId, i, label, annotation) => {
-            const xpath = '//a[@id="lesson-' + pageId + '"]//ancestor::table' +
-                '//td/label[contains(text(),"' + label + ' ' + i + '")]/ancestor::tr/td[2]';
-            const nodes = this.#getNodesByXpath(xpath);
-            for (let n in nodes) {
-                const node = nodes[n];
-                $(node).attr('data-ally-richcontent', annotation);
+            for (var s in sectionMapping) {
+                var sectionId = sectionMapping[s];
+                var ident = buildContentIdent('course', 'course_sections', 'summary', sectionId);
+
+                var selectors = [
+                    '#' + s + ' > .content div[class*="summarytext"] .no-overflow',
+                    'body.theme-snap #' + s + ' > .content > .summary > div > .no-overflow' // Snap.
+                ];
+                $(selectors.join(',')).attr('data-ally-richcontent', ident);
+            }
+
+            dfd.resolve();
+            return dfd.promise();
+        };
+
+        /**
+         * Annotate module introductions.
+         * @param {array} introMapping
+         * @param {string} module
+         * @param {array} additionalSelectors
+         */
+        var annotateModuleIntros = function(introMapping, module, additionalSelectors) {
+            for (var i in introMapping) {
+                var annotation = introMapping[i];
+                var selectors = [
+                    'body.path-mod-' + module + '.cmid-' + i + ' #intro > .no-overflow',
+                    // We need to be specific here for non course pages to skip this.
+                    'li.activity.modtype_' + module + '#module-' + i + ' .description .no-overflow > .no-overflow',
+                    'li.snap-activity.modtype_' + module + '#module-' + i + ' .contentafterlink > .no-overflow'
+                ];
+                if (additionalSelectors) {
+                    for (var a in additionalSelectors) {
+                        selectors.push(additionalSelectors[a].replace('{{i}}', i));
+                    }
+                }
+                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
             }
         };
 
-        for (let a in answers) {
-            // Increment anum so that we can get the answer number.
-            // Note, we can trust that this is correct because you can't order answers and the code in the lesson component
-            // orders answers by id.
-            const annotation = answers[a];
+        /**
+         * Add annotations to forums.
+         * @param {array} forumMapping
+         */
+        var annotateForums = function(forumMapping) {
+            // Annotate introductions.
+            var intros = forumMapping['intros'];
+            annotateModuleIntros(intros, 'forum');
 
-            const tmpArr = a.split('_');
-            const pageId = tmpArr[0];
-            const ansId = tmpArr[1];
-            const anum = tmpArr[2];
+            // Annotate discussions.
+            var discussions = forumMapping['posts'];
+            for (var d in discussions) {
+                var post = 'p' + d;
+                var annotation = discussions[d];
+                var selectors = [
+                    "#page-mod-forum-discuss #" + post +
+                    ' div.forumpost div.no-overflow'
+                ];
+                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+            }
+        };
 
-            // Process answers when on lesson edit page.
-            if (document.body.id === "page-mod-lesson-edit") {
-                processAnswerResponse(pageId, anum, answerLabel, annotation);
+        /**
+         * Add annotations to Open Forums.
+         * @param {array} forumMapping
+         */
+        var annotateMRForums = function(forumMapping) {
+
+            // Annotate introductions.
+            var intros = forumMapping['intros'];
+            annotateModuleIntros(intros, 'hsuforum', ['#hsuforum-header .hsuforum_introduction > .no-overflow']);
+
+            var discussions = forumMapping['posts'];
+            for (var d in discussions) {
+                var annotation = discussions[d];
+                var postSelector = 'article[id="p' + d + '"] div.posting';
+                $(postSelector).attr('data-ally-richcontent', annotation);
+            }
+        };
+
+        /**
+         * Add annotations to glossary.
+         * @param {array} mapping
+         */
+        var annotateGlossary = function(mapping) {
+            // Annotate introductions.
+            var intros = mapping['intros'];
+            annotateModuleIntros(intros, 'glossary');
+
+            // Annotate entries.
+            var entries = mapping['entries'];
+            for (var e in entries) {
+                var annotation = entries[e];
+                var entryFooter = $('.entrylowersection .commands a[href*="id=' + e + '"]');
+                var entry = $(entryFooter).parents('.glossarypost').find('.entry .no-overflow');
+                $(entry).attr('data-ally-richcontent', annotation);
+            }
+        };
+
+        /**
+         * Add annotations to page.
+         * @param {array} mapping
+         */
+        var annotatePage = function(mapping) {
+            var intros = mapping['intros'];
+            annotateModuleIntros(intros, 'page', ['li.snap-native.modtype_page#module-{{i}} .contentafterlink > .summary-text']);
+
+            // Annotate content.
+            var content = mapping['content'];
+            for (var c in content) {
+                var annotation = content[c];
+                var selectors = [
+                    '#page-mod-page-view #region-main .box.generalbox > .no-overflow',
+                    'li.snap-native.modtype_page#module-' + c + ' .pagemod-content'
+                ];
+                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+            }
+        };
+
+        /**
+         * Add annotations to book.
+         * @param {array} mapping
+         */
+        var annotateBook = function(mapping) {
+            var intros = mapping['intros'];
+
+            // For book, the only place the intro shows is on the course page when you select "display description on course page"
+            // in the module settings.
+            annotateModuleIntros(intros, 'book',
+                ['li.snap-native.modtype_book#module-{{i}} .contentafterlink > .summary-text .no-overflow']);
+
+            // Annotate content.
+            var content = mapping['chapters'], chapterId;
+
+            if (self.params.chapterid) {
+                chapterId = self.params.chapterid;
             } else {
-                // Wrap answers in labels.
-                $('#page-mod-lesson-view label[for="id_answerid_' + ansId + '"]').attr('data-ally-richcontent', annotation);
+                var urlParams = new URLSearchParams(window.location.search);
+                chapterId = urlParams.get('chapterid');
+            }
 
-                if (this.#params.answerid && this.#params.answerid == ansId) {
-                    $('.studentanswer tr:nth-of-type(1) > td div').attr('data-ally-richcontent', annotation);
+            $.each(content, function(ch, annotation) {
+                if (chapterId != ch) {
+                    return;
+                }
+                var selectors = [
+                    '#page-mod-book-view #region-main .box.generalbox.book_content > .no-overflow',
+                    'li.snap-native.modtype_page#module-' + ch + ' .pagemod-content'
+                ];
+                $(selectors.join(',')).attr('data-ally-richcontent', annotation);
+            });
+        };
+
+        /**
+         * Add annotations to lesson.
+         * @param {array} mapping
+         */
+        var annotateLesson = function(mapping) {
+            var intros = mapping['intros'];
+
+            // For lesson, the only place the intro shows is on the course page when you select "display description on course page"
+            // in the module settings.
+            annotateModuleIntros(intros, 'lesson',
+                ['li.snap-native.modtype_lesson#module-{{i}} .contentafterlink > .summary-text .no-overflow']);
+
+            // Annotate content.
+            var content = mapping['lesson_pages'];
+            for (var p in content) {
+                if (document.body.id === "page-mod-lesson-edit") {
+                    var xpath = '//a[@id="lesson-' + p + '"]//ancestor::table//tbody/tr/td/div[contains(@class, "no-overflow")]';
+                    var annotation = content[p];
+                    var node = getNodeByXpath(xpath);
+                    $(node).attr('data-ally-richcontent', annotation);
                 } else {
-                    const answerWrapperId = 'answer_wrapper_' + ansId;
-                    const answerEl = $('#id_answerid_' + ansId);
-                    if (answerEl.data('annotated') != 1) {
-                        // We only want to wrap this once.
-                        const contentEls = answerEl.nextAll();
-                        answerEl.parent('label').append('<span id="answer_wrapper_' + ansId + '"></span>');
-                        $('#' + answerWrapperId).append(contentEls);
+                    // Try get page from form.
+                    var node = getNodeByXpath('//form[contains(@action, "continue.php")]//input[@name="pageid"]');
+                    if (node) {
+                        var pageId = $(node).val();
+                    } else {
+                        var urlParams = new URLSearchParams(window.location.search);
+                        var pageId = urlParams.get('pageid');
                     }
-                    answerEl.data('annotated', 1);
+
+                    if (pageId != p) {
+                        continue;
+                    }
+                    var annotation = content[p];
+                    var selectors = [
+                        // Regular page.
+                        '#page-mod-lesson-view #region-main .box.contents > .no-overflow',
+                        // Question page.
+                        '#page-mod-lesson-view #region-main form > fieldset > .fcontainer > .contents .no-overflow',
+                        // Lesson page.
+                        'li.snap-native.modtype_page#module-' + p + ' .pagemod-content'
+                    ];
+
+                    $(selectors.join(',')).attr('data-ally-richcontent', annotation);
                 }
-                $('#answer_wrapper_' + a).attr('data-ally-richcontent', annotation);
             }
-        }
 
-        // Annotate answer responses.
-        const responses = mapping.lesson_answers_response;
-        for (let r in responses) {
-            const annotation = responses[r];
+            // Annotate answer answers.
+            Strings.get_strings([
+                {key:'answer', component:'mod_lesson'},
+                {key:'response', component:'mod_lesson'}
+            ]).then(function(strings) {
+                var answerLabel = strings[0];
+                var responseLabel = strings[1];
+                var answers = mapping['lesson_answers'];
 
-            const tmpArr = r.split('_');
-            const pageId = tmpArr[0];
-            const respId = tmpArr[1];
-            const rnum = tmpArr[2];
+                var processAnswerResponse = function(pageId, i, label, annotation) {
+                    var xpath = '//a[@id="lesson-' + pageId + '"]//ancestor::table' +
+                        '//td/label[contains(text(),"' + label + ' ' + i + '")]/ancestor::tr/td[2]';
+                    var nodes = getNodesByXpath(xpath);
+                    for (var n in nodes) {
+                        var node = nodes[n];
+                        $(node).attr('data-ally-richcontent', annotation);
+                    }
+                };
 
-            if (document.body.id === "page-mod-lesson-edit") {
-                processAnswerResponse(pageId, rnum, responseLabel, annotation);
-            } else if (this.#params.answerid && this.#params.answerid == respId) {
-                // Just incase you are wondering, yes answer ids ^ are the same as response ids ;-).
-                const responseWrapperId = 'response_wrapper_' + respId;
-                if (!$('.studentanswer tr.lastrow > td #' + responseWrapperId).length) {
-                    // We only want to wrap this once, hence above ! length check.
-                    const contentEls = $('.studentanswer tr.lastrow > td > br').nextAll();
-                    $('.studentanswer tr.lastrow > td > br').after('<span id="' + responseWrapperId + '"></span>');
-                    $('#' + responseWrapperId).append(contentEls);
+                for (var a in answers) {
+                    // increment anum so that we can get the answer number.
+                    // Note, we can trust that this is correct because you can't order answers and the code in the lesson component
+                    // orders answers by id.
+                    var annotation = answers[a];
+
+                    var tmpArr = a.split('_');
+                    var pageId = tmpArr[0];
+                    var ansId = tmpArr[1];
+                    var anum = tmpArr[2];
+
+                    // Process answers when on lesson edit page.
+                    if (document.body.id === "page-mod-lesson-edit") {
+                        processAnswerResponse(pageId, anum, answerLabel, annotation);
+                    } else {
+                        // Wrap answers in labels.
+                        $('#page-mod-lesson-view label[for="id_answerid_' + ansId + '"]').attr('data-ally-richcontent', annotation);
+
+                        if (self.params.answerid && self.params.answerid == ansId) {
+                            $('.studentanswer tr:nth-of-type(1) > td div').attr('data-ally-richcontent', annotation);
+                        } else {
+                            var answerWrapperId = 'answer_wrapper_' + ansId;
+                            var answerEl = $('#id_answerid_' + ansId);
+                            if (answerEl.data('annotated') != 1) {
+                                // We only want to wrap this once.
+                                var contentEls = answerEl.nextAll();
+                                answerEl.parent('label').append('<span id="answer_wrapper_' + ansId + '"></span>');
+                                $('#' + answerWrapperId).append(contentEls);
+                            }
+                            answerEl.data('annotated', 1);
+                        }
+                        $('#answer_wrapper_' + a).attr('data-ally-richcontent', annotation);
+                    }
                 }
 
-                $('#' + responseWrapperId).attr('data-ally-richcontent', annotation);
+                // Annotate answer responses.
+                var responses = mapping['lesson_answers_response'];
+                for (var r in responses) {
+                    var annotation = responses[r];
+
+                    var tmpArr = r.split('_');
+                    var pageId = tmpArr[0];
+                    var respId = tmpArr[1];
+                    var rnum = tmpArr[2];
+
+                    if (document.body.id === "page-mod-lesson-edit") {
+                        processAnswerResponse(pageId, rnum, responseLabel, annotation);
+                    } else if (self.params.answerid && self.params.answerid == respId) {
+                        // Just incase you are wondering, yes answer ids ^ are the same as response ids ;-).
+                        var responseWrapperId = 'response_wrapper_' + respId;
+                        if (!$('.studentanswer tr.lastrow > td #' + responseWrapperId).length) {
+                            // We only want to wrap this once, hence above ! length check.
+                            var contentEls = $('.studentanswer tr.lastrow > td > br').nextAll();
+                            $('.studentanswer tr.lastrow > td > br').after('<span id="' + responseWrapperId + '"></span>');
+                            $('#' + responseWrapperId).append(contentEls);
+                        }
+
+                        $('#' + responseWrapperId).attr('data-ally-richcontent', annotation);
+                    }
+
+                }
+            });
+        };
+
+        /**
+         * Annotate supported modules
+         * @param {array} moduleMapping
+         */
+        var annotateModules = function(moduleMapping) {
+            var dfd = $.Deferred();
+            if (moduleMapping['mod_forum'] !== undefined) {
+                annotateForums(moduleMapping['mod_forum']);
             }
-        }
-    }
-
-    /**
-     * Annotate supported modules
-     * @param {array} moduleMapping
-     * @returns {Promise}
-     */
-    #annotateModules(moduleMapping) {
-        const dfd = $.Deferred();
-        if (moduleMapping.mod_forum !== undefined) {
-            this.annotateForums(moduleMapping.mod_forum);
-        }
-        if (moduleMapping.mod_hsuforum !== undefined) {
-            this.annotateMRForums(moduleMapping.mod_hsuforum);
-        }
-        if (moduleMapping.mod_glossary !== undefined) {
-            this.annotateGlossary(moduleMapping.mod_glossary);
-        }
-        if (moduleMapping.mod_page !== undefined) {
-            this.annotatePage(moduleMapping.mod_page);
-        }
-        if (moduleMapping.mod_book !== undefined) {
-            this.annotateBook(moduleMapping.mod_book);
-        }
-        if (moduleMapping.mod_lesson !== undefined) {
-            this.annotateLesson(moduleMapping.mod_lesson);
-        }
-        dfd.resolve();
-        return dfd.promise();
-    }
-
-    /**
-     * Annotates course summary if found on footer.
-     * @param {object} mapping
-     * @returns {Promise}
-     */
-    #annotateSnapCourseSummary(mapping) {
-        const dfd = $.Deferred();
-        const snapFooterCourseSummary = $('#snap-course-footer-summary > div.no-overflow');
-        if (snapFooterCourseSummary.length) {
-            const ident = this.buildContentIdent('course', 'course', 'summary', mapping.courseId);
-            snapFooterCourseSummary.attr('data-ally-richcontent', ident);
-        }
-        dfd.resolve();
-        return dfd.promise();
-    }
-
-    /**
-     * Annotate html block.
-     * @param {object} mapping
-     * @returns {Promise}
-     */
-    #annotateHtmlBlock(mapping) {
-        const dfd = $.Deferred();
-
-        const items = mapping.block_html;
-        for (let i in items) {
-            const ident = items[i];
-            const selectors = [
-                '#inst' + i + '.block_html > .card-body > .card-text > .no-overflow',
-                '#inst' + i + '.block_html > .content > .no-overflow'
-            ];
-            const selector = selectors.join(',');
-            $(selector).attr('data-ally-richcontent', ident);
-        }
-        dfd.resolve();
-        return dfd.promise();
-    }
-
-    /**
-     * Apply place holders and add annotations to content.
-     * @returns {promise}
-     */
-    applyPlaceHolders() {
-        M.util.js_pending('filter_ally_applyPlaceHolders');
-        const dfd = $.Deferred();
-
-        if (ally_module_maps === undefined || ally_section_maps === undefined) {
+            if (moduleMapping['mod_hsuforum'] !== undefined) {
+                annotateMRForums(moduleMapping['mod_hsuforum']);
+            }
+            if (moduleMapping['mod_glossary'] !== undefined) {
+                annotateGlossary(moduleMapping['mod_glossary']);
+            }
+            if (moduleMapping['mod_page'] !== undefined) {
+                annotatePage(moduleMapping['mod_page']);
+            }
+            if (moduleMapping['mod_book'] !== undefined) {
+                annotateBook(moduleMapping['mod_book']);
+            }
+            if (moduleMapping['mod_lesson'] !== undefined) {
+                annotateLesson(moduleMapping['mod_lesson']);
+            }
             dfd.resolve();
             return dfd.promise();
-        }
+        };
 
-        const self = this;
+        /**
+         * Annotates course summary if found on footer.
+         * @param {object} mapping
+         */
+        var annotateSnapCourseSummary = function(mapping) {
+            var dfd = $.Deferred();
+            var snapFooterCourseSummary = $('#snap-course-footer-summary > div.no-overflow');
+            if (snapFooterCourseSummary.length) {
+                var ident = buildContentIdent('course', 'course', 'summary', mapping.courseId);
+                snapFooterCourseSummary.attr('data-ally-richcontent', ident);
+            }
+            dfd.resolve();
+            return dfd.promise();
+        };
 
-        const tasks = [
-            {
+        /**
+         * Annotate html block.
+         * @param {object} mapping
+         */
+        var annotateHtmlBlock = function(mapping) {
+            var dfd = $.Deferred();
+
+            var items = mapping.block_html;
+            for (var i in items) {
+                var ident = items[i];
+                var selectors = [
+                    '#inst' + i + '.block_html > .card-body > .card-text > .no-overflow',
+                    '#inst' + i + '.block_html > .content > .no-overflow'
+                ];
+                var selector = selectors.join(',');
+                $(selector).attr('data-ally-richcontent', ident);
+            }
+            dfd.resolve();
+            return dfd.promise();
+        };
+
+        /**
+         * Apply place holders and add annotations to content.
+         * @return {promise}
+         */
+        var applyPlaceHolders = function() {
+            M.util.js_pending('filter_ally_applyPlaceHolders');
+            var dfd = $.Deferred();
+
+            if (ally_module_maps === undefined || ally_section_maps === undefined) {
+                dfd.resolve();
+                return dfd.promise();
+            }
+
+            var tasks = [{
                 mapVar: ally_module_maps.file_resources,
-                method: this.#placeHoldResourceModule
+                method: placeHoldResourceModule
             },
             {
                 mapVar: ally_module_maps.assignment_files,
-                method: this.#placeHoldAssignModule
+                method: placeHoldAssignModule
             },
             {
                 mapVar: ally_module_maps.folder_files,
-                method: this.#placeHoldFolderModule
+                method: placeHoldFolderModule
             },
             {
                 mapVar: ally_module_maps.forum_files,
-                method: this.#placeHoldForumModule
+                method: placeHoldForumModule
             },
             {
                 mapVar: ally_module_maps.glossary_files,
-                method: this.#placeHoldGlossaryModule
+                method: placeHoldGlossaryModule
             },
             {
                 mapVar: ally_module_maps.lesson_files,
-                method: this.#placeHoldLessonModule
+                method: placeHoldLessonModule
             },
             {
                 mapVar: ally_section_maps,
-                method: this.#annotateSections
+                method: annotateSections
             },
             {
                 mapVar: ally_annotation_maps,
-                method: this.#annotateModules
+                method: annotateModules
             },
             {
-                mapVar: {courseId: this.#courseId},
-                method: this.#annotateSnapCourseSummary
+                mapVar: {courseId: self.courseId},
+                method: annotateSnapCourseSummary
             },
             {
                 mapVar: ally_annotation_maps,
-                method: this.#annotateHtmlBlock
+                method: annotateHtmlBlock
             }];
 
-        $(document).ready(() => {
-            let completed = 0;
-
-            /**
-             * Run this once a task has resolved.
-             */
-            const onTaskComplete = () => {
-                completed++;
-                if (completed === tasks.length) {
-                    // All tasks completed.
-                    M.util.js_complete('filter_ally_applyPlaceHolders');
-                    dfd.resolve();
-                }
-            };
-
-            for (let t in tasks) {
-                const task = tasks[t];
-                if (Object.keys(task.mapVar).length > 0) {
-                    task.method.call(self, task.mapVar)
-                        .done(onTaskComplete);
-                } else {
-                    // Skipped this task because mappings are empty.
-                    onTaskComplete();
-                }
-            }
-        });
-        return dfd.promise();
-    }
-
-    /**
-     * Initialise JS stage two.
-     * @param {string} jwt
-     * @param {object} config
-     */
-    initStageTwo(jwt, config) {
-        if (this.#canViewFeedback || this.#canDownload) {
-            const debounceApplyPlaceHolders = Util.debounce(() => {
-                return this.applyPlaceHolders();
-            }, 1000);
-            debounceApplyPlaceHolders()
-                .done(() => {
-                    ImageCover.init();
-                    Ally.init(jwt, config);
-                    try {
-                        const selector = $('.foldertree > .filemanager');
-                        const targetNode = selector[0];
-                        if (targetNode) {
-                            const observerConfig = {attributes: true, childList: true, subtree: true};
-                            const callback = (mutationsList) => {
-                                mutationsList.filter((mutation) => {
-                                    return mutation.type === 'childList';
-                                }).forEach(() => {
-                                    this.#placeHoldFolderModule(ally_module_maps.folder_files);
-                                });
-                            };
-                            const observer = new MutationObserver(callback);
-                            observer.observe(targetNode, observerConfig);
-                        }
-                    } catch (error) {
-                        setInterval(() => {
-                            this.#placeHoldFolderModule(ally_module_maps.folder_files);
-                        }, 5000);
+            $(document).ready(function() {
+                var completed = 0;
+                /**
+                 * Run this once a task has resolved.
+                 */
+                var onTaskComplete = function() {
+                    completed++;
+                    if (completed === tasks.length) {
+                        // All tasks completed.
+                        M.util.js_complete('filter_ally_applyPlaceHolders');
+                        dfd.resolve();
                     }
-                    this.#initialised = true;
-                });
+                };
 
-            $(document).ajaxComplete(() => {
-                if (!this.#initialised) {
-                    return;
+                for (var t in tasks) {
+                    var task = tasks[t];
+                    if (Object.keys(task.mapVar).length > 0) {
+                        task.method(task.mapVar)
+                            .done(onTaskComplete);
+                    } else {
+                        // Skipped this task because mappings are empty.
+                        onTaskComplete();
+                    }
                 }
-                debounceApplyPlaceHolders();
             });
-            // For Snap theme.
-            if ($('body.theme-snap').length) {
-                $(document).ajaxComplete((event, xhr, settings) => {
-                    // Search ally server response.
-                    if (settings.url.includes('ally.js')) {
-                        setTimeout(() => {
-                            // Show score icons that are hidden, see INT-18688.
-                            $('.ally-feedback.ally-active.ally-score-indicator-embedded span').each((idx, el) => {
-                                if (el.style.display == 'none') {
-                                    el.style.display = 'block';
-                                    if (el.getAttribute('class') == 'ally-scoreindicator-container') {
-                                        el.style.display = 'inline-block';
-                                        el.children[0].style.display = 'inline-block';
-                                    }
-                                }
-                            });
-                        }, 5000);
-                        $(document).off('ajaxComplete');
-                    }
-                });
-            }
-        }
-    }
-
-    /**
-     * Init function.
-     * @param {string} jwt
-     * @param {object} config
-     * @param {boolean} canViewFeedback
-     * @param {boolean} canDownload
-     * @param {int} courseId
-     * @param {object} params
-     */
-    init(jwt, config, canViewFeedback, canDownload, courseId, params) {
-
-        this.#canViewFeedback = canViewFeedback;
-        this.#canDownload = canDownload;
-        this.#courseId = courseId;
-        this.#params = params;
-
-        const self = this;
-
-        const pluginJSURL = (path) => {
-            return M.cfg.wwwroot + "/pluginfile.php/" + M.cfg.contextid + "/filter_ally/" + path;
+            return dfd.promise();
         };
 
-        const polyfills = {};
-        if (!document.evaluate) {
-            polyfills['filter_ally/wgxpath'] = pluginJSURL("vendorjs/wgxpath.install");
-        }
-        if (typeof URLSearchParams === 'undefined') {
-            polyfills['filter_ally/urlsearchparams'] = [
-                'https://cdnjs.cloudflare.com/ajax/libs/url-search-params/1.1.0/url-search-params.amd.js',
-                pluginJSURL('vendorjs/url-search-params.amd') // CDN fallback.
-            ];
-        }
-        if (polyfills !== {}) {
-            // Polyfill document.evaluate.
-            require.config(
-                {
-                    enforceDefine: false,
-                    paths: polyfills
+        var debounceApplyPlaceHolders = Util.debounce(function() {
+            return applyPlaceHolders();
+        }, 1000);
+
+        /**
+         * Initialise JS stage two.
+         * @param {string} jwt
+         * @param {object} config
+         */
+        this.initStageTwo = function(jwt, config) {
+            if (self.canViewFeedback || self.canDownload) {
+                debounceApplyPlaceHolders()
+                    .done(function() {
+                        ImageCover.init();
+                        Ally.init(jwt, config);
+                        try {
+                            var selector = $('.foldertree > .filemanager');
+                            var targetNode = selector[0];
+                            if (targetNode) {
+                                var observerConfig = { attributes: true, childList: true, subtree: true };
+                                var callback = function(mutationsList) {
+                                    mutationsList.filter( function (mutation) {
+                                        return mutation.type === 'childList';
+                                    }).forEach( function () {
+                                        placeHoldFolderModule(ally_module_maps.folder_files);
+                                    });
+                                };
+                                var observer = new MutationObserver(callback);
+                                observer.observe(targetNode, observerConfig);
+                            }
+                        } catch (error) {
+                            setInterval(function() {
+                                placeHoldFolderModule(ally_module_maps.folder_files);
+                            }, 5000);
+                        }
+                        self.initialised = true;
+                    });
+
+                $(document).ajaxComplete(function() {
+                    if (!self.initialised) {
+                        return;
+                    }
+                    debounceApplyPlaceHolders();
+                });
+                // For Snap theme.
+                if ($('body.theme-snap').length) {
+                    $(document).ajaxComplete(function(event, xhr, settings) {
+                        // Search ally server response.
+                        if (settings.url.includes('ally.js')) {
+                            setTimeout(function() {
+                                // Show score icons that are hidden, see INT-18688.
+                                $('.ally-feedback.ally-active.ally-score-indicator-embedded span').each(function () {
+                                    if (this.style.display == 'none') {
+                                        this.style.display = 'block';
+                                        if (this.getAttribute('class') == 'ally-scoreindicator-container') {
+                                            this.style.display = 'inline-block';
+                                            this.children[0].style.display = 'inline-block';
+                                        }
+                                    }
+                                });
+                            }, 5000);
+                            $(document).off('ajaxComplete');
+                        }
+                    });
                 }
-            );
-            const requires = Object.keys(polyfills);
+            }
+        };
 
-            require(requires, () => {
-                if (typeof URLSearchParams === 'undefined') {
-                    window.URLSearchParams = arguments[1]; // Second arg in require (which is URLSearchParams).
-                }
-                self.initStageTwo(jwt, config);
-            });
+        /**
+         * Init function.
+         * @param {string} jwt
+         * @param {object} config
+         * @param {boolean} canViewFeedback
+         * @param {boolean} canDownload
+         * @param {int} courseId
+         * @param {object} params
+         */
+        this.init = function(jwt, config, canViewFeedback, canDownload, courseId, params) {
 
-            return;
-        }
-        self.initStageTwo(jwt, config);
-    }
-}
+            self.canViewFeedback = canViewFeedback;
+            self.canDownload = canDownload;
+            self.courseId = courseId;
+            self.params = params;
 
-export default new Main();
+            var pluginJSURL = function(path) {
+                return M.cfg.wwwroot + "/pluginfile.php/" + M.cfg.contextid + "/filter_ally/" + path;
+            };
+
+            var polyfills = {};
+            if (!document.evaluate) {
+                polyfills['filter_ally/wgxpath'] = pluginJSURL("vendorjs/wgxpath.install");
+            }
+            if (typeof(URLSearchParams) === 'undefined') {
+                polyfills['filter_ally/urlsearchparams'] = [
+                    'https://cdnjs.cloudflare.com/ajax/libs/url-search-params/1.1.0/url-search-params.amd.js',
+                    pluginJSURL('vendorjs/url-search-params.amd') // CDN fallback.
+                ];
+            }
+            if (polyfills !== {}) {
+                // Polyfill document.evaluate.
+                require.config(
+                    {
+                        enforceDefine: false,
+                        paths: polyfills
+                    }
+                );
+                var requires = Object.keys(polyfills);
+
+                require(requires, function() {
+                    if (typeof(URLSearchParams) === 'undefined') {
+                        window.URLSearchParams = arguments[1]; // second arg in require (which is URLSearchParams)
+                    }
+                    self.initStageTwo(jwt, config);
+                });
+
+                return;
+            }
+            self.initStageTwo(jwt, config);
+        };
+    };
+});
