@@ -1,6 +1,6 @@
 # Ally filter
 
-![example workflow](https://github.com/gthomas2/moodle-filter_ally/actions/workflows/moodle-ci.yml/badge.svg)
+![example workflow](https://github.com/anthology-ally/moodle-filter_ally/actions/workflows/moodle-ci.yml/badge.svg)
 
 The Ally filter provides accessibility scores and tools for files uploaded to Moodle by teachers. It also provides
 alternative download types to enhance accessibility - e.g. audio, braille, etc

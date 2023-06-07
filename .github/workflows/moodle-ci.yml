@@ -23,12 +23,6 @@ on:
         default: '8.0'
 
 jobs:
-  # debug:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Output Inputs
-  #       run: echo "${{ toJSON(inputs.phpversion || '8.0') }}"
-
   test:
     runs-on: ubuntu-22.04
 
