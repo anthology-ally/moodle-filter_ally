@@ -18,74 +18,76 @@
  *
  * @package
  * @author    Guy Thomas
- * @copyright Copyright (c) 2016 Open LMS
+ * @copyright Copyright (c) 2016 Open LMS / 2023 Anthology Group
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-define(['jquery', 'filter_ally/util'], function($, Util) {
-    return new function() {
+import $ from 'jquery';
+import Util from 'filter_ally/util';
 
-        var applySizing = function() {
-            $('.ally-image-wrapper').each(function(){
-                var wrapper = this;
-                var img = $(wrapper).find('img');
-                var cover = $(wrapper).find('.ally-image-cover');
-                var feedback = $(wrapper).find('.ally-feedback');
-                var marginTop = parseInt($(img).css('marginTop'));
-                var marginLeft = parseInt($(img).css('marginLeft'));
+class ImageCover {
+    #applySizing() {
+        $('.ally-image-wrapper').each(function() {
+            const wrapper = this;
+            const img = $(wrapper).find('img');
+            const cover = $(wrapper).find('.ally-image-cover');
+            const feedback = $(wrapper).find('.ally-feedback');
+            const marginTop = parseInt($(img).css('marginTop'));
+            const marginLeft = parseInt($(img).css('marginLeft'));
 
-                var debounceCoordsChanged = Util.debounce(function(coords) {
-                    var width = (coords.right - coords.left);
-                    var height = (coords.bottom - coords.top);
-                    $(cover)
-                        .css('width', width + 'px')
-                        .css('height', height + 'px');
-                    var topPos = $(img).position().top + marginTop;
-                    var leftPos = $(img).position().left + marginLeft;
-                    $(cover)
-                        .css('top', topPos + 'px')
+            const debounceCoordsChanged = Util.debounce(function(coords) {
+                const width = (coords.right - coords.left);
+                const height = (coords.bottom - coords.top);
+                $(cover)
+                    .css('width', width + 'px')
+                    .css('height', height + 'px');
+                const topPos = $(img).position().top + marginTop;
+                const leftPos = $(img).position().left + marginLeft;
+                $(cover)
+                    .css('top', topPos + 'px')
+                    .css('left', leftPos + 'px');
+                if (feedback.length) {
+                    feedback
+                        .css('top', (topPos + height - feedback.height()) + 'px')
                         .css('left', leftPos + 'px');
-                    if (feedback.length) {
-                        feedback
-                            .css('top', (topPos + height - feedback.height()) + 'px')
-                            .css('left', leftPos + 'px');
+                }
+            }, 1000);
+
+            Util.onCoordsChange(img, function(coords) {
+                debounceCoordsChanged(coords);
+            });
+        });
+    }
+
+    init() {
+        $(document).ready(this.#applySizing);
+        const targetNode = document;
+        const observerOptions = {
+            childList: true,
+            attributes: true,
+            subtree: true
+        };
+        /**
+         *  By using the an event combined with a mutation observer that disconnects itself,
+         *  we can manage to have a mutation observer that works after page content lazy loaded by loaded in snap.
+         *  the interval is added as a redundancy to prevent calculation errors by correcting the indicator position.
+         * */
+        $(document).on('snap-course-content-loaded', () => {
+            const observer = new MutationObserver(() => {
+                let count = 0;
+                let interval = setInterval(() => {
+                    if (count < 5) {
+                        this.#applySizing();
+                        count++;
+                    } else {
+                        clearTimeout(interval);
                     }
-                }, 1000);
-
-                Util.onCoordsChange(img, function(coords) {
-                    debounceCoordsChanged(coords);
-                });
+                }, 500);
+                observer.disconnect();
             });
-        };
+            observer.observe(targetNode, observerOptions);
+        });
+    }
+}
 
-        this.init = function() {
-            $(document).ready(applySizing);
-            var targetNode = document;
-            var observerOptions = {
-                childList: true,
-                attributes: true,
-                subtree: true
-            };
-            /**
-             *  By using the an event combined with a mutation observer that disconnects itself,
-             *  we can manage to have a mutation observer that works after page content lazy loaded by loaded in snap.
-             *  the interval is added as a redundancy to prevent calculation errors by correcting the indicator position.
-             * */
-            $(document).on('snap-course-content-loaded', function() {
-                var observer = new MutationObserver(() => {
-                    let count = 0;
-                    let interval = setInterval(function(){
-                        if (count < 5) {
-                            applySizing();
-                            count++;
-                        } else {
-                            clearTimeout(interval);
-                        }
-                    },500);
-                    observer.disconnect();
-                });
-                observer.observe(targetNode, observerOptions);
-            });
-        };
-    };
-});
+export default new ImageCover();
