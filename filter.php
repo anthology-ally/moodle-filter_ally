@@ -18,7 +18,7 @@
  * Filter for processing file links for Ally accessibility enhancements.
  * @author    Guy Thomas
  * @package   filter_ally
- * @copyright Copyright (c) 2017 Open LMS
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 defined('MOODLE_INTERNAL') || die();
@@ -36,7 +36,7 @@ use tool_ally\logging\logger;
  * Filter for processing file links for Ally accessibility enhancements.
  * @author    Guy Thomas
  * @package   filter_ally
- * @copyright Copyright (c) 2017 Open LMS
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class filter_ally extends moodle_text_filter {
