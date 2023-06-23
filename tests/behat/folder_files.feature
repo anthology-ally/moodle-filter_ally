@@ -16,7 +16,7 @@
 # Tests for mod folder files processed by Ally filter.
 #
 # @package    filter_ally
-# @copyright  Copyright (c) 2017 Open LMS
+# @copyright  Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
 @filter @filter_ally @_file_upload

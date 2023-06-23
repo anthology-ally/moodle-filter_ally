@@ -17,7 +17,7 @@
 /**
  * Test filter loop avoidance.
  * @author    David Castro <david.castro@openlms.net>
- * @copyright Copyright (c) 2020 Open LMS.
+ * @copyright Copyright (c) 2020 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace filter_ally;

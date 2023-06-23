@@ -18,7 +18,7 @@
  * JSON Web Token helpers.
  *
  * @package   filter_ally
- * @copyright   Open LMS 2017
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

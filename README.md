@@ -65,7 +65,7 @@ When clicked, a modal appears where a student can select the alternative version
 
 ## License for Ally filter
 
-© Open LMS 2017 / Anthology Group 2023
+© 2017 Open LMS / 2023 Anthology Inc. and its affiliates
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
