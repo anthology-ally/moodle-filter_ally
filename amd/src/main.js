@@ -86,6 +86,10 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 .done(function(result) {
                     var presentWrappers = $(targetEl).next().find('span[data-file-id="'+ pathHash +'"]');
                     if (presentWrappers.length == 0) {
+                        if ($(targetEl).parent('.inplaceeditable')) {
+                            targetEl = $(targetEl).parent('.inplaceeditable');
+                        }
+
                         $(targetEl).after(result);
 
                         // We are inserting the module element next to the target as opposed to replacing the
