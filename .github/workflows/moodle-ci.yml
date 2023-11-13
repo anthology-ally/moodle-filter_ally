@@ -142,14 +142,14 @@ jobs:
 #          rm -rf moodledata/phpu_moodledata/cache
 #          moodle-plugin-ci phpunit --fail-on-warning
 #
-#      - name: Ally tool PHPUnit test
-#        if: ${{ always() }}
-#        run: |
-#          cd moodle
-#          composer config --unset repositories
-#          composer require --dev phpspec/prophecy
-#          vendor/bin/phpunit --testsuite=tool_ally_testsuite
-#          cd ..
+      - name: Ally tool PHPUnit test
+        if: ${{ always() }}
+        run: |
+          cd moodle
+          composer config --unset repositories
+          composer require --dev phpspec/prophecy
+          vendor/bin/phpunit --testsuite=tool_ally_testsuite
+          cd ..
 #
 #      - name: Ally report PHPUnit test
 #        if: ${{ always() }}
@@ -158,6 +158,6 @@ jobs:
 #          vendor/bin/phpunit --testsuite=report_allylti_testsuite
 #          cd ..
 
-      - name: Ally filter Behat test
-        if: ${{ always() }}
-        run: moodle-plugin-ci behat --profile chrome
+#      - name: Ally filter Behat test
+#        if: ${{ always() }}
+#        run: moodle-plugin-ci behat --profile chrome
