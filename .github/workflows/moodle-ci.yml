@@ -95,53 +95,53 @@ jobs:
 #        if: ${{ always() }}
 #        run: moodle-plugin-ci phplint
 
-#      - name: PHP Copy/Paste Detector
-#        continue-on-error: true # This step will show errors but will not fail
-#        if: ${{ always() }}
-#        run: moodle-plugin-ci phpcpd
-#
-#      - name: PHP Mess Detector
-#        continue-on-error: true # This step will show errors but will not fail
-#        if: ${{ always() }}
-#        run: moodle-plugin-ci phpmd
-#
-#      - name: Moodle Code Checker
-#        continue-on-error: true # This step will show errors but will not fail
-#        if: ${{ always() }}
-#        run: moodle-plugin-ci codechecker --max-warnings 0
-#
-#      - name: Moodle PHPDoc Checker
-#        continue-on-error: true # This step will show errors but will not fail
-#        if: ${{ always() }}
-#        run: moodle-plugin-ci phpdoc
-#
-#      - name: Validating
-#        if: ${{ always() }}
-#        run: moodle-plugin-ci validate
-#
-#      - name: Check upgrade savepoints
-#        if: ${{ always() }}
-#        run: moodle-plugin-ci savepoints
-#
-#      - name: Mustache Lint
-#        continue-on-error: true # This step will show errors but will not fail
-#        if: ${{ always() }}
-#        run: moodle-plugin-ci mustache
-#
-#      - name: Grunt
-#        continue-on-error: true # This step will show errors but will not fail
-#        if: ${{ always() }}
-#        run: moodle-plugin-ci grunt --max-lint-warnings 0
-#
-#      # - name: Setup upterm session
-#      #   uses: lhotari/action-upterm@v1
-#
-#      - name: Ally filter PHPUnit test
-#        if: ${{ always() }}
-#        run: |
-#          rm -rf moodledata/phpu_moodledata/cache
-#          moodle-plugin-ci phpunit --fail-on-warning
-#
+      - name: PHP Copy/Paste Detector
+        continue-on-error: true # This step will show errors but will not fail
+        if: ${{ always() }}
+        run: moodle-plugin-ci phpcpd
+
+      - name: PHP Mess Detector
+        continue-on-error: true # This step will show errors but will not fail
+        if: ${{ always() }}
+        run: moodle-plugin-ci phpmd
+
+      - name: Moodle Code Checker
+        continue-on-error: true # This step will show errors but will not fail
+        if: ${{ always() }}
+        run: moodle-plugin-ci codechecker --max-warnings 0
+
+      - name: Moodle PHPDoc Checker
+        continue-on-error: true # This step will show errors but will not fail
+        if: ${{ always() }}
+        run: moodle-plugin-ci phpdoc
+
+      - name: Validating
+        if: ${{ always() }}
+        run: moodle-plugin-ci validate
+
+      - name: Check upgrade savepoints
+        if: ${{ always() }}
+        run: moodle-plugin-ci savepoints
+
+      - name: Mustache Lint
+        continue-on-error: true # This step will show errors but will not fail
+        if: ${{ always() }}
+        run: moodle-plugin-ci mustache
+
+      - name: Grunt
+        continue-on-error: true # This step will show errors but will not fail
+        if: ${{ always() }}
+        run: moodle-plugin-ci grunt --max-lint-warnings 0
+
+      # - name: Setup upterm session
+      #   uses: lhotari/action-upterm@v1
+
+      - name: Ally filter PHPUnit test
+        if: ${{ always() }}
+        run: |
+          rm -rf moodledata/phpu_moodledata/cache
+          moodle-plugin-ci phpunit --fail-on-warning
+
       - name: Ally tool PHPUnit test
         if: ${{ always() }}
         run: |
@@ -150,13 +150,13 @@ jobs:
           composer require --dev phpspec/prophecy
           vendor/bin/phpunit --testsuite=tool_ally_testsuite
           cd ..
-#
-#      - name: Ally report PHPUnit test
-#        if: ${{ always() }}
-#        run: |
-#          cd moodle
-#          vendor/bin/phpunit --testsuite=report_allylti_testsuite
-#          cd ..
+
+      - name: Ally report PHPUnit test
+        if: ${{ always() }}
+        run: |
+          cd moodle
+          vendor/bin/phpunit --testsuite=report_allylti_testsuite
+          cd ..
 
 #      - name: Ally filter Behat test
 #        if: ${{ always() }}
