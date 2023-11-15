@@ -22,6 +22,10 @@
  */
 namespace filter_ally;
 
+/**
+ * @group     filter_ally
+ * @group     ally
+ */
 class annotating_state_test extends \advanced_testcase {
     public function test_annotating_state() {
         $this->resetAfterTest();

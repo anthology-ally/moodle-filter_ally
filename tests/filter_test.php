@@ -23,6 +23,10 @@
 namespace filter_ally;
 use tool_ally\local_file;
 
+/**
+ * @group     filter_ally
+ * @group     ally
+ */
 class filter_test extends \advanced_testcase {
 
     public $filter;
