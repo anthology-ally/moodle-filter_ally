@@ -158,6 +158,6 @@ jobs:
           vendor/bin/phpunit --testsuite=report_allylti_testsuite
           cd ..
 
-#      - name: Ally filter Behat test
-#        if: ${{ always() }}
-#        run: moodle-plugin-ci behat --profile chrome
+      - name: Ally filter Behat test
+        if: ${{ always() }}
+        run: moodle-plugin-ci behat --profile chrome
