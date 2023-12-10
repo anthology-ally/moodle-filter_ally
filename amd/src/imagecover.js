@@ -29,6 +29,14 @@ class ImageCover {
     #applySizing() {
         $('.ally-image-wrapper').each(function() {
             const wrapper = this;
+
+            // Note - we are using .attr and not .data so that we can observe what is happening to the dom elements.
+            if ($(wrapper).attr('data-processed')) {
+                return;
+            }
+
+            $(wrapper).attr('data-processed', 1);
+
             const img = $(wrapper).find('img');
             const cover = $(wrapper).find('.ally-image-cover');
             const feedback = $(wrapper).find('.ally-feedback');
@@ -68,7 +76,7 @@ class ImageCover {
             subtree: true
         };
         /**
-         *  By using the an event combined with a mutation observer that disconnects itself,
+         *  By using an event combined with a mutation observer that disconnects itself,
          *  we can manage to have a mutation observer that works after page content lazy loaded by loaded in snap.
          *  the interval is added as a redundancy to prevent calculation errors by correcting the indicator position.
          * */
