@@ -22,8 +22,8 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-
-define(['jquery', 'core/templates', 'core/str', 'filter_ally/ally', 'filter_ally/imagecover', 'filter_ally/util'],
+define(['jquery', 'core/templates', 'core/str', 'filter_ally/ally',
+        'filter_ally/imagecover', 'filter_ally/util'],
 function($, Templates, Strings, Ally, ImageCover, Util) {
     return new function() {
 
@@ -84,7 +84,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
 
             Templates.render('filter_ally/wrapper', data)
                 .done(function(result) {
-                    var presentWrappers = $(targetEl).next().find('span[data-file-id="'+ pathHash +'"]');
+                    var presentWrappers = $(targetEl).next().find('span[data-file-id="' + pathHash + '"]');
                     if (presentWrappers.length == 0) {
                         $(targetEl).after(result);
 
@@ -179,7 +179,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 };
 
                 renderTemplate(data, pathHash, $(this))
-                    .done(function(){
+                    .done(function() {
                         c++;
                         checkComplete();
                     });
@@ -196,7 +196,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
             var dfd = $.Deferred();
             placeHoldSelector('.forumpost .attachedimages img[src*="pluginfile.php"], ' +
                 '.forumpost .body-content-container a[href*="pluginfile.php"]', forumFileMapping)
-                .done(function(){
+                .done(function() {
                     dfd.resolve();
                 });
             return dfd.promise();
@@ -378,7 +378,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 }
             };
             for (var moduleId in moduleFileMapping) {
-                var pathHash = moduleFileMapping[moduleId]['content'];
+                var pathHash = moduleFileMapping[moduleId].content;
                 if ($('body').hasClass('theme-snap') && !$('body').hasClass('format-tiles')) {
                     var moduleEl = $('#module-' + moduleId + ':not(.snap-native) .activityinstance ' +
                         '.snap-asset-link a:first-of-type:not(.clickable-region)');
@@ -458,11 +458,11 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
          */
         var annotateForums = function(forumMapping) {
             // Annotate introductions.
-            var intros = forumMapping['intros'];
+            var intros = forumMapping.intros;
             annotateModuleIntros(intros, 'forum');
 
             // Annotate discussions.
-            var discussions = forumMapping['posts'];
+            var discussions = forumMapping.posts;
             for (var d in discussions) {
                 var post = 'p' + d;
                 var annotation = discussions[d];
@@ -481,10 +481,10 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
         var annotateMRForums = function(forumMapping) {
 
             // Annotate introductions.
-            var intros = forumMapping['intros'];
+            var intros = forumMapping.intros;
             annotateModuleIntros(intros, 'hsuforum', ['#hsuforum-header .hsuforum_introduction > .no-overflow']);
 
-            var discussions = forumMapping['posts'];
+            var discussions = forumMapping.posts;
             for (var d in discussions) {
                 var annotation = discussions[d];
                 var postSelector = 'article[id="p' + d + '"] div.posting';
@@ -498,11 +498,11 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
          */
         var annotateGlossary = function(mapping) {
             // Annotate introductions.
-            var intros = mapping['intros'];
+            var intros = mapping.intros;
             annotateModuleIntros(intros, 'glossary');
 
             // Annotate entries.
-            var entries = mapping['entries'];
+            var entries = mapping.entries;
             for (var e in entries) {
                 var annotation = entries[e];
                 var entryFooter = $('.entrylowersection .commands a[href*="id=' + e + '"]');
@@ -516,11 +516,11 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
          * @param {array} mapping
          */
         var annotatePage = function(mapping) {
-            var intros = mapping['intros'];
+            var intros = mapping.intros;
             annotateModuleIntros(intros, 'page', ['li.snap-native.modtype_page#module-{{i}} .contentafterlink > .summary-text']);
 
             // Annotate content.
-            var content = mapping['content'];
+            var content = mapping.content;
             for (var c in content) {
                 var annotation = content[c];
                 var selectors = [
@@ -536,7 +536,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
          * @param {array} mapping
          */
         var annotateBook = function(mapping) {
-            var intros = mapping['intros'];
+            var intros = mapping.intros;
 
             // For book, the only place the intro shows is on the course page when you select "display description on course page"
             // in the module settings.
@@ -544,7 +544,8 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 ['li.snap-native.modtype_book#module-{{i}} .contentafterlink > .summary-text .no-overflow']);
 
             // Annotate content.
-            var content = mapping['chapters'], chapterId;
+            var content = mapping.chapters,
+chapterId;
 
             if (self.params.chapterid) {
                 chapterId = self.params.chapterid;
@@ -570,7 +571,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
          * @param {array} mapping
          */
         var annotateLesson = function(mapping) {
-            var intros = mapping['intros'];
+            var intros = mapping.intros;
 
             // For lesson, the only place the intro shows is on the course page when you select "display description on course page"
             // in the module settings.
@@ -578,7 +579,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 ['li.snap-native.modtype_lesson#module-{{i}} .contentafterlink > .summary-text .no-overflow']);
 
             // Annotate content.
-            var content = mapping['lesson_pages'];
+            var content = mapping.lesson_pages;
             for (var p in content) {
                 if (document.body.id === "page-mod-lesson-edit") {
                     var xpath = '//a[@id="lesson-' + p + '"]//ancestor::table//tbody/tr/td/div[contains(@class, "no-overflow")]';
@@ -614,12 +615,12 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
 
             // Annotate answer answers.
             Strings.get_strings([
-                {key:'answer', component:'mod_lesson'},
-                {key:'response', component:'mod_lesson'}
+                {key: 'answer', component: 'mod_lesson'},
+                {key: 'response', component: 'mod_lesson'}
             ]).then(function(strings) {
                 var answerLabel = strings[0];
                 var responseLabel = strings[1];
-                var answers = mapping['lesson_answers'];
+                var answers = mapping.lesson_answers;
 
                 var processAnswerResponse = function(pageId, i, label, annotation) {
                     var xpath = '//a[@id="lesson-' + pageId + '"]//ancestor::table' +
@@ -632,7 +633,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 };
 
                 for (var a in answers) {
-                    // increment anum so that we can get the answer number.
+                    // Increment anum so that we can get the answer number.
                     // Note, we can trust that this is correct because you can't order answers and the code in the lesson component
                     // orders answers by id.
                     var annotation = answers[a];
@@ -667,7 +668,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 }
 
                 // Annotate answer responses.
-                var responses = mapping['lesson_answers_response'];
+                var responses = mapping.lesson_answers_response;
                 for (var r in responses) {
                     var annotation = responses[r];
 
@@ -701,23 +702,23 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
          */
         var annotateModules = function(moduleMapping) {
             var dfd = $.Deferred();
-            if (moduleMapping['mod_forum'] !== undefined) {
-                annotateForums(moduleMapping['mod_forum']);
+            if (moduleMapping.mod_forum !== undefined) {
+                annotateForums(moduleMapping.mod_forum);
             }
-            if (moduleMapping['mod_hsuforum'] !== undefined) {
-                annotateMRForums(moduleMapping['mod_hsuforum']);
+            if (moduleMapping.mod_hsuforum !== undefined) {
+                annotateMRForums(moduleMapping.mod_hsuforum);
             }
-            if (moduleMapping['mod_glossary'] !== undefined) {
-                annotateGlossary(moduleMapping['mod_glossary']);
+            if (moduleMapping.mod_glossary !== undefined) {
+                annotateGlossary(moduleMapping.mod_glossary);
             }
-            if (moduleMapping['mod_page'] !== undefined) {
-                annotatePage(moduleMapping['mod_page']);
+            if (moduleMapping.mod_page !== undefined) {
+                annotatePage(moduleMapping.mod_page);
             }
-            if (moduleMapping['mod_book'] !== undefined) {
-                annotateBook(moduleMapping['mod_book']);
+            if (moduleMapping.mod_book !== undefined) {
+                annotateBook(moduleMapping.mod_book);
             }
-            if (moduleMapping['mod_lesson'] !== undefined) {
-                annotateLesson(moduleMapping['mod_lesson']);
+            if (moduleMapping.mod_lesson !== undefined) {
+                annotateLesson(moduleMapping.mod_lesson);
             }
             dfd.resolve();
             return dfd.promise();
@@ -847,10 +848,9 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
 
         /**
          * Initialise JS stage two.
-         * @param {string} jwt
-         * @param {object} config
          */
-        this.initStageTwo = function(jwt, config) {
+        this.initStageTwo = function() {
+            const {jwt, config} = self;
             if (self.canViewFeedback || self.canDownload) {
                 debounceApplyPlaceHolders()
                     .done(function() {
@@ -860,11 +860,11 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                             var selector = $('.foldertree > .filemanager');
                             var targetNode = selector[0];
                             if (targetNode) {
-                                var observerConfig = { attributes: true, childList: true, subtree: true };
+                                var observerConfig = {attributes: true, childList: true, subtree: true};
                                 var callback = function(mutationsList) {
-                                    mutationsList.filter( function (mutation) {
+                                    mutationsList.filter(function(mutation) {
                                         return mutation.type === 'childList';
-                                    }).forEach( function () {
+                                    }).forEach(function() {
                                         placeHoldFolderModule(ally_module_maps.folder_files);
                                     });
                                 };
@@ -892,7 +892,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                         if (settings.url.includes('ally.js')) {
                             setTimeout(function() {
                                 // Show score icons that are hidden, see INT-18688.
-                                $('.ally-feedback.ally-active.ally-score-indicator-embedded span').each(function () {
+                                $('.ally-feedback.ally-active.ally-score-indicator-embedded span').each(function() {
                                     if (this.style.display == 'none') {
                                         this.style.display = 'block';
                                         if (this.getAttribute('class') == 'ally-scoreindicator-container') {
@@ -904,6 +904,13 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                             }, 5000);
                             $(document).off('ajaxComplete');
                         }
+                    });
+
+                    document.addEventListener('core_filters/contentUpdated', () => {
+                        // When Snap lazy loads a section it triggers this event.
+                        // We can ensure everything has been processed on lazy load by recalling the second
+                        // stage initialization.
+                        self.initStageTwo();
                     });
                 }
             }
@@ -924,6 +931,8 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
             self.canDownload = canDownload;
             self.courseId = courseId;
             self.params = params;
+            self.jwt = jwt;
+            self.config = config;
 
             var pluginJSURL = function(path) {
                 return M.cfg.wwwroot + "/pluginfile.php/" + M.cfg.contextid + "/filter_ally/" + path;
@@ -933,7 +942,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
             if (!document.evaluate) {
                 polyfills['filter_ally/wgxpath'] = pluginJSURL("vendorjs/wgxpath.install");
             }
-            if (typeof(URLSearchParams) === 'undefined') {
+            if (typeof (URLSearchParams) === 'undefined') {
                 polyfills['filter_ally/urlsearchparams'] = [
                     'https://cdnjs.cloudflare.com/ajax/libs/url-search-params/1.1.0/url-search-params.amd.js',
                     pluginJSURL('vendorjs/url-search-params.amd') // CDN fallback.
@@ -950,15 +959,15 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 var requires = Object.keys(polyfills);
 
                 require(requires, function() {
-                    if (typeof(URLSearchParams) === 'undefined') {
-                        window.URLSearchParams = arguments[1]; // second arg in require (which is URLSearchParams)
+                    if (typeof (URLSearchParams) === 'undefined') {
+                        window.URLSearchParams = arguments[1]; // Second arg in require (which is URLSearchParams)
                     }
-                    self.initStageTwo(jwt, config);
+                    self.initStageTwo();
                 });
 
                 return;
             }
-            self.initStageTwo(jwt, config);
+            self.initStageTwo();
         };
-    };
+    }();
 });

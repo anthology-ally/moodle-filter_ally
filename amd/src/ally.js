@@ -29,12 +29,19 @@ class Ally {
     #token = null;
     #baseUrl = null;
 
+    static #initialized = false;
+
     /**
      * Initialize the AMD module with the necessary data
      * @param  {String} jwt    The JWT token
      * @param  {Object} config The Ally configuration containing the Ally client id and admin URL
      */
     init = function(jwt, config) {
+        if (Ally.#initialized) {
+            // Already initialized - return.
+            return;
+        }
+        Ally.#initialized = true;
         if (!config.adminurl) {
             // Do not localise - just a debug message.
             Log.info('The Ally admin tool is not configured with a Launch URL. Aborting JS load.');
