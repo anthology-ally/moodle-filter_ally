@@ -17,6 +17,11 @@ namespace filter_ally;
 
 use Firebase\JWT\Key;
 
+/**
+ * @package   filter_ally
+ * @group     filter_ally
+ * @group     ally
+ */
 class jwthelper_test extends \advanced_testcase {
 
     protected function config_set_ok() {

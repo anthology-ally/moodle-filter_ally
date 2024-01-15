@@ -106,7 +106,7 @@ body.behat-site .filter-ally-wrapper.ally-image-wrapper .ally-actions .ally-feed
 
 @media (min-width: 767px) {
     body:not(.snap-resource-card) .mform .form-group:has(.ally-score-meter-container.ally-add-tooltip) {
-        margin-top: 3rem!important; /* Avoid overlap with ally score indicator */
+        padding-top: 3rem!important; /* Avoid overlap with ally score indicator */
     }
 }
 
@@ -114,4 +114,17 @@ body.behat-site .filter-ally-wrapper.ally-image-wrapper .ally-actions .ally-feed
 body.path-course li.activity.modtype_resource span.ally-actions {
     position: relative;
     z-index: 1;
+}
+
+.ally-wysiwyg-feedback-tinymce .ally-score-meter-container-toolbar {
+    /* Place ally toolbar (feedback indicator) outside and above the tiny mce editor */
+    margin-top: -36px;
+}
+
+.filter-ally-wrapper.ally-anchor-wrapper {
+    display: inline-block;
+}
+
+.filter-ally-wrapper.ally-anchor-wrapper .ally-actions {
+    display: inline-flex;
 }
