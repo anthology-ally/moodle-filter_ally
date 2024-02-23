@@ -524,8 +524,8 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
             for (var c in content) {
                 var annotation = content[c];
                 var selectors = [
-                    '#page-mod-page-view #region-main .box.generalbox > .no-overflow',
-                    'li.snap-native.modtype_page#module-' + c + ' .pagemod-content'
+                    `#page-mod-page-view.cmid-${c} #region-main .box.generalbox > .no-overflow`,
+                    `li.snap-native.modtype_page#module-${c} .pagemod-content`
                 ];
                 $(selectors.join(',')).attr('data-ally-richcontent', annotation);
             }
