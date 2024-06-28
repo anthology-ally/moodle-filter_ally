@@ -118,7 +118,10 @@ body.path-course li.activity.modtype_resource span.ally-actions {
 
 .ally-wysiwyg-feedback-tinymce .ally-score-meter-container-toolbar {
     /* Place ally toolbar (feedback indicator) outside and above the tiny mce editor */
-    margin-top: -36px;
+    /* ALLY-11 - fix css bugs as part of Moodle 4.3 upgrade */
+    height: 0;
+    overflow-y: visible;
+    top: -32px;
 }
 
 .filter-ally-wrapper.ally-anchor-wrapper {
@@ -128,3 +131,44 @@ body.path-course li.activity.modtype_resource span.ally-actions {
 .filter-ally-wrapper.ally-anchor-wrapper .ally-actions {
     display: inline-flex;
 }
+
+/* =====================================================*/
+/* ALLY-11 - fix css bugs as part of Moodle 4.3 upgrade */
+.ally-score-meter-toolbar-atto {
+    padding: 0 16px;
+}
+
+/*
+ * Fixes the score meter appearing behind the TinyMCE toolbar in forum posts.
+ */
+.ally-score-meter-container-toolbar > button.ally-score-meter-container {
+    position: relative !important;
+    padding: 5px !important;
+}
+.ally-score-meter-container-toolbar:not(.ally-score-meter-toolbar-atto) > button.ally-score-meter-container {
+    top: 0 !important;
+}
+.ally-score-meter-container-toolbar.ally-score-meter-toolbar-atto > button.ally-score-meter-container {
+    top: -32px !important;
+}
+
+/*
+ * Fixes the top buttons appearing behind the accessibility header when
+viewing the full-screen information.
+ * This seems to be caused by the Moodle message appearing at the
+bottom of the editor when a draft is restored.
+ */
+.ally-wysiwyg-feedback-atto-fullscreen {
+    overflow-y: hidden !important;
+}
+
+/*
+ * Fixes the TinyMCE editor being moved down.
+ */
+body .form-group.row.fitem
+.ally-score-meter-toolbar-atto.ally-score-meter-container-toolbar {
+    position: absolute !important;
+}
+/* End ALLY-11 fixes */
+/* =====================================================*/
+
