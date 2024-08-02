@@ -553,7 +553,8 @@ EOF;
             $configvars = (object) [
                 'adminurl' => !empty($config->adminurl) ? $config->adminurl : null,
                 'pushurl' => !empty($config->pushurl) ? $config->pushurl : null,
-                'clientid' => !empty($config->clientid) ? $config->clientid : null
+                'clientid' => !empty($config->clientid) ? $config->clientid : null,
+                'moodleversion' => $CFG->version
             ];
 
             $params = new stdClass();
