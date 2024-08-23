@@ -1085,12 +1085,21 @@ XPATH;
 
     /**
      * @param string $title
-     * @Given html block with title ":title" is annotated
+     * @Then html block with title ":title" is annotated
      */
     public function html_block_with_title_is_annotated($title) {
         $this->wait_for_pending_js();
         $selectors = [];
-        // Boost theme selector.
+        // Boost theme selector < Moodle 4.3
+        $selectors[] = <<<XPATH
+            //section[contains(@class, 'block_html')]
+            //div//h3[contains(@class, 'card-title')][contains(text(), '$title')]
+            /ancestor::section[contains(@class, 'block_html')]
+            //div[contains(@class, 'card-text')]
+            //div[@data-ally-richcontent]
+XPATH;
+
+        // Boost theme selector >= Moodle 4.3
         $selectors[] = <<<XPATH
             //section[contains(@class, 'block_html')]
             //div//h5[contains(text(), '$title')]
@@ -1098,6 +1107,7 @@ XPATH;
             //div[contains(@class, 'card-text')]
             //div[@data-ally-richcontent]
 XPATH;
+
         // Clean theme selector.
         $selectors[] = <<<XPATH
             //div//h2[contains(@id, 'instance')][contains(text(), '$title')]
