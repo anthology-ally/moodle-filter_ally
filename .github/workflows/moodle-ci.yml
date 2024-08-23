@@ -77,7 +77,14 @@ jobs:
           echo $(cd ci/bin; pwd) >> $GITHUB_PATH
           echo $(cd ci/vendor/bin; pwd) >> $GITHUB_PATH
           sudo locale-gen en_AU.UTF-8
-          echo "NVM_DIR=$HOME/.nvm" >> $GITHUB_ENV
+
+      - name: Install NVM and Node
+        run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+          nvm install 20
+          nvm use 20
 
       - name: Extract branch name
         shell: bash
@@ -87,7 +94,9 @@ jobs:
       # See https://moodlehq.github.io/moodle-plugin-ci/AddExtraConfig.html
       # for adding extra config.php values via moodle-plugin-ci.
       - name: Install moodle-plugin-ci
+        continue-on-error: false
         run: |
+          echo "NOTE: Using branch ${{ steps.extract_branch.outputs.branch }}" 
           moodle-plugin-ci add-plugin --branch ${{ steps.extract_branch.outputs.branch }} $GITHUB_REPOSITORY_OWNER/moodle-tool_ally
           moodle-plugin-ci add-plugin --branch ${{ steps.extract_branch.outputs.branch }} $GITHUB_REPOSITORY_OWNER/moodle-report_allylti
           moodle-plugin-ci add-plugin --branch ${{ steps.extract_branch.outputs.branch }} $GITHUB_REPOSITORY_OWNER/moodle-mod_hsuforum
