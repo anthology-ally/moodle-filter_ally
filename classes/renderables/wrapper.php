@@ -29,4 +29,5 @@ class wrapper implements \renderable {
     public $url;
     public $canviewfeedback;
     public $isimage;
+    public $candownload;
 }
