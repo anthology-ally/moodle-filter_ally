@@ -419,6 +419,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
 
                 var selectors = [
                     '#' + s + ' > .content div[class*="summarytext"] .no-overflow',
+                    '#' + s + ' > .section-item div[class*="summarytext"] .no-overflow', // Moodle 4.4+
                     'body.theme-snap #' + s + ' > .content > .summary > div > .no-overflow' // Snap.
                 ];
                 $(selectors.join(',')).attr('data-ally-richcontent', ident);
@@ -589,6 +590,7 @@ chapterId;
 
             // Annotate content.
             var content = mapping.lesson_pages;
+
             for (var p in content) {
                 if (document.body.id === "page-mod-lesson-edit") {
                     var xpath = '//a[@id="lesson-' + p + '"]//ancestor::table//tbody/tr/td/div[contains(@class, "no-overflow")]';
@@ -711,6 +713,7 @@ chapterId;
          */
         var annotateModules = function(moduleMapping) {
             var dfd = $.Deferred();
+
             if (moduleMapping.mod_forum !== undefined) {
                 annotateForums(moduleMapping.mod_forum);
             }
