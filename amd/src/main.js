@@ -418,7 +418,7 @@ function($, Templates, Strings, Ally, ImageCover, Util) {
                 var ident = buildContentIdent('course', 'course_sections', 'summary', sectionId);
 
                 var selectors = [
-                    '#' + s + ' > .content div[class*="summarytext"] .no-overflow',
+                    '#' + s + ' .content div[class*="summarytext"] .no-overflow',
                     'body.theme-snap #' + s + ' > .content > .summary > div > .no-overflow' // Snap.
                 ];
                 $(selectors.join(',')).attr('data-ally-richcontent', ident);
