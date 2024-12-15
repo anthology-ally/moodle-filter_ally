@@ -947,7 +947,13 @@ XPATH;
      * @Given /^I view all submissions$/
      */
     public function i_view_all_submissions() {
-        $path = "//a[contains(text(), 'View all submissions')][contains(@class, 'btn')]";
+        global $CFG;
+        if ($CFG->branch < 405) {
+            $path = "//a[contains(text(), 'View all submissions')][contains(@class, 'btn')]";
+        } else {
+            $path = "//a[contains(text(), 'Submissions')][contains(@class, 'nav-link')]";
+        }
+
         $this->execute('behat_general::i_click_on', [$path, 'xpath_element']);
     }
 
@@ -1006,7 +1012,13 @@ XPATH;
      * @Given /^section (?P<section_number>\d*) html is annotated$/
      */
     public function section_is_annotated($section) {
-        $selector = '#section-'.$section.' > .content div[class*="summarytext"] .no-overflow[data-ally-richcontent]';
+        global $CFG;
+
+        if ($CFG->branch < 404) {
+            $selector = '#section-'.$section.' > .content div[class*="summarytext"] .no-overflow[data-ally-richcontent]';
+        } else {
+            $selector = '#section-'.$section.' .content div[class*="summarytext"] .no-overflow[data-ally-richcontent]';
+        }
         $node = $this->find('css', $selector);
         if (empty($node)) {
             throw new ExpectationException(
@@ -1035,7 +1047,14 @@ XPATH;
      * @Given /^section (?P<section_number>\d*) html is not annotated$/
      */
     public function section_is_not_annotated($section) {
-        $selector = '#section-'.$section.' > .content div[class*="summarytext"] .no-overflow';
+        global $CFG;
+
+        if ($CFG->branch < 404) {
+            $selector = '#section-'.$section.' > .content div[class*="summarytext"] .no-overflow';
+        } else {
+            $selector = '#section-'.$section.' .content div[class*="summarytext"] .no-overflow';
+        }
+
         $node = $this->find('css', $selector);
 
         if ($node->hasAttribute('data-ally-richcontent')) {

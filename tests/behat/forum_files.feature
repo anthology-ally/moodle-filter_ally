@@ -44,7 +44,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | slasharguments      | <slasharguments> |
     And I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
-    And I add a "<forumtypestr>" to section "1" and I fill the form with:
+    And I add a "<forumtypestr>" activity to course "Course 1" section "1" and I fill the form with:
       | Forum name | Test forum name |
       | Forum type | Standard forum for general use |
       | Description | Test forum description |
@@ -107,10 +107,10 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should not see the download place holder for the post entitled "Student reply (image file)" by "Student 1"
   Examples:
   | forumtypestr      | forumtype         | slasharguments |
-  | Open Forum        | Open Forum        | 1              |
-  | Forum             | forum             | 1              |
-  | Open Forum        | Open Forum        | 0              |
-  | Forum             | forum             | 0              |
+  | hsuforum          | Open Forum        | 1              |
+  | forum             | forum             | 1              |
+  | hsuforum          | Open Forum        | 0              |
+  | forum             | forum             | 0              |
 
   @javascript
   Scenario Outline: Social format attachments are processed appropriately.
@@ -207,7 +207,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | slasharguments      | <slasharguments> |
     And I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
-    And I add a "<forumtypestr>" to section "1" and I fill the form with:
+    And I add a "<forumtypestr>" activity to course "Course 1" section "1" and I fill the form with:
       | Forum name | Test forum name |
       | Forum type | Standard forum for general use |
       | Description | Test forum description |
@@ -244,6 +244,6 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
 
     Examples:
       | forumtypestr      | forumtype         | slasharguments |
-      | Forum             | forum             | 1              |
-      | Forum             | forum             | 0              |
+      | forum             | forum             | 1              |
+      | forum             | forum             | 0              |
 
