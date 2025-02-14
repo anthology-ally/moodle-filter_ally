@@ -21,15 +21,31 @@
  * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+namespace filter_ally;
+
 defined('MOODLE_INTERNAL') || die();
 
-require_once(__DIR__.'/../../mod/forum/lib.php');
+require_once(__DIR__.'/../../../mod/forum/lib.php');
 
+use cm_info;
+use context;
+use context_course;
+use core\exception\coding_exception;
+use core\exception\moodle_exception;
+use dml_exception;
+use DOMElement;
+use filter_ally\local\jwthelper;
 use filter_ally\renderables\wrapper;
+use filter_ally_renderer;
+use moodle_page;
+use moodle_text_filter;
+use stdClass;
+use Throwable;
 use tool_ally\cache;
-use tool_ally\local_file;
+use tool_ally\files_iterator;
 use tool_ally\local_content;
-use tool_ally\models\pluginfileurlprops;
+use tool_ally\local_file;
 use tool_ally\logging\logger;
 
 /**
@@ -39,7 +55,7 @@ use tool_ally\logging\logger;
  * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class filter_ally extends moodle_text_filter {
+class text_filter extends moodle_text_filter {
 
     /**
      * @var array File ids (path hashes) of all processed files by url.
@@ -85,7 +101,7 @@ class filter_ally extends moodle_text_filter {
         $map = [];
 
         $files = local_file::iterator();
-        /** @var stored_file[] $files */
+        /** @var files_iterator $files */
         $files = $files->in_context($cm->context)->with_component($component)->with_filearea($filearea);
 
         if (!empty($mimetype)) {
@@ -518,7 +534,7 @@ class filter_ally extends moodle_text_filter {
             $foldermap = $this->map_folder_file_paths_to_pathhash();
             $glossarymap = $this->map_glossary_file_paths_to_pathhash();
             $lessonmap = $this->map_lesson_file_paths_to_pathhash();
-            $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
+            $jwt = jwthelper::get_token($USER, $COURSE->id);
             $coursecontext = context_course::instance($COURSE->id);
             $canviewfeedback = has_capability('filter/ally:viewfeedback', $coursecontext);
             $candownload = has_capability('filter/ally:viewdownload', $coursecontext);
@@ -557,7 +573,7 @@ EOF;
                 'moodleversion' => $CFG->version
             ];
 
-            $params = new stdClass();
+            $params = new stdClass;
             if (strpos($PAGE->pagetype, 'mod-lesson-view') !== false) {
                 $params = $this->get_mod_lesson_params();
             } else if (strpos($PAGE->pagetype, 'mod-book') !== false && $PAGE->pagetype !== 'mod-book-edit') {
@@ -814,7 +830,7 @@ EOF;
                         $filesbyareakey[$areakey] = $keys;
                     } else {
                         $files = local_file::iterator();
-                        /** @var stored_file[] $files */
+                        /** @var files_iterator $files */
                         $files = $files->in_context($context)->with_component($component)->with_filearea($filearea);
                         $files = $files->with_itemid($itemid);
                         $filekeys = [];
