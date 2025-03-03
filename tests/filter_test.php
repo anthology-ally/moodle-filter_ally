@@ -40,7 +40,6 @@ class filter_test extends \advanced_testcase {
         // Filter must be on.
         filter_set_global_state('ally', TEXTFILTER_ON);
 
-        require_once(__DIR__.'/../filter.php');
         require_once($CFG->dirroot.'/mod/forum/lib.php');
         $PAGE->set_url($CFG->wwwroot.'/course/view.php');
         $this->filter = $this->call_filter_setup();
@@ -62,10 +61,10 @@ class filter_test extends \advanced_testcase {
         global $PAGE, $CFG;
 
         $PAGE->set_url($CFG->wwwroot.'/course/view.php');
-        $iscoursepage = \phpunit_util::call_internal_method($this->filter, 'is_course_page', [], 'filter_ally');
+        $iscoursepage = \phpunit_util::call_internal_method($this->filter, 'is_course_page', [], text_filter::class);
         $this->assertTrue($iscoursepage);
         $PAGE->set_url($CFG->wwwroot.'/user/view.php');
-        $iscoursepage = \phpunit_util::call_internal_method($this->filter, 'is_course_page', [], 'filter_ally');
+        $iscoursepage = \phpunit_util::call_internal_method($this->filter, 'is_course_page', [], text_filter::class);
         $this->assertFalse($iscoursepage);
     }
 
@@ -75,12 +74,12 @@ class filter_test extends \advanced_testcase {
         $gen = $this->getDataGenerator();
 
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_assignment_file_paths_to_pathhash', [], 'filter_ally'
+            $this->filter, 'map_assignment_file_paths_to_pathhash', [], text_filter::class
         );
         $this->assertEmpty($map);
 
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_assignment_file_paths_to_pathhash', [], 'filter_ally'
+            $this->filter, 'map_assignment_file_paths_to_pathhash', [], text_filter::class
         );
         $this->assertEmpty($map);
 
@@ -109,14 +108,14 @@ class filter_test extends \advanced_testcase {
         }
 
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_assignment_file_paths_to_pathhash', [], 'filter_ally'
+            $this->filter, 'map_assignment_file_paths_to_pathhash', [], text_filter::class
         );
         $this->assertEmpty($map);
 
         $PAGE->set_pagetype('mod-assign-view');
         $_GET['id'] = $assign->cmid;
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_assignment_file_paths_to_pathhash', [], 'filter_ally'
+            $this->filter, 'map_assignment_file_paths_to_pathhash', [], text_filter::class
         );
         $this->assertNotEmpty($map);
     }
@@ -129,7 +128,7 @@ class filter_test extends \advanced_testcase {
         $gen = $this->getDataGenerator();
 
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_folder_file_paths_to_pathhash', [], 'filter_ally'
+            $this->filter, 'map_folder_file_paths_to_pathhash', [], text_filter::class
         );
         $this->assertEmpty($map);
 
@@ -163,14 +162,14 @@ class filter_test extends \advanced_testcase {
         }
 
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_folder_file_paths_to_pathhash', [], 'filter_ally'
+            $this->filter, 'map_folder_file_paths_to_pathhash', [], text_filter::class
         );
         $this->assertEmpty($map);
 
         $PAGE->set_pagetype('mod-folder-view');
         $_GET['id'] = $assign->cmid;
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_folder_file_paths_to_pathhash', [], 'filter_ally'
+            $this->filter, 'map_folder_file_paths_to_pathhash', [], text_filter::class
         );
         $this->assertNotEmpty($map);
     }
@@ -184,7 +183,7 @@ class filter_test extends \advanced_testcase {
         $gen->enrol_user($student->id, $course->id, 'student');
 
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], 'filter_ally'
+            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], text_filter::class
         );
         $this->assertEmpty($map);
 
@@ -217,14 +216,14 @@ class filter_test extends \advanced_testcase {
         }
 
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], 'filter_ally'
+            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], text_filter::class
         );
         $this->assertNotEmpty($map);
 
         // Check students don't get anything as all the resources were invisible.
         $this->setUser($student);
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], 'filter_ally'
+            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], text_filter::class
         );
         $this->assertEmpty($map);
 
@@ -233,7 +232,7 @@ class filter_test extends \advanced_testcase {
         $PAGE->set_url($CFG->wwwroot.'/user/view.php');
         $PAGE->set_pagetype('course-view-topics');
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], 'filter_ally'
+            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], text_filter::class
         );
 
         $this->assertEmpty($map);
@@ -254,7 +253,7 @@ class filter_test extends \advanced_testcase {
 
         foreach ($urlformats as $expectedcomponent => $url) {
             list($contextid, $component, $filearea, $itemid, $filename) = \phpunit_util::call_internal_method(
-                $this->filter, 'process_url', [$url], 'filter_ally'
+                $this->filter, 'process_url', [$url], text_filter::class
             );
             $this->assertEquals(123, $contextid);
             $this->assertEquals($expectedcomponent, $component);
@@ -266,7 +265,7 @@ class filter_test extends \advanced_testcase {
         // Make sure URLs belonging to different sites are *not* processed.
         $badurl = 'http://test.com/pluginfile.php'.$fileparam.'/123/somecomponent/somearea/myfile.test';
         $result = \phpunit_util::call_internal_method(
-            $this->filter, 'process_url', [$badurl], 'filter_ally'
+            $this->filter, 'process_url', [$badurl], text_filter::class
         );
         $this->assertNull($result);
     }
@@ -784,7 +783,7 @@ EOF;
 
         // Should be empty when nothing added.
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], 'filter_ally'
+            $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], text_filter::class
         );
         $this->assertEmpty($map);
 
@@ -808,7 +807,7 @@ EOF;
 
         // Add an file.
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], 'filter_ally'
+            $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], text_filter::class
         );
         $this->assertNotEmpty($map);
 
@@ -824,7 +823,7 @@ EOF;
 
         // Shouldn't be be empty when an image file has been added (only image files are mapped).
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], 'filter_ally'
+            $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], text_filter::class
         );
         $this->assertNotEmpty($map);
     }
@@ -881,10 +880,10 @@ EOF;
         $this->assertEquals($filteredtext, $datalessfilteredtext);
     }
 
-    private function call_filter_setup(): \filter_ally {
+    private function call_filter_setup(): text_filter {
         global $PAGE;
         $context = \context_system::instance();
-        $filter = new \filter_ally($context, []);
+        $filter = new text_filter($context, []);
         $filter->setup($PAGE, $context);
         return $filter;
     }
