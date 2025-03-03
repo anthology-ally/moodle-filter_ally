@@ -18,12 +18,15 @@
  * Filter for processing file links for Ally accessibility enhancements.
  * @author    Guy Thomas
  * @package   filter_ally
- * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
+ * @copyright Copyright (c) 2017 Open LMS / 2025 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
+
+namespace filter_ally;
+
 defined('MOODLE_INTERNAL') || die();
 
-require_once(__DIR__.'/../../mod/forum/lib.php');
+require_once(__DIR__.'/../../../mod/forum/lib.php');
 
 use filter_ally\renderables\wrapper;
 use tool_ally\cache;
@@ -31,15 +34,19 @@ use tool_ally\local_file;
 use tool_ally\local_content;
 use tool_ally\models\pluginfileurlprops;
 use tool_ally\logging\logger;
+use stdClass;
+use context_course;
+use cm_info;
+use DOMElement;
 
 /**
  * Filter for processing file links for Ally accessibility enhancements.
  * @author    Guy Thomas
  * @package   filter_ally
- * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
+ * @copyright Copyright (c) 2017 Open LMS / 2025 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class filter_ally extends moodle_text_filter {
+class text_filter extends \core_filters\text_filter {
 
     /**
      * @var array File ids (path hashes) of all processed files by url.
@@ -682,15 +689,8 @@ EOF;
         return $urlprops->to_list();
     }
 
-    /**
-     * Filters the given HTML text, looking for links pointing to files so that the file id data attribute can
-     * be injected.
-     *
-     * @param $text HTML to be processed.
-     * @param $options
-     * @return string String containing processed HTML.
-     */
-    public function filter($text, array $options = array()) {
+    #[\Override]
+    public function filter($text, array $options = []) {
         global $PAGE;
 
         if (!$this->filteractive) {
@@ -766,7 +766,7 @@ EOF;
                     continue;
                 }
 
-                $context = context::instance_by_id($contextid, IGNORE_MISSING);
+                $context = \context::instance_by_id($contextid, IGNORE_MISSING);
                 if (!$context) {
                     // The context couldn't be found (perhaps this is a copy/pasted url pointing at old deleted content). Move on.
                     continue;
