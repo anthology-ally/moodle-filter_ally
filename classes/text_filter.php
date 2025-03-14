@@ -76,7 +76,7 @@ class text_filter extends \core_filters\text_filter {
      */
     protected function is_course_page() {
         $path = parse_url(qualified_me())['path'];
-        return (bool) preg_match('~/course/view.php$~', $path);
+        return preg_match('~/course/view.php$~', $path) || preg_match('~/course/section.php~', $path);
     }
 
     /**
