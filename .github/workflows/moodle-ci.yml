@@ -90,7 +90,17 @@ jobs:
       - name: Extract branch name
         id: extract_branch
         shell: bash
-        run: echo "branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}" >> $GITHUB_OUTPUT
+        run: |
+          branch="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+      
+          if [[ "$branch" =~ ^(MOODLE_[0-9]+_STABLE) ]]; then
+            branch="${BASH_REMATCH[1]}"
+          elif [[ "$branch" =~ ^(MOODLE_[0-9]+) ]]; then
+            branch="${BASH_REMATCH[1]}_STABLE"
+          fi
+      
+          echo "Extracted Moodle branch: $branch"
+          echo "branch=$branch" >> $GITHUB_OUTPUT
 
       - name: Create citricity branch name
         id: citricity_branch
@@ -156,8 +166,8 @@ jobs:
         if: ${{ always() }}
         run: moodle-plugin-ci grunt --max-lint-warnings 0
 
-      # - name: Setup upterm session
-      #   uses: lhotari/action-upterm@v1
+#      - name: Setup upterm session
+#        uses: lhotari/action-upterm@v1
 
       - name: Ally filter PHPUnit test
         if: ${{ always() }}
