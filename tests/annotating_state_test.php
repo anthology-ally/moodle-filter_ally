@@ -23,18 +23,19 @@
 namespace filter_ally;
 
 /**
- * @group     text_filter
+ * @group     filter_ally
  * @group     ally
  */
 class annotating_state_test extends \advanced_testcase {
     public function test_annotating_state() {
         $this->resetAfterTest();
+        require_once(__DIR__.'/../filter.php');
         $courseid = 3;
 
-        $this->assertFalse(text_filter::is_annotating($courseid));
-        text_filter::start_annotating($courseid);
-        $this->assertTrue(text_filter::is_annotating($courseid));
-        text_filter::end_annotating($courseid);
-        $this->assertFalse(text_filter::is_annotating($courseid));
+        $this->assertFalse(\filter_ally::is_annotating($courseid));
+        \filter_ally::start_annotating($courseid);
+        $this->assertTrue(\filter_ally::is_annotating($courseid));
+        \filter_ally::end_annotating($courseid);
+        $this->assertFalse(\filter_ally::is_annotating($courseid));
     }
 }
