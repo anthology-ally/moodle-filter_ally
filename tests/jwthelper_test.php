@@ -24,6 +24,12 @@ use Firebase\JWT\Key;
  */
 class jwthelper_test extends \advanced_testcase {
 
+    public function setUp(): void {
+        global $CFG;
+        require_once($CFG->dirroot.'/mod/forum/lib.php');
+        parent::setUp();
+    }
+
     protected function config_set_ok() {
         set_config('secret', 'WAzk9ohDeK', 'tool_ally');
     }

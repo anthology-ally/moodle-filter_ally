@@ -946,7 +946,7 @@ XPATH;
      * @Given /^I view all submissions$/
      */
     public function i_view_all_submissions() {
-        $path = "//a[contains(text(), 'Submissions')][contains(@role, 'menuitem')]";
+        $path = "//a[contains(text(), 'View all submissions')][contains(@class, 'btn')]";
         $this->execute('behat_general::i_click_on', [$path, 'xpath_element']);
     }
 
