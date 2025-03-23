@@ -641,10 +641,12 @@ XPATH;
     }
 
     /**
-     * @Given /^I create file resources using fixtures "(?P<fixtures_string>[^"]*)"/
+     * @Given I create file resources using fixtures :fixtures_string
+     * @Given I create file resources using fixtures :fixtures_string in section :section
      * @param string $fixtures
+     * @param string|null $section
      */
-    public function i_create_file_resources_using_fixtures($fixtures) {
+    public function i_create_file_resources_using_fixtures(string $fixtures, ?string $section = null) {
         global $CFG;
 
         $gen = testing_util::get_data_generator();
@@ -664,7 +666,7 @@ XPATH;
             $data = (object) [
                 'course' => $course->id,
                 'name' => $file,
-                'section' => 1 // Section 1 so that it will also work on front page.
+                'section' => $section ? intval($section) : 1 // Default is section 1 so that it will also work on front page.
             ];
 
             $resource = $gen->create_module('resource', $data);
@@ -950,6 +952,21 @@ XPATH;
         $this->execute('behat_general::i_click_on', [$path, 'xpath_element']);
     }
 
+    private function get_course_and_section(string $shortname, int $section): array {
+        global $DB;
+
+        $course = $DB->get_field('course', 'id', ['shortname' => $shortname]);
+        if (!$course) {
+            throw new coding_exception('Invalid moodle course shortname', $shortname);
+        }
+        $coursesection = $DB->get_record('course_sections', ['course' => $course, 'section' => $section]);
+        if (!$coursesection) {
+            throw new coding_exception('Invalid moodle course section', $section);
+        }
+
+        return [$course, $coursesection];
+    }
+
     /**
      * @param string $shortname
      * @param int $section
@@ -959,8 +976,7 @@ XPATH;
      */
     private function section_has_summary($shortname, $section, $summary, $format) {
         global $DB;
-        $course = $DB->get_field('course', 'id', ['shortname' => $shortname]);
-        $coursesection = $DB->get_record('course_sections', ['course' => $course, 'section' => $section]);
+        [$course, $coursesection] = $this->get_course_and_section($shortname, $section);
         $coursesection->summaryformat = $format;
         $coursesection->summary = $summary;
         $DB->update_record('course_sections', $coursesection);
@@ -977,6 +993,23 @@ XPATH;
             )
         );
         $event->trigger();
+    }
+
+    /**
+     * @Given I am on course :shortname section :section
+     *
+     * @param $shortname
+     * @param string|null $section
+     * @return void
+     * @throws \coding_exception
+     * @throws \core\exception\moodle_exception
+     */
+    public function on_course_section_page($shortname, ?string $section = null) {
+        [, $coursesection] = $this->get_course_and_section($shortname, $section);
+
+        $urlparams = ['id' => $coursesection->id];
+        $url = new moodle_url('/course/section.php', $urlparams);
+        $this->execute('behat_general::i_visit', [$url]);
     }
 
     /**
