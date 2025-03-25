@@ -427,6 +427,7 @@ XPATH;
      */
     public function book_current_chapter_is_annotated() {
         $xpath = <<<XPATH
+            //div[@id="mod_book-chapter"]/div[@class="no-overflow"]|
             //section[@id="region-main"]//div[@role="main"]/div/div[@class="no-overflow"]
 XPATH;
         $node = $this->find('xpath', $xpath);
