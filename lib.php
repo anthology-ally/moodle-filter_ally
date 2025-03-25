@@ -34,7 +34,7 @@
  * @param array $options
  * @return bool
  */
-function filter_ally_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = array()) {
+function filter_ally_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
     $pluginpath = __DIR__.'/';
 
     if ($filearea === 'vendorjs') {

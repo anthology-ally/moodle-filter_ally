@@ -499,7 +499,7 @@ class text_filter extends \core_filters\text_filter {
                     'courseid' => $COURSE->id,
                     'pagetype' => $PAGE->pagetype,
                     'pagelayout' => $PAGE->pagelayout,
-                    'stacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)
+                    'stacktrace' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS),
                 ];
                 logger::get()->info('logger:filtersetupdebugger', $log);
             }
@@ -536,7 +536,7 @@ class text_filter extends \core_filters\text_filter {
                 'forum_files' => $forummap,
                 'folder_files' => $foldermap,
                 'glossary_files' => $glossarymap,
-                'lesson_files' => $lessonmap
+                'lesson_files' => $lessonmap,
             ];
             $filejson = json_encode($modulemaps);
 
@@ -561,7 +561,7 @@ EOF;
                 'adminurl' => !empty($config->adminurl) ? $config->adminurl : null,
                 'pushurl' => !empty($config->pushurl) ? $config->pushurl : null,
                 'clientid' => !empty($config->clientid) ? $config->clientid : null,
-                'moodleversion' => $CFG->version
+                'moodleversion' => $CFG->version,
             ];
 
             $params = new stdClass();
@@ -728,7 +728,7 @@ EOF;
                 $elements[] = (object) [
                     'type' => 'a',
                     'url' => $href,
-                    'result' => $result
+                    'result' => $result,
                 ];
             }
         }
@@ -742,7 +742,7 @@ EOF;
                 $elements[] = (object) [
                     'type' => 'img',
                     'url' => $src,
-                    'result' => $result
+                    'result' => $result,
                 ];
             }
         }
@@ -775,7 +775,7 @@ EOF;
                 $blacklistedcontexts = [
                     CONTEXT_USER,
                     CONTEXT_COURSECAT,
-                    CONTEXT_SYSTEM
+                    CONTEXT_SYSTEM,
                 ];
                 if (in_array($context->contextlevel, $blacklistedcontexts)) {
                     continue;
