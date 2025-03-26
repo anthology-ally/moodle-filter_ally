@@ -21,6 +21,7 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 namespace filter_ally;
+use tool_ally\local_content;
 use tool_ally\local_file;
 
 /**
@@ -878,6 +879,38 @@ EOF;
         $datalessfilteredtext = $this->filter->filter($datalesstext); // This should add the file ids to the data less spans.
 
         $this->assertEquals($filteredtext, $datalessfilteredtext);
+    }
+
+    public function test_apply_content_annotation(): void {
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+        $label = $gen->create_module('label', ['course' => $course->id]);
+        $modinfo = get_fast_modinfo($course);
+        $cm = $modinfo->get_cm($label->cmid);
+        $filter = new text_filter($cm->context, []);
+
+        $tests = [
+            'just some text, no tags',
+            '<!--hi there-->',
+            '<!--hi there--><div class="no-overflow">Test</div>',
+            '<div class="no-overflow">Test</div>',
+            '<p class="no-overflow">Test</p>',
+            '<div>Test</div>',
+            '<div class="no-overflow">Test</div><p>Test</p>',
+            '<div title="Hover > Get text" class="no-overflow">Hover for more</div>',
+        ];
+        foreach ($tests as $test) {
+            $parsed = \phpunit_util::call_internal_method($filter, 'apply_content_annotation',
+                [$test], get_class($filter));
+            $body = local_content::build_dom_doc($parsed)->getElementsByTagName('body')->item(0);
+
+            // Check that there is just one element which should be the ally wrapper.
+            $this->assertEquals(1, $body->childNodes->count());
+            $firstitem = $body->childNodes->item(0);
+            $this->assertTrue($firstitem->hasAttributes());
+            $this->assertEquals('label:label:intro:'.$label->id, $firstitem->attributes['data-ally-richcontent']->textContent);
+        }
+
     }
 
     private function call_filter_setup(): text_filter {

@@ -652,29 +652,28 @@ EOF;
             return $text;
         }
 
-        $pattern = '/\>/mU';
-
         // Some modules will not send a single div node or have several nodes for filtering.
         // We need to add a parent div when such setup is found.
-        $doc = local_content::build_dom_doc($text);
+        $doc = local_content::build_dom_doc("<div class=\"temp-wrapper\">$text</div>");
         if (!$doc) {
             return $text;
         }
         $bodynode = $doc->getElementsByTagName('body')->item(0);
-        $shouldwrap = $bodynode->childNodes->length > 1;
-        if (!$shouldwrap && $bodynode->childNodes->length === 1) {
-            $node = $bodynode->childNodes->item(0);
-            $shouldwrap = $node->tagName !== 'div' ||
+        $tmpwrappernode = $bodynode->childNodes->item(0);
+        $shouldwrap = empty($tmpwrappernode) || $tmpwrappernode->childNodes->length > 1;
+        if (!$shouldwrap && $tmpwrappernode->childNodes->length === 1) {
+            $node = $tmpwrappernode->childNodes->item(0);
+            $shouldwrap = $node instanceof \DOMComment || $node instanceof \DOMText || $node->tagName !== 'div' ||
                 ($node->tagName === 'div' && strpos($node->getAttribute('class'), 'no-overflow') === false);
         }
 
         if ($shouldwrap) {
-            $text = "<div class=\"no-overflow\">{$text}</div>";
+            return "<div class=\"no-overflow\" data-ally-richcontent=\"$annotation\">{$text}</div>";
         }
 
-        $text = preg_replace ( $pattern , ' data-ally-richcontent = "'.$annotation.'" >' , $text , 1);
-
-        return $text;
+        $primarynode = $tmpwrappernode->childNodes->item(0);
+        $primarynode->setAttribute('data-ally-richcontent', $annotation);
+        return $doc->saveHTML($primarynode);
     }
 
     /**
