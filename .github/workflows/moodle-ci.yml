@@ -156,11 +156,53 @@ jobs:
           echo "tool_ally_branch=$tool_ally_branch" >> $GITHUB_OUTPUT
           echo "report_allylti_branch=$report_allylti_branch" >> $GITHUB_OUTPUT
 
-      - name: Create citricity branch name
-        id: citricity_branch
+      - name: Determine hsuforum and snap branches
+        id: citricity_branches
         shell: bash
         run: |
-          echo "branch_citricity=$(echo '${{ steps.extract_branches.outputs.stable_branch }}' | sed 's/STABLE/CITRICITY/')" >> $GITHUB_OUTPUT
+          set -euo pipefail
+
+          base_branch="${{ steps.extract_branches.outputs.stable_branch }}"
+          citricity_branch="${base_branch/STABLE/CITRICITY}"
+
+          check_remote_branch_exists() {
+            local org="$1"
+            local repo="$2"
+            local test_branch="$3"
+            git ls-remote --exit-code --heads "https://github.com/${org}/${repo}.git" "refs/heads/${test_branch}" &>/dev/null
+          }
+
+          # hsuforum logic
+          if check_remote_branch_exists "${GITHUB_REPOSITORY_OWNER}" "moodle-mod_hsuforum" "$citricity_branch"; then
+            echo "branch_hsuforum=$citricity_branch" >> $GITHUB_OUTPUT
+            echo "repo_hsuforum=https://github.com/${GITHUB_REPOSITORY_OWNER}/moodle-mod_hsuforum" >> $GITHUB_OUTPUT
+          elif check_remote_branch_exists "${GITHUB_REPOSITORY_OWNER}" "moodle-mod_hsuforum" "$base_branch"; then
+            echo "branch_hsuforum=$base_branch" >> $GITHUB_OUTPUT
+            echo "repo_hsuforum=https://github.com/${GITHUB_REPOSITORY_OWNER}/moodle-mod_hsuforum" >> $GITHUB_OUTPUT
+          elif check_remote_branch_exists "open-lms-open-source" "moodle-mod_hsuforum" "$base_branch"; then
+            echo "branch_hsuforum=$base_branch" >> $GITHUB_OUTPUT
+            echo "repo_hsuforum=https://github.com/open-lms-open-source/moodle-mod_hsuforum" >> $GITHUB_OUTPUT
+          else
+            echo "❌ No valid branch found for moodle-mod_hsuforum"
+            exit 1
+          fi
+
+          # snap logic
+          if check_remote_branch_exists "${GITHUB_REPOSITORY_OWNER}" "moodle-theme_snap" "$citricity_branch"; then
+            echo "branch_snap=$citricity_branch" >> $GITHUB_OUTPUT
+            echo "repo_snap=https://github.com/${GITHUB_REPOSITORY_OWNER}/moodle-theme_snap" >> $GITHUB_OUTPUT
+          elif check_remote_branch_exists "${GITHUB_REPOSITORY_OWNER}" "moodle-theme_snap" "$base_branch"; then
+            echo "branch_snap=$base_branch" >> $GITHUB_OUTPUT
+            echo "repo_snap=https://github.com/${GITHUB_REPOSITORY_OWNER}/moodle-theme_snap" >> $GITHUB_OUTPUT
+          elif check_remote_branch_exists "open-lms-open-source" "moodle-theme_snap" "$base_branch"; then
+            echo "branch_snap=$base_branch" >> $GITHUB_OUTPUT
+            echo "repo_snap=https://github.com/open-lms-open-source/moodle-theme_snap" >> $GITHUB_OUTPUT
+          else
+            echo "❌ No valid branch found for moodle-theme_snap"
+            exit 1
+          fi
+
+
 
       # See https://moodlehq.github.io/moodle-plugin-ci/AddExtraConfig.html
       # for adding extra config.php values via moodle-plugin-ci.
@@ -170,8 +212,8 @@ jobs:
           echo "NOTE: Using branch ${{ steps.extract_branches.outputs.branch }}" 
           moodle-plugin-ci add-plugin --branch ${{ steps.extract_branches.outputs.tool_ally_branch }} --clone=https://github.com/$GITHUB_REPOSITORY_OWNER/moodle-tool_ally
           moodle-plugin-ci add-plugin --branch ${{ steps.extract_branches.outputs.report_allylti_branch }} --clone=https://github.com/$GITHUB_REPOSITORY_OWNER/moodle-report_allylti
-          moodle-plugin-ci add-plugin --branch ${{ steps.citricity_branch.outputs.branch_citricity }} --clone=https://github.com/$GITHUB_REPOSITORY_OWNER/moodle-mod_hsuforum
-          moodle-plugin-ci add-plugin --branch ${{ steps.citricity_branch.outputs.branch_citricity }} --clone=https://github.com/$GITHUB_REPOSITORY_OWNER/moodle-theme_snap
+          moodle-plugin-ci add-plugin --branch ${{ steps.citricity_branches.outputs.branch_hsuforum }} --clone=${{ steps.citricity_branches.outputs.repo_hsuforum }}
+          moodle-plugin-ci add-plugin --branch ${{ steps.citricity_branches.outputs.branch_snap }} --clone=${{ steps.citricity_branches.outputs.repo_snap }}
           moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
           moodle-plugin-ci add-config '$CFG->behat_increasetimeout = 2;'
         env:
