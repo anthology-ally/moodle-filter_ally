@@ -427,14 +427,14 @@ XPATH;
      */
     public function book_current_chapter_is_annotated() {
         $xpath = <<<XPATH
+            //div[@id="mod_book-chapter"]/div[@class="no-overflow"]|
             //section[@id="region-main"]//div[@role="main"]/div/div[@class="no-overflow"]
 XPATH;
         $node = $this->find('xpath', $xpath);
-        $params = array('node' => $node);
+        $params = ['node' => $node];
         $timeout = false;
         $exception = new ExpectationException('Annotation not found', $this->getSession()->getDriver());
         $microsleep = false;
-
         $annotationids = [
             'book:book:intro',
             'book:book_chapters:content',
