@@ -19,6 +19,7 @@
  * @author    Guy Thomas
  * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package filter_ally
  */
 namespace filter_ally;
 use tool_ally\local_content;
@@ -27,13 +28,15 @@ use tool_ally\local_file;
 /**
  * @group     filter_ally
  * @group     ally
+ * @package filter_ally
  */
-class filter_test extends \advanced_testcase {
+final class filter_test extends \advanced_testcase {
 
     public $filter;
 
     public function setUp(): void {
         global $PAGE, $CFG;
+        parent::setUp();
 
         // We reset after every test because the filter modifies $CFG->additionalhtmlfooter.
         $this->resetAfterTest();

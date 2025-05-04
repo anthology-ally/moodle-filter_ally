@@ -25,10 +25,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Ally';
-$string['filtername'] = 'Ally';
-$string['ally:viewfeedback'] = 'Mostra els comentaris d\'Ally';
 $string['ally:viewdownload'] = 'Mostra el botó de descàrrega d\'Ally';
+$string['ally:viewfeedback'] = 'Mostra els comentaris d\'Ally';
+$string['filtername'] = 'Ally';
+$string['pluginname'] = 'Ally';
 $string['privacy:metadata:jwt:courseid'] = 'L\'ID del curs en el qual l\'usuari està editant el fitxer.';
 $string['privacy:metadata:jwt:externalpurpose'] = 'Proporcionar a Ally la informació necessària per poder editar el fitxer per tal de millorar-ne l\'accessibilitat.';
 $string['privacy:metadata:jwt:locale'] = 'La configuració regional de l\'usuari per tal de presentar la interfície d\'usuari utilitzant l\'idioma més apropiat.';

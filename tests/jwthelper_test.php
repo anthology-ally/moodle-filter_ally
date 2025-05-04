@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 namespace filter_ally;
 
 use Firebase\JWT\Key;
@@ -22,7 +23,7 @@ use Firebase\JWT\Key;
  * @group     filter_ally
  * @group     ally
  */
-class jwthelper_test extends \advanced_testcase {
+final class jwthelper_test extends \advanced_testcase {
 
     protected function config_set_ok() {
         set_config('secret', 'WAzk9ohDeK', 'tool_ally');

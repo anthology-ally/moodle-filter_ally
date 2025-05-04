@@ -25,10 +25,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Ally';
-$string['filtername'] = 'Ally';
-$string['ally:viewfeedback'] = 'Zobrazit zpětnou vazbu služby Ally';
 $string['ally:viewdownload'] = 'Zobrazit tlačítko ke stažení služby Ally';
+$string['ally:viewfeedback'] = 'Zobrazit zpětnou vazbu služby Ally';
+$string['filtername'] = 'Ally';
+$string['pluginname'] = 'Ally';
 $string['privacy:metadata:jwt:courseid'] = 'ID kurzu, ve kterém uživatel upravuje soubor';
 $string['privacy:metadata:jwt:externalpurpose'] = 'Poskytuje službě Ally informace, které umožňují úpravu souborů za účelem zlepšení přístupnosti.';
 $string['privacy:metadata:jwt:locale'] = 'Národní prostředí uživatele, aby mohlo být uživatelské rozhraní služby Ally zobrazeno v nejvhodnějším jazyce';

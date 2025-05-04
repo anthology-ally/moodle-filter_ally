@@ -888,7 +888,7 @@ EOF;
      * @param $courseid
      * @return bool
      */
-    public static function is_annotating($courseid) : bool {
+    public static function is_annotating($courseid): bool {
         return array_key_exists($courseid, self::$isannotating);
     }
 
