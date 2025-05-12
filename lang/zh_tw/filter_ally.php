@@ -25,10 +25,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Ally';
-$string['filtername'] = 'Ally';
-$string['ally:viewfeedback'] = '檢視 Ally 意見回應';
 $string['ally:viewdownload'] = '檢視 Ally 下載按鈕';
+$string['ally:viewfeedback'] = '檢視 Ally 意見回應';
+$string['filtername'] = 'Ally';
+$string['pluginname'] = 'Ally';
 $string['privacy:metadata:jwt:courseid'] = '使用者正在編輯其中檔案的課程編號。';
 $string['privacy:metadata:jwt:externalpurpose'] = '為 Ally 提供資訊，以允許編輯檔案來改善易存取性。';
 $string['privacy:metadata:jwt:locale'] = '提供使用者的地區設定，以便使用最合適的語言呈現 Ally 使用者介面。';

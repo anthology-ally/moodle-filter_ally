@@ -25,10 +25,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Ally';
-$string['filtername'] = 'Ally';
-$string['ally:viewfeedback'] = 'عرض ملاحظات Ally';
 $string['ally:viewdownload'] = 'عرض زر تنزيل Ally';
+$string['ally:viewfeedback'] = 'عرض ملاحظات Ally';
+$string['filtername'] = 'Ally';
+$string['pluginname'] = 'Ally';
 $string['privacy:metadata:jwt:courseid'] = '"معرف" المقرر الدراسي الذي يقوم المستخدم بتحرير الملف به.';
 $string['privacy:metadata:jwt:externalpurpose'] = 'قم بتزويد Ally بمعلومات للسماح لتحرير الملفات بتحسين إمكانية الوصول.';
 $string['privacy:metadata:jwt:locale'] = 'لغة المستخدم المحلية حيث يتم عرض واجهة مستخدم Ally باستخدام اللغة الأكثر ملاءمة.';

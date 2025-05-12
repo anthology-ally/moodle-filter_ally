@@ -19,6 +19,7 @@
  * @author    Guy Thomas <citricity@gmail.com>
  * @copyright Copyright (c) 2019 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package filter_ally
  */
 
 /**
@@ -33,6 +34,7 @@
  * @param bool $forcedownload
  * @param array $options
  * @return bool
+ * @package filter_ally
  */
 function filter_ally_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
     $pluginpath = __DIR__.'/';

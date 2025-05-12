@@ -25,10 +25,10 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$string['pluginname'] = 'Ally';
-$string['filtername'] = 'Ally';
-$string['ally:viewfeedback'] = 'Näytä Ally-palaute';
 $string['ally:viewdownload'] = 'Näytä Allyn latauspainike';
+$string['ally:viewfeedback'] = 'Näytä Ally-palaute';
+$string['filtername'] = 'Ally';
+$string['pluginname'] = 'Ally';
 $string['privacy:metadata:jwt:courseid'] = 'Tämä on sen kurssin tunnus, jolla käyttäjä muokkaa tiedostoa.';
 $string['privacy:metadata:jwt:externalpurpose'] = 'Anna Allylle tiedot, joiden avulla tiedoston esteettömyyttä voidaan parantaa muokkaamalla.';
 $string['privacy:metadata:jwt:locale'] = 'Tämä on käyttäjän kielialue, jonka perusteella Allyn käyttöliittymä näytetään oikealla kielellä.';
