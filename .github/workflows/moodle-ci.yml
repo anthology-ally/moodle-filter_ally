@@ -112,10 +112,12 @@ jobs:
           branch="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
           echo "Detected current branch: $branch"
           
-          # Derive stable branch fallback, if possible
+          # Derive stable / wip branch fallbacks, if possible
           stable_branch=""
+          wip_branch=""
           if [[ "$branch" =~ ^(MOODLE_[0-9]+) ]]; then
             stable_branch="${BASH_REMATCH[1]}_STABLE"
+            wip_branch="${BASH_REMATCH[1]}_WIP"
           fi
           
           echo "Derived stable branch: $stable_branch"
@@ -135,6 +137,8 @@ jobs:
             tool_ally_branch="$branch"
           elif [[ -n "$stable_branch" ]] && check_remote_branch_exists "moodle-tool_ally" "$stable_branch"; then
             tool_ally_branch="$stable_branch"
+          elif [[ -n "$wip_branch" ]] && check_remote_branch_exists "moodle-tool_ally" "$wip_branch"; then
+            tool_ally_branch="$wip_branch"
           else
             echo "❌ Corresponding branch missing for tool_ally (tried: $branch, fallback: $stable_branch)"
             exit 1
@@ -145,8 +149,10 @@ jobs:
             report_allylti_branch="$branch"
           elif [[ -n "$stable_branch" ]] && check_remote_branch_exists "moodle-report_allylti" "$stable_branch"; then
             report_allylti_branch="$stable_branch"
+          elif [[ -n "$wip_branch" ]] && check_remote_branch_exists "moodle-report_allylti" "$wip_branch"; then
+            report_allylti_branch="$wip_branch"
           else
-            echo "❌ Corresponding branch missing for report_allylti (tried: $branch, fallback: $stable_branch)"
+            echo "❌ Corresponding branch missing for report_allylti (tried: $branch, fallbacks: $stable_branch, $wip_branch)"
             exit 1
           fi
           
@@ -289,4 +295,4 @@ jobs:
 
       - name: Ally filter Behat test
         if: ${{ always() }}
-        run: moodle-plugin-ci behat --profile chrome
+        run: moodle-plugin-ci behat --tags=@suite_ally --profile=chrome
