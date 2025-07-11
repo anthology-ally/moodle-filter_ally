@@ -724,6 +724,22 @@ EOF;
             }
             $href = $result->attributes->getNamedItem('href')->nodeValue;
             if (strpos($href, 'pluginfile.php') !== false) {
+                // Skip anchor if it only contains an image with the same src as the href.
+                // This fixes an issue where dragging an image file onto a moodle course page allows you to add media to course page.
+                // This results in an image wrapped in an anchor tag with the same href as the image src.
+                // In these cases, we are only interested in the image, not the anchor.
+
+                if ($result->childNodes->length === 1 && 
+                    $result->firstChild->nodeType === XML_ELEMENT_NODE && 
+                    $result->firstChild->tagName === 'img') {                  
+                    $imgSrc = $result->firstChild->attributes->getNamedItem('src');
+
+                    // Note - the s_ suffix is used by Moodle to indicate a small version of the image.
+                    if ($imgSrc && ($imgSrc->nodeValue === $href || str_replace('/s_', '/', $imgSrc->nodeValue) === $href)) {
+                        continue; // Skip this anchor as it's just wrapping an image with the same URL.
+                    }
+                }
+                
                 $elements[] = (object) [
                     'type' => 'a',
                     'url' => $href,
