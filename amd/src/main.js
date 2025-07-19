@@ -28,6 +28,8 @@ import {get_strings} from "core/str";
 import Ally from "filter_ally/ally";
 import ImageCover from "filter_ally/imagecover";
 import Util from "filter_ally/util";
+import {eventTypes as filterEventTypes} from "core_filters/events";
+import Log from "core/log";
 
 /**
  * Main filter ally class
@@ -42,14 +44,30 @@ class FilterAllyMain {
     this.jwt = null;
     this.config = null;
     this.courseId = null;
+    this.initTime = Date.now();
 
     // Setup event listener for content updates
-    document.addEventListener("core_filters/contentUpdated", () => {
-      // When Snap lazy loads a section it triggers this event.
-      // We can ensure everything has been processed on lazy load by recalling the second
-      // stage initialization.
-      this.initStageTwo();
-    });
+    this.debouncedContentUpdateHandler = Util.debounce(async() => {
+      // Refresh entity maps and rerun stage two init when content is updated and
+      // five seconds have elapsed since this class
+      // was initialized.
+      // The initTime is used to ensure that we do not refresh the entity maps just
+      // after the page has loaded.
+      if (Date.now() - this.initTime > 3000) {
+        Log.debug("refreshing entity maps and reinitializing stage two");
+        await this.refreshEntityMaps();
+
+        // When Snap lazy loads a section it triggers this event.
+        // We can ensure everything has been processed on lazy load by recalling the second
+        // stage initialization.
+        this.initStageTwo();
+      }
+    }, 1000);
+
+    document.addEventListener(
+      filterEventTypes.filterContentUpdated,
+      this.debouncedContentUpdateHandler
+    );
   }
 
   /**
@@ -978,6 +996,52 @@ class FilterAllyMain {
       }
     });
     return dfd.promise();
+  }
+
+  /**
+   * Refresh entity maps by calling the web service.
+   */
+  async refreshEntityMaps() {
+    if (!this.courseId) {
+      Log.warn("Course ID not available for refreshing entity maps");
+      return;
+    }
+
+    try {
+      const Ajax = await import("core/ajax");
+      const response = await Ajax.call([
+        {
+          methodname: "filter_ally_get_module_maps",
+          args: {
+            courseid: this.courseId,
+          },
+        },
+      ]);
+
+      const result = await response[0];
+      if (result.success) {
+        // Update global variables with new mappings
+        const moduleData = {};
+        result.modulemaps.forEach((map) => {
+          moduleData[map.maptype] = JSON.parse(map.mapdata);
+        });
+
+        window.ally_module_maps = moduleData;
+
+        const sectionData = {};
+        result.sectionmaps.forEach((map) => {
+          sectionData[map.sectionkey] = map.sectionid;
+        });
+        window.ally_section_maps = sectionData;
+        window.ally_annotation_maps = JSON.parse(result.annotationmaps);
+
+        Log.debug("Entity maps refreshed successfully");
+      } else {
+        Log.error("Failed to refresh entity maps:", result);
+      }
+    } catch (error) {
+      Log.error("Error refreshing entity maps:", error);
+    }
   }
 
   /**
