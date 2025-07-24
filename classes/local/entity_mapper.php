@@ -30,10 +30,8 @@ use tool_ally\local_file;
 use tool_ally\local_content;
 use tool_ally\logging\logger;
 use cm_info;
-use coding_exception;
-use moodle_page;
-use moodle_url;
-use context_course;
+use stdClass;
+use \core\exception\coding_exception;
 
 /**
  * Class for generating module maps.
@@ -56,11 +54,18 @@ class entity_mapper {
 
     /**
      * Constructor.
-     * @param int $courseid The course ID
+     * @param stdClass|int $course course instance or courseid
      * @throws moodle_exception
      */
-    public function __construct($courseid) {
-        $this->course = get_course($courseid);
+    public function __construct($course) {
+        if ($course instanceof stdClass) {
+            $this->course = $course;
+            return;
+        }
+        if (!is_number($course)) {
+            throw new coding_exception('Invalid course id');
+        }
+        $this->course = get_course($course);
     }
 
     /**
@@ -119,8 +124,8 @@ class entity_mapper {
      * @param object $course
      * @return cm_info
      */
-    protected function get_forum_cm($forumid, $course) {
-        $modinfo = get_fast_modinfo($course);
+    protected function get_forum_cm($forumid) {
+        $modinfo = get_fast_modinfo($this->course);
         $instances = $modinfo->get_instances_of('forum');
         $cm = isset($instances[$forumid]) ? $instances[$forumid] : null;
         return $cm;
@@ -133,14 +138,13 @@ class entity_mapper {
      * @throws coding_exception
      * @throws moodle_exception
      */
-    protected function map_forum_attachment_file_paths_to_pathhash($course) {
+    protected function map_forum_attachment_file_paths_to_pathhash() {
         global $PAGE, $DB;
         $map = [];
         $cm = false;
-
-        if ($course->format === 'social') {
-            if ($forum = forum_get_course_forum($course->id, 'social')) {
-                $cm = $this->get_forum_cm($forum->id, $course);
+        if ($this->course->format === 'social') {
+            if ($forum = forum_get_course_forum($this->course->id, 'social')) {
+                $cm = $this->get_forum_cm($forum->id);
             }
         } else if (in_array($PAGE->pagetype, ['mod-forum-view', 'mod-forum-discuss'])) {
             $cmid = optional_param('id', false, PARAM_INT);
@@ -159,7 +163,7 @@ class entity_mapper {
                     }
                 }
                 if ($forumid) {
-                    $cm = $this->get_forum_cm($forumid, $course);
+                    $cm = $this->get_forum_cm($forumid);
                 }
             }
         }
@@ -178,7 +182,7 @@ class entity_mapper {
      * @throws coding_exception
      * @throws moodle_exception
      */
-    protected function map_assignment_file_paths_to_pathhash($course) {
+    protected function map_assignment_file_paths_to_pathhash() {
         global $PAGE;
         $map = [];
 
@@ -202,7 +206,7 @@ class entity_mapper {
      * @throws coding_exception
      * @throws moodle_exception
      */
-    protected function map_folder_file_paths_to_pathhash($course) {
+    protected function map_folder_file_paths_to_pathhash() {
         global $PAGE, $DB;
         $map = [];
 
@@ -217,7 +221,7 @@ class entity_mapper {
             $cm;
             $map = $this->get_cm_file_map($cm, 'mod_folder', 'content');
         } else if ((stripos($PAGE->pagetype, 'course-view') === 0) || $PAGE->pagetype === 'site-index') {
-            $folders = $DB->get_records('folder', ['course' => $course->id]);
+            $folders = $DB->get_records('folder', ['course' => $this->course->id]);
             $map = [];
             foreach ($folders as $folder) {
                 if (empty($folder->name)) {
@@ -239,12 +243,11 @@ class entity_mapper {
 
     /**
      * Map file paths to pathname hash.
-     * @param object $course The course object
      * @return array
      * @throws coding_exception
      * @throws moodle_exception
      */
-    protected function map_glossary_file_paths_to_pathhash($course) {
+    protected function map_glossary_file_paths_to_pathhash() {
         global $PAGE;
         $map = [];
 
@@ -261,10 +264,10 @@ class entity_mapper {
         return $map;
     }
 
-    protected function map_course_module_file_paths_to_pathhash($course, $modname) {
+    protected function map_course_module_file_paths_to_pathhash(string $modname) {
         global $DB;
 
-        $modinfo = get_fast_modinfo($course);
+        $modinfo = get_fast_modinfo($this->course);
         $modules = $modinfo->get_instances_of($modname);
         if (empty($modules)) {
             return [];
@@ -316,29 +319,27 @@ class entity_mapper {
 
     /**
      * Map file resource moduleid to pathname hash.
-     * @param $course
      * @return array
      * @throws coding_exception
      * @throws dml_exception
      */
-    protected function map_resource_file_paths_to_pathhash($course) {
+    protected function map_resource_file_paths_to_pathhash() {
         global $PAGE;
 
         if (!$this->is_course_page() && !AJAX_SCRIPT && $PAGE->pagetype !== 'site-index') {
             return [];
         }
 
-        return $this->map_course_module_file_paths_to_pathhash($course, 'resource');
+        return $this->map_course_module_file_paths_to_pathhash('resource');
     }
 
     /**
      * Map lesson file paths to path hash.
-     * @param object $course The course object
      * @return array
      * @throws coding_exception
      * @throws moodle_exception
      */
-    protected function map_lesson_file_paths_to_pathhash($course) {
+    protected function map_lesson_file_paths_to_pathhash() {
         global $PAGE;
         $map = [];
 
@@ -349,7 +350,7 @@ class entity_mapper {
         if ($islessoncontext) {
             // For web service context, get all lesson modules for this course
             if (!$PAGE) {
-                $map = $this->map_course_module_file_paths_to_pathhash($course, 'lesson');
+                $map = $this->map_course_module_file_paths_to_pathhash('lesson');
             } else {
                 // For page context, get specific lesson module
                 $cmid = optional_param('id', false, PARAM_INT);
@@ -368,24 +369,24 @@ class entity_mapper {
 
     /**
      * Section ids hashed by section-numbers.
-     * @param object $course The course object
      * @return array
      */
-    protected function map_sections_to_ids($course) {
+    protected function map_sections_to_ids() {
         global $PAGE;
 
+        // Ensure we're in a course context (either via PAGE or assume true for web service)
+        $iscourseviewpage = !empty($PAGE) && strpos($PAGE->pagetype ?? '', 'course-view-') === 0;
+        $iscoursecontext = AJAX_SCRIPT || !$PAGE || $iscourseviewpage;
+        if (!$iscoursecontext) {
+            return [];
+        }
+
+        $component = local_content::component_instance('course');
+        $sections = $component->get_course_section_summary_rows($this->course->id);
+
         $sectionmap = [];
-
-        // Check if we're in a course context (either via PAGE or assume true for web service)
-        $iscoursecontext = !$PAGE || (isset($PAGE->pagetype) && strpos($PAGE->pagetype, 'course-view-') === 0);
-
-        if ($iscoursecontext) {
-            $component = local_content::component_instance('course');
-            $sections = $component->get_course_section_summary_rows($course->id);
-
-            foreach ($sections as $section) {
-                $sectionmap['section-'.$section->section] = intval($section->id);
-            }
+        foreach ($sections as $section) {
+            $sectionmap['section-'.$section->section] = intval($section->id);
         }
 
         return $sectionmap;
@@ -464,7 +465,7 @@ class entity_mapper {
 
             $course = $this->course;
 
-            $sectionmaps = $this->map_sections_to_ids($course);
+            $sectionmaps = $this->map_sections_to_ids();
 
             // Possible course cache build recursion avoidance, by adding the course id to a static array.
             self::start_annotating($course->id);
@@ -475,12 +476,12 @@ class entity_mapper {
 
             // Note, we only have to build maps for modules that don't pass their file containing content
             // through the filter.
-            $modulefilemapping = $this->map_resource_file_paths_to_pathhash($course);
-            $assignmentmap = $this->map_assignment_file_paths_to_pathhash($course);
-            $forummap = $this->map_forum_attachment_file_paths_to_pathhash($course);
-            $foldermap = $this->map_folder_file_paths_to_pathhash($course);
-            $glossarymap = $this->map_glossary_file_paths_to_pathhash($course);
-            $lessonmap = $this->map_lesson_file_paths_to_pathhash($course);
+            $modulefilemapping = $this->map_resource_file_paths_to_pathhash();
+            $assignmentmap = $this->map_assignment_file_paths_to_pathhash();
+            $forummap = $this->map_forum_attachment_file_paths_to_pathhash();
+            $foldermap = $this->map_folder_file_paths_to_pathhash();
+            $glossarymap = $this->map_glossary_file_paths_to_pathhash();
+            $lessonmap = $this->map_lesson_file_paths_to_pathhash();
 
             $modulemaps = [
                 'file_resources' => $modulefilemapping,
