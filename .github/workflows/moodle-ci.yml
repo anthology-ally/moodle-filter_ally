@@ -1,8 +1,8 @@
 name: Ally automated testing
 
 env:
-  DEFAULT_PHP_VERSION: '8.2'
-  DEFAULT_MOODLE_BRANCH: 'MOODLE_405_STABLE'
+  DEFAULT_PHP_VERSION: "8.2"
+  DEFAULT_MOODLE_BRANCH: "MOODLE_500_STABLE"
 
 on:
   push:
@@ -12,43 +12,47 @@ on:
         type: choice
         description: Select Moodle branch
         options:
-          - 'MOODLE_400_STABLE'
-          - 'MOODLE_401_STABLE'
-          - 'MOODLE_402_STABLE'
-          - 'MOODLE_403_STABLE'
-          - 'MOODLE_404_STABLE'
-          - 'MOODLE_405_STABLE'
-          - 'MOODLE_406_STABLE'
-          - 'MOODLE_407_STABLE'
-        default: 'MOODLE_405_STABLE'
+          - "MOODLE_400_STABLE"
+          - "MOODLE_401_STABLE"
+          - "MOODLE_402_STABLE"
+          - "MOODLE_403_STABLE"
+          - "MOODLE_404_STABLE"
+          - "MOODLE_405_STABLE"
+          - "MOODLE_500_STABLE"
+          - "MOODLE_501_STABLE"
+        default: "MOODLE_500_STABLE"
       phpversion:
         type: choice
         description: Select PHP version
         options:
-          - '7.4'
-          - '8.0'
-          - '8.1'
-          - '8.2'
-          - '8.3'
-        default: '8.2'
-
+          - "7.4"
+          - "8.0"
+          - "8.1"
+          - "8.2"
+          - "8.3"
+          - "8.4"
+        default: "8.3"
+      skipopenlms:
+        type: boolean
+        description: Skip Open LMS plugins (hsuforum/snap)?
+        default: false
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     services:
       postgres:
-        image: postgres:13
+        image: postgres:14
         env:
-          POSTGRES_USER: 'postgres'
-          POSTGRES_HOST_AUTH_METHOD: 'trust'
+          POSTGRES_USER: "postgres"
+          POSTGRES_HOST_AUTH_METHOD: "trust"
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
       mariadb:
         image: mariadb:10
         env:
-          MYSQL_USER: 'root'
+          MYSQL_USER: "root"
           MYSQL_ALLOW_EMPTY_PASSWORD: "true"
           MYSQL_CHARACTER_SET_SERVER: "utf8mb4"
           MYSQL_COLLATION_SERVER: "utf8mb4_unicode_ci"
@@ -108,10 +112,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          
+
           branch="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
           echo "Detected current branch: $branch"
-          
+
           # Derive stable / wip branch fallbacks, if possible
           stable_branch=""
           wip_branch=""
@@ -119,19 +123,19 @@ jobs:
             stable_branch="${BASH_REMATCH[1]}_STABLE"
             wip_branch="${BASH_REMATCH[1]}_WIP"
           fi
-          
+
           echo "Derived stable branch: $stable_branch"
-          
+
           # Function to check if a branch exists remotely
           check_remote_branch_exists() {
             local repo="$1"
             local test_branch="$2"
             git ls-remote --exit-code --heads "https://github.com/${GITHUB_REPOSITORY_OWNER}/${repo}.git" "refs/heads/${test_branch}" &>/dev/null
           }
-          
+
           tool_ally_branch=""
           report_allylti_branch=""
-          
+
           # Check for tool_ally branch
           if check_remote_branch_exists "moodle-tool_ally" "$branch"; then
             tool_ally_branch="$branch"
@@ -143,7 +147,7 @@ jobs:
             echo "❌ Corresponding branch missing for tool_ally (tried: $branch, fallback: $stable_branch)"
             exit 1
           fi
-          
+
           # Check for report_allylti branch
           if check_remote_branch_exists "moodle-report_allylti" "$branch"; then
             report_allylti_branch="$branch"
@@ -155,21 +159,47 @@ jobs:
             echo "❌ Corresponding branch missing for report_allylti (tried: $branch, fallbacks: $stable_branch, $wip_branch)"
             exit 1
           fi
-          
+
           # Output variables
           echo "branch=$branch" >> $GITHUB_OUTPUT
           echo "stable_branch=$stable_branch" >> $GITHUB_OUTPUT
           echo "tool_ally_branch=$tool_ally_branch" >> $GITHUB_OUTPUT
           echo "report_allylti_branch=$report_allylti_branch" >> $GITHUB_OUTPUT
 
+      - name: Check for skip-openlms in commit message or manual input
+        id: check_skip
+        run: |
+          skip="false"
+          # Check commit message from event (push)
+          if echo "${{ github.event.head_commit.message }}" | grep -Eiq '\[?skip-openlms\]?'; then
+            echo "Detected 'skip-openlms' in event commit message"
+            skip="true"
+          # Check PR title and body for pull_request events
+          elif echo "${{ github.event.pull_request.title }} ${{ github.event.pull_request.body }}" | grep -Eiq '\[?skip-openlms\]?'; then
+            echo "Detected 'skip-openlms' in PR title/body"
+            skip="true"
+          # Fallback: check latest commit in repo
+          elif git log -1 --pretty=%B | grep -Eiq '\[?skip-openlms\]?'; then
+            echo "Detected 'skip-openlms' in latest repo commit message"
+            skip="true"
+          fi
+
+          if [[ "${{ github.event.inputs.skipopenlms }}" == "true" ]]; then
+            echo "Manual input to skip Open LMS plugins is enabled"
+            skip="true"
+          fi
+
+          echo "skip_openlms=${skip}" >> $GITHUB_OUTPUT
+
       - name: Determine hsuforum and snap branches
-        id: citricity_branches
+        id: openlms_branches
+        if: steps.check_skip.outputs.skip_openlms == 'false'
         shell: bash
         run: |
           set -euo pipefail
 
           base_branch="${{ steps.extract_branches.outputs.stable_branch }}"
-          citricity_branch="${base_branch/STABLE/CITRICITY}"
+          openlms_branch="${base_branch/STABLE/CITRICITY}"
 
           check_remote_branch_exists() {
             local org="$1"
@@ -179,8 +209,8 @@ jobs:
           }
 
           # hsuforum logic
-          if check_remote_branch_exists "${GITHUB_REPOSITORY_OWNER}" "moodle-mod_hsuforum" "$citricity_branch"; then
-            echo "branch_hsuforum=$citricity_branch" >> $GITHUB_OUTPUT
+          if check_remote_branch_exists "${GITHUB_REPOSITORY_OWNER}" "moodle-mod_hsuforum" "$openlms_branch"; then
+            echo "branch_hsuforum=$openlms_branch" >> $GITHUB_OUTPUT
             echo "repo_hsuforum=https://github.com/${GITHUB_REPOSITORY_OWNER}/moodle-mod_hsuforum" >> $GITHUB_OUTPUT
           elif check_remote_branch_exists "${GITHUB_REPOSITORY_OWNER}" "moodle-mod_hsuforum" "$base_branch"; then
             echo "branch_hsuforum=$base_branch" >> $GITHUB_OUTPUT
@@ -194,8 +224,8 @@ jobs:
           fi
 
           # snap logic
-          if check_remote_branch_exists "${GITHUB_REPOSITORY_OWNER}" "moodle-theme_snap" "$citricity_branch"; then
-            echo "branch_snap=$citricity_branch" >> $GITHUB_OUTPUT
+          if check_remote_branch_exists "${GITHUB_REPOSITORY_OWNER}" "moodle-theme_snap" "$openlms_branch"; then
+            echo "branch_snap=$openlms_branch" >> $GITHUB_OUTPUT
             echo "repo_snap=https://github.com/${GITHUB_REPOSITORY_OWNER}/moodle-theme_snap" >> $GITHUB_OUTPUT
           elif check_remote_branch_exists "${GITHUB_REPOSITORY_OWNER}" "moodle-theme_snap" "$base_branch"; then
             echo "branch_snap=$base_branch" >> $GITHUB_OUTPUT
@@ -208,8 +238,6 @@ jobs:
             exit 1
           fi
 
-
-
       # See https://moodlehq.github.io/moodle-plugin-ci/AddExtraConfig.html
       # for adding extra config.php values via moodle-plugin-ci.
       - name: Install moodle-plugin-ci
@@ -218,8 +246,14 @@ jobs:
           echo "NOTE: Using branch ${{ steps.extract_branches.outputs.branch }}" 
           moodle-plugin-ci add-plugin --branch ${{ steps.extract_branches.outputs.tool_ally_branch }} --clone=https://github.com/$GITHUB_REPOSITORY_OWNER/moodle-tool_ally
           moodle-plugin-ci add-plugin --branch ${{ steps.extract_branches.outputs.report_allylti_branch }} --clone=https://github.com/$GITHUB_REPOSITORY_OWNER/moodle-report_allylti
-          moodle-plugin-ci add-plugin --branch ${{ steps.citricity_branches.outputs.branch_hsuforum }} --clone=${{ steps.citricity_branches.outputs.repo_hsuforum }}
-          moodle-plugin-ci add-plugin --branch ${{ steps.citricity_branches.outputs.branch_snap }} --clone=${{ steps.citricity_branches.outputs.repo_snap }}
+
+          if [[ "${{ steps.check_skip.outputs.skip_openlms }}" == "false" ]]; then
+            moodle-plugin-ci add-plugin --branch ${{ steps.openlms_branches.outputs.branch_hsuforum }} --clone=${{ steps.openlms_branches.outputs.repo_hsuforum }}
+            moodle-plugin-ci add-plugin --branch ${{ steps.openlms_branches.outputs.branch_snap }} --clone=${{ steps.openlms_branches.outputs.repo_snap }}
+          else
+            echo "Skipping hsuforum and snap tests"
+          fi
+
           moodle-plugin-ci install --plugin ./plugin --db-host=127.0.0.1
           moodle-plugin-ci add-config '$CFG->behat_increasetimeout = 2;'
         env:
