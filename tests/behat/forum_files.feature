@@ -28,7 +28,8 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
 
   @javascript
   Scenario Outline: Forum attachments are processed appropriately.
-    Given the following "courses" exist:
+    Given forum type <forumtype> is available
+    And the following "courses" exist:
       | fullname | shortname | category | format |
       | Course 1 | C1        | 0        | topics |
     And the following "users" exist:
@@ -47,19 +48,15 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | <forumtype>| Test forum name  | Test forum description | general | C1       | 1       |
     And I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
-#    And I add a "<forumtypestr>" to section "1" and I fill the form with:
-#      | Forum name | Test forum name |
-#      | Forum type | Standard forum for general use |
-#      | Description | Test forum description |
-    And I add a new discussion to "Test forum name" <forumtypestr> with:
+    And I add a new discussion to "Test forum name" using forum type "<forumtypestr>" with:
       | Subject | Teacher discussion |
       | Message | This is the body |
       | Attachment | lib/tests/fixtures/empty.txt |
-    And I reply "Teacher discussion" post from "Test forum name" <forumtypestr> with:
+    And I reply "Teacher discussion" post from "Test forum name" using forum type "<forumtypestr>" with:
       | Subject | Teacher reply (non image file) |
       | Message | This is the body |
       | Attachment | lib/tests/fixtures/upload_users.csv |
-    And I reply "Teacher discussion" post from "Test forum name" <forumtypestr> with:
+    And I reply "Teacher discussion" post from "Test forum name" using forum type "<forumtypestr>" with:
       | Subject | Teacher reply (image file) |
       | Message | This is the body |
       | Attachment | lib/tests/fixtures/gd-logo.png |
@@ -67,11 +64,11 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I log in as "student1"
     And I am on "Course 1" course homepage
     And I follow "Test forum name"
-    And I reply "Teacher discussion" post from "Test forum name" <forumtypestr> with:
+    And I reply "Teacher discussion" post from "Test forum name" using forum type "<forumtypestr>" with:
       | Subject | Student reply (non image file) |
       | Message | This is the body |
       | Attachment | lib/tests/fixtures/upload_users.csv |
-    And I reply "Teacher discussion" post from "Test forum name" <forumtypestr> with:
+    And I reply "Teacher discussion" post from "Test forum name" using forum type "<forumtypestr>" with:
       | Subject | Student reply (image file) |
       | Message | This is the body |
       | Attachment | lib/tests/fixtures/upload_users.csv |
@@ -211,21 +208,18 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And the following "activities" exist:
       | activity   | name             | intro                  | type    | course   | section |
       | <forumtype>| Test forum name  | Test forum description | general | C1       | 1       |
+    Given forum type <forumtype> is available
     And I log in as "teacher1"
     And I am on "Course 1" course homepage with editing mode on
-#    And I add a "<forumtypestr>" to section "1" and I fill the form with:
-#      | Forum name | Test forum name |
-#      | Forum type | Standard forum for general use |
-#      | Description | Test forum description |
-    And I add a new discussion to "Test forum name" <forumtypestr> with:
+    And I add a new discussion to "Test forum name" using forum type "<forumtypestr>" with:
       | Subject | Teacher discussion |
       | Message | This is the body |
       | Attachment | lib/tests/fixtures/empty.txt |
-    And I reply "Teacher discussion" post from "Test forum name" <forumtypestr> with:
+    And I reply "Teacher discussion" post from "Test forum name" using forum type "<forumtypestr>" with:
       | Subject | Teacher reply (non image file) |
       | Message | This is the body |
       | Attachment | lib/tests/fixtures/upload_users.csv |
-    And I reply "Teacher discussion" post from "Test forum name" <forumtypestr> with:
+    And I reply "Teacher discussion" post from "Test forum name" using forum type "<forumtypestr>" with:
       | Subject | Teacher reply (image file) |
       | Message | This is the body |
       | Attachment | lib/tests/fixtures/gd-logo.png |
@@ -233,11 +227,11 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I log in as "student1"
     And I am on "Course 1" course homepage
     And I follow "Test forum name"
-    And I reply "Teacher discussion" post from "Test forum name" <forumtypestr> with:
+    And I reply "Teacher discussion" post from "Test forum name" using forum type "<forumtypestr>" with:
       | Subject | Student reply (non image file) |
       | Message | This is the body |
       | Attachment | lib/tests/fixtures/upload_users.csv |
-    And I reply "Teacher discussion" post from "Test forum name" <forumtypestr> with:
+    And I reply "Teacher discussion" post from "Test forum name" using forum type "<forumtypestr>" with:
       | Subject | Student reply (image file) |
       | Message | This is the body |
       | Attachment | lib/tests/fixtures/upload_users.csv |
