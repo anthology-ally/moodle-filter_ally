@@ -24,9 +24,11 @@
 namespace filter_ally;
 
 /**
+ * Test filter loop avoidance.
  * @group     text_filter
  * @group     ally
  * @package filter_ally
+ * @covers \filter_ally\text_filter
  */
 final class annotating_state_test extends \advanced_testcase {
     public function test_annotating_state(): void {

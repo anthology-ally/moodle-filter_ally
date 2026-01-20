@@ -36,10 +36,13 @@ use core_privacy\local\request\userlist;
  * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
  * @license http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class provider implements \core_privacy\local\metadata\provider,
-    \core_privacy\local\request\plugin\provider,
-    \core_privacy\local\request\core_userlist_provider {
-
+class provider implements
+    \core_privacy\local\metadata\provider,
+    \core_privacy\local\request\core_userlist_provider,
+    \core_privacy\local\request\plugin\provider {
+    /**
+     * Get privacy metadata.
+     */
     public static function get_metadata(collection $collection): collection {
         $collection->add_external_location_link('jwt', [
             'userid'   => 'privacy:metadata:jwt:userid',
@@ -51,22 +54,45 @@ class provider implements \core_privacy\local\metadata\provider,
         return $collection;
     }
 
+    /**
+     * Get the list of contexts that contain user information for the specified user.
+     */
     public static function get_contexts_for_userid(int $userid): contextlist {
         return new contextlist();
     }
 
+    /**
+     * Export user data in the specified contexts.
+     * NOT relevant as no user data is stored.
+     */
     public static function export_user_data(approved_contextlist $contextlist) {
     }
 
+    /**
+     * Delete user data in the specified contexts.
+     * NOT relevant as no user data is stored.
+     */
     public static function delete_data_for_all_users_in_context(\context $context) {
     }
 
+    /**
+     * Delete data for user.
+     * NOT relevant as no user data is stored.
+     */
     public static function delete_data_for_user(approved_contextlist $contextlist) {
     }
 
+    /**
+     * Get the list of users in a context.
+     * NOT relevant as no user data is stored.
+     */
     public static function get_users_in_context(userlist $userlist) {
     }
 
+    /**
+     * Delete user data for users.
+     * NOT relevant as no user data is stored.
+     */
     public static function delete_data_for_users(approved_userlist $userlist) {
     }
 }

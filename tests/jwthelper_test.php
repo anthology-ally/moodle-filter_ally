@@ -14,17 +14,32 @@
 // You should have received a copy of the GNU General Public License
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
+/**
+ * Test jwthelper lib.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package filter_ally
+ */
+
 namespace filter_ally;
 
 use Firebase\JWT\Key;
 
 /**
+ * Test jwthelper lib.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @package   filter_ally
  * @group     filter_ally
  * @group     ally
+ * @covers    \filter_ally\local\jwthelper
  */
 final class jwthelper_test extends \advanced_testcase {
-
+    /**
+     * Set config for valid JWT token generation.
+     */
     protected function config_set_ok() {
         set_config('secret', 'WAzk9ohDeK', 'tool_ally');
     }
@@ -165,6 +180,5 @@ final class jwthelper_test extends \advanced_testcase {
         $expectedrole = 'urn:lti:sysrole:ims/lis/None';
         $expecteduserid = null; // Special case for guest role and not logged in.
         $this->validate_token($token, $expecteduserid, $course->id, $expectedrole);
-
     }
 }

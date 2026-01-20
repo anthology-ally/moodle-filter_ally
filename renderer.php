@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Ally renderer.
+ * Ally filter renderer.
  * @author    Guy Thomas
  * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
@@ -24,6 +24,13 @@
 
 use filter_ally\renderables\wrapper;
 
+/**
+ * Ally filter renderer.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package filter_ally
+ */
 class filter_ally_renderer extends plugin_renderer_base {
     /**
      * Render ally wrapper.

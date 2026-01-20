@@ -24,11 +24,47 @@
 
 namespace filter_ally\renderables;
 
+/**
+ * Renderable for ally wrapper.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package filter_ally
+ */
 class wrapper implements \renderable {
-    public $html;
-    public $fileid;
-    public $url;
-    public $canviewfeedback;
-    public $candownload;
-    public $isimage;
+    /**
+     * HTML content.
+     * @var string
+     */
+    public string $html;
+
+    /**
+     * File ID.
+     * @var string
+     */
+    public string $fileid;
+
+    /**
+     * URL of element with pluginfile.php url.
+     * @var string
+     */
+    public string $url;
+
+    /**
+     * Whether the user can view feedback.
+     * @var bool
+     */
+    public bool $canviewfeedback;
+
+    /**
+     * Whether the user can download the file.
+     * @var bool
+     */
+    public bool $candownload;
+
+    /**
+     * Whether the file is an image.
+     * @var bool
+     */
+    public bool $isimage;
 }

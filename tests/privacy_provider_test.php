@@ -35,6 +35,7 @@ use filter_ally\privacy\provider;
  * @group     filter_ally
  * @group     ally
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @covers    \filter_ally\privacy\provider
  */
 final class privacy_provider_test extends provider_testcase {
     /**
