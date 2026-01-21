@@ -1,8 +1,8 @@
 name: Ally automated testing
 
 env:
-  DEFAULT_PHP_VERSION: "8.2"
-  DEFAULT_MOODLE_BRANCH: "MOODLE_500_STABLE"
+  DEFAULT_PHP_VERSION: "8.3"
+  DEFAULT_MOODLE_BRANCH: "MOODLE_501_STABLE"
 
 on:
   push:
@@ -20,7 +20,8 @@ on:
           - "MOODLE_405_STABLE"
           - "MOODLE_500_STABLE"
           - "MOODLE_501_STABLE"
-        default: "MOODLE_500_STABLE"
+          - "MOODLE_502_STABLE"
+        default: "MOODLE_501_STABLE"
       phpversion:
         type: choice
         description: Select PHP version
@@ -42,7 +43,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:15
         env:
           POSTGRES_USER: "postgres"
           POSTGRES_HOST_AUTH_METHOD: "trust"
