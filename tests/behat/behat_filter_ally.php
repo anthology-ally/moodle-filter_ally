@@ -655,7 +655,7 @@ XPATH;
     protected function is_node_visible(
         NodeElement $node,
         $timeout = null,
-        ExpectationException $exception = null
+        ?ExpectationException $exception = null
     ) {
 
         $timeout = $timeout == null ? behat_base::get_extended_timeout() : $timeout;
