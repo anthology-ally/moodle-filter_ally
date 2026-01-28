@@ -31,6 +31,6 @@ $plugin->version      = 2026012800;
 $plugin->requires     = 2024100700;
 $plugin->maturity     = MATURITY_STABLE;
 $plugin->dependencies = [
-    'tool_ally'      => 2025032300,
-    'report_allylti' => 2025032300,
+    'tool_ally'      => 2026012800,
+    'report_allylti' => 2026012800,
 ];
