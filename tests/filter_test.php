@@ -22,13 +22,14 @@
  * @package filter_ally
  */
 namespace filter_ally;
+use filter_ally\local\entity_mapper;
 use tool_ally\local_content;
 use tool_ally\local_file;
 
 /**
  * @group     filter_ally
  * @group     ally
- * @package filter_ally
+ * @package   filter_ally
  */
 final class filter_test extends \advanced_testcase {
 
@@ -76,18 +77,19 @@ final class filter_test extends \advanced_testcase {
         global $PAGE, $CFG;
 
         $gen = $this->getDataGenerator();
-
-        $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_assignment_file_paths_to_pathhash', [], text_filter::class
-        );
-        $this->assertEmpty($map);
-
-        $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_assignment_file_paths_to_pathhash', [], text_filter::class
-        );
-        $this->assertEmpty($map);
-
         $course = $gen->create_course();
+        $mapper = new entity_mapper($course);
+
+        $map = \phpunit_util::call_internal_method(
+            $mapper, 'map_assignment_file_paths_to_pathhash', [$course], entity_mapper::class
+        );
+        $this->assertEmpty($map);
+
+        $map = \phpunit_util::call_internal_method(
+            $mapper, 'map_assignment_file_paths_to_pathhash', [], entity_mapper::class
+        );
+        $this->assertEmpty($map);
+
         $data = (object) [
             'course' => $course->id,
         ];
@@ -112,14 +114,14 @@ final class filter_test extends \advanced_testcase {
         }
 
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_assignment_file_paths_to_pathhash', [], text_filter::class
+            $mapper, 'map_assignment_file_paths_to_pathhash', [], entity_mapper::class
         );
         $this->assertEmpty($map);
 
         $PAGE->set_pagetype('mod-assign-view');
         $_GET['id'] = $assign->cmid;
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_assignment_file_paths_to_pathhash', [], text_filter::class
+            $mapper, 'map_assignment_file_paths_to_pathhash', [], entity_mapper::class
         );
         $this->assertNotEmpty($map);
     }
@@ -130,13 +132,14 @@ final class filter_test extends \advanced_testcase {
         $this->setAdminUser();
 
         $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+        $mapper = new entity_mapper($course);
 
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_folder_file_paths_to_pathhash', [], text_filter::class
+            $mapper, 'map_folder_file_paths_to_pathhash', [], entity_mapper::class
         );
         $this->assertEmpty($map);
 
-        $course = $gen->create_course();
         $data = (object) [
             'course' => $course->id,
         ];
@@ -165,15 +168,17 @@ final class filter_test extends \advanced_testcase {
             $fs->create_file_from_pathname($filerecord, $fixturepath);
         }
 
+        // Test map returns empty when age type is folder view but no cmid has been provided.
+        $PAGE->set_pagetype('mod-folder-view');
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_folder_file_paths_to_pathhash', [], text_filter::class
+            $mapper, 'map_folder_file_paths_to_pathhash', [], entity_mapper::class
         );
         $this->assertEmpty($map);
 
-        $PAGE->set_pagetype('mod-folder-view');
+        // Test map does not return empty when cmid provided.
         $_GET['id'] = $assign->cmid;
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_folder_file_paths_to_pathhash', [], text_filter::class
+            $mapper, 'map_folder_file_paths_to_pathhash', [], entity_mapper::class
         );
         $this->assertNotEmpty($map);
     }
@@ -183,11 +188,12 @@ final class filter_test extends \advanced_testcase {
 
         $gen = $this->getDataGenerator();
         $course = $gen->create_course();
+        $mapper = new entity_mapper($course);
         $student = $gen->create_user();
         $gen->enrol_user($student->id, $course->id, 'student');
 
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], text_filter::class
+            $mapper, 'map_resource_file_paths_to_pathhash', [$course], entity_mapper::class
         );
         $this->assertEmpty($map);
 
@@ -220,14 +226,14 @@ final class filter_test extends \advanced_testcase {
         }
 
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], text_filter::class
+            $mapper, 'map_resource_file_paths_to_pathhash', [$course], entity_mapper::class
         );
         $this->assertNotEmpty($map);
 
         // Check students don't get anything as all the resources were invisible.
         $this->setUser($student);
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], text_filter::class
+            $mapper, 'map_resource_file_paths_to_pathhash', [$course], entity_mapper::class
         );
         $this->assertEmpty($map);
 
@@ -784,10 +790,11 @@ EOF;
 
         $PAGE->set_pagetype('mod-forum-view');
         $COURSE = $course;
+        $mapper = new entity_mapper($course);
 
         // Should be empty when nothing added.
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], text_filter::class
+            $mapper, 'map_forum_attachment_file_paths_to_pathhash', [], entity_mapper::class
         );
         $this->assertEmpty($map);
 
@@ -811,7 +818,7 @@ EOF;
 
         // Add an file.
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], text_filter::class
+            $mapper, 'map_forum_attachment_file_paths_to_pathhash', [], entity_mapper::class
         );
         $this->assertNotEmpty($map);
 
@@ -825,9 +832,9 @@ EOF;
         $fixturepath = $fixturedir.'/'.$testfile;
         $fs->create_file_from_pathname($filerecord, $fixturepath);
 
-        // Shouldn't be be empty when an image file has been added (only image files are mapped).
+        // Shouldn't be empty when an image file has been added (only image files are mapped).
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_forum_attachment_file_paths_to_pathhash', [$course], text_filter::class
+            $mapper, 'map_forum_attachment_file_paths_to_pathhash', [], entity_mapper::class
         );
         $this->assertNotEmpty($map);
     }
@@ -863,7 +870,6 @@ EOF;
             $teststring = 'moodletest';
             $file = $fs->create_file_from_string($filerecord, $teststring);
             $url = local_file::url($file);
-            $urls[] = $url;
             $anchortext = '<a href="'.$url.'">test</a>';
             $text .= $anchortext;
 

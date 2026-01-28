@@ -26,17 +26,16 @@ namespace filter_ally;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once(__DIR__.'/../../../mod/forum/lib.php');
+require_once(__DIR__ . '/../../../mod/forum/lib.php');
 
 use filter_ally\renderables\wrapper;
+use filter_ally\local\entity_mapper;
 use tool_ally\cache;
 use tool_ally\local_file;
 use tool_ally\local_content;
-use tool_ally\models\pluginfileurlprops;
 use tool_ally\logging\logger;
 use stdClass;
 use context_course;
-use cm_info;
 use DOMElement;
 
 /**
@@ -47,7 +46,6 @@ use DOMElement;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class text_filter extends \core_filters\text_filter {
-
     /**
      * @var array File ids (path hashes) of all processed files by url.
      */
@@ -80,306 +78,6 @@ class text_filter extends \core_filters\text_filter {
     }
 
     /**
-     * Get file map for specific course module, component and file area.
-     * @param cm_info $cm
-     * @param string $component
-     * @param string $filearea
-     * @param string $mimetype
-     * @return array
-     * @throws coding_exception
-     */
-    protected function get_cm_file_map(cm_info $cm, $component, $filearea, $mimetype = null) {
-        $map = [];
-
-        $files = local_file::iterator();
-        /** @var stored_file[] $files */
-        $files = $files->in_context($cm->context)->with_component($component)->with_filearea($filearea);
-
-        if (!empty($mimetype)) {
-            $files = $files->with_mimetype($mimetype);
-        }
-
-        foreach ($files as $file) {
-            if ($file->is_directory()) {
-                continue;
-            }
-
-            // Use the logic from moodle_url::make_pluginfile_url() to generate matching URL path.
-            $path = [];
-            $path[] = $cm->context->id;
-            $path[] = $component;
-            $path[] = $filearea;
-            if ($file->get_itemid() !== null) {
-                $path[] = $file->get_itemid();
-            }
-            $fullpath = implode('/', $path) . $file->get_filepath() . $file->get_filename();
-
-            $map[$fullpath] = $file->get_pathnamehash();
-        }
-        return $map;
-    }
-
-    /**
-     * Get course module for specific forum in current course.
-     * @param int $forumid
-     * @return cm_info
-     */
-    protected function get_forum_cm($forumid) {
-        global $COURSE;
-        $modinfo = get_fast_modinfo($COURSE);
-        $instances = $modinfo->get_instances_of('forum');
-        $cm = isset($instances[$forumid]) ? $instances[$forumid] : null;
-        return $cm;
-    }
-
-    /**
-     * Return file map for forum.
-     * @return array
-     * @throws coding_exception
-     * @throws moodle_exception
-     */
-    protected function map_forum_attachment_file_paths_to_pathhash() {
-        global $PAGE, $COURSE, $DB;
-        $map = [];
-        $cm = false;
-
-        if ($COURSE->format === 'social') {
-            if ($forum = forum_get_course_forum($COURSE->id, 'social')) {
-                $cm = $this->get_forum_cm($forum->id);
-            }
-        } else if (in_array($PAGE->pagetype, ['mod-forum-view', 'mod-forum-discuss'])) {
-            $cmid = optional_param('id', false, PARAM_INT);
-            if ($cmid) {
-                [$course, $cm] = get_course_and_cm_from_cmid($cmid);
-                unset($course);
-            } else {
-                $forumid = optional_param('forum', false, PARAM_INT);
-                if (!$forumid) {
-                    $forumid = optional_param('f', false, PARAM_INT);
-                }
-                if (!$forumid) {
-                    $discussionid = optional_param('d', false, PARAM_INT);
-                    if ($discussionid) {
-                        $forumid = $DB->get_field('forum_discussions', 'forum', ['id' => $discussionid]);
-                    }
-                }
-                if ($forumid) {
-                    $cm = $this->get_forum_cm($forumid);
-                }
-            }
-        }
-
-        if (!empty($cm)) {
-            $map = $this->get_cm_file_map($cm, 'mod_forum', 'attachment');
-        }
-
-        return $map;
-    }
-
-    /**
-     * Map file paths to pathname hash.
-     * @return array
-     * @throws coding_exception
-     * @throws moodle_exception
-     */
-    protected function map_assignment_file_paths_to_pathhash() {
-        global $PAGE;
-        $map = [];
-
-        if ($PAGE->pagetype === 'mod-assign-view') {
-            $cmid = optional_param('id', false, PARAM_INT);
-            if ($cmid === false) {
-                return $map;
-            }
-            [$course, $cm] = get_course_and_cm_from_cmid($cmid);
-            unset($course);
-            $map = $this->get_cm_file_map($cm, 'mod_assign', 'introattachment');
-        }
-
-        return $map;
-    }
-
-    /**
-     * Map folder file paths to pathname hash.
-     * @return array
-     * @throws coding_exception
-     * @throws moodle_exception
-     */
-    protected function map_folder_file_paths_to_pathhash() {
-        global $PAGE, $DB, $COURSE;
-        $map = [];
-
-        if ($PAGE->pagetype === 'mod-folder-view') {
-            $cmid = optional_param('id', false, PARAM_INT);
-            if ($cmid === false) {
-                return $map;
-            }
-            [$course, $cm] = get_course_and_cm_from_cmid($cmid);
-            unset($course);
-            /** @var cm_info $cm */
-            $cm;
-            $map = $this->get_cm_file_map($cm, 'mod_folder', 'content');
-        } else if ((stripos($PAGE->pagetype, 'course-view') === 0) || $PAGE->pagetype === 'site-index') {
-            $folders = $DB->get_records('folder', ['course' => $COURSE->id]);
-            $map = [];
-            foreach ($folders as $folder) {
-                if (empty($folder->name)) {
-                    continue;
-                }
-                try {
-                    [$course, $cm] = get_course_and_cm_from_instance($folder->id, 'folder');
-                    $map = array_merge($map, $this->get_cm_file_map($cm, 'mod_folder', 'content'));
-                } catch (\moodle_exception $ex) {
-                    // Course module id not valid, component not identified correctly.
-                    $context = ['_exception' => $ex];
-                    logger::get()->error('logger:moduleidresolutionfailure', $context);
-                }
-            }
-        }
-
-        return $map;
-    }
-
-    /**
-     * Map file paths to pathname hash.
-     * @return array
-     * @throws coding_exception
-     * @throws moodle_exception
-     */
-    protected function map_glossary_file_paths_to_pathhash() {
-        global $PAGE;
-        $map = [];
-
-        if ($PAGE->pagetype === 'mod-glossary-view') {
-            $cmid = optional_param('id', false, PARAM_INT);
-            if ($cmid === false) {
-                return $map;
-            }
-            [$course, $cm] = get_course_and_cm_from_cmid($cmid);
-            unset($course);
-            $map = $this->get_cm_file_map($cm, 'mod_glossary', 'attachment');
-        }
-
-        return $map;
-    }
-
-    protected function map_course_module_file_paths_to_pathhash($course, $modname) {
-        global $DB;
-
-        $modinfo = get_fast_modinfo($course);
-        $modules = $modinfo->get_instances_of($modname);
-        if (empty($modules)) {
-            return [];
-        }
-
-        $contextsbymoduleid = [];
-        $moduleidsbycontext = [];
-        foreach ($modules as $modid => $module) {
-            try {
-                if ($module->uservisible) {
-                    $contextsbymoduleid[$module->id] = $module->context->id;
-                    $moduleidsbycontext[$module->context->id] = $module->id;
-                }
-            } catch (Throwable $ex) {
-                $context = ['_exception' => $ex];
-                logger::get()->error('logger:cmvisibilityresolutionfailure', $context);
-            }
-        }
-
-        if (empty($contextsbymoduleid)) {
-            return [];
-        }
-
-        [$insql, $params] = $DB->get_in_or_equal($contextsbymoduleid);
-
-        $sql = "contextid $insql
-            AND component = 'mod_{$modname}'
-            AND mimetype IS NOT NULL
-            AND filename != '.'";
-
-        $files = $DB->get_records_select('files', $sql, $params, 'contextid ASC, sortorder DESC, id ASC');
-        $pathhashbymoduleid = [];
-        $contextid = null;
-        foreach ($files as $id => $file) {
-            if ($file->contextid === $contextid) {
-                // We've already got the first file for this contextid.
-                continue;
-            }
-            $contextid = $file->contextid;
-            $moduleid = $moduleidsbycontext[$file->contextid];
-            if (!isset($pathhashbymoduleid[$moduleid])) {
-                $pathhashbymoduleid[$moduleid] = [];
-            }
-            $pathhashbymoduleid[$moduleid][$file->filearea] = $file->pathnamehash;
-        }
-
-        return $pathhashbymoduleid;
-    }
-
-    /**
-     * Map file resource moduleid to pathname hash.
-     * @param $course
-     * @return array
-     * @throws coding_exception
-     * @throws dml_exception
-     */
-    protected function map_resource_file_paths_to_pathhash($course) {
-        global $PAGE;
-
-        if (!$this->is_course_page() && $PAGE->pagetype !== 'site-index') {
-            return [];
-        }
-
-        return $this->map_course_module_file_paths_to_pathhash($course, 'resource');
-    }
-
-    /**
-     * Map lesson file paths to path hash.
-     * @return array
-     * @throws coding_exception
-     * @throws moodle_exception
-     */
-    protected function map_lesson_file_paths_to_pathhash() {
-        global $PAGE;
-        $map = [];
-
-        if ($PAGE->pagetype === 'mod-lesson-view' || $PAGE->pagetype === 'mod-lesson-continue') {
-            $cmid = optional_param('id', false, PARAM_INT);
-            if ($cmid === false) {
-                return $map;
-            }
-            [$course, $cm] = get_course_and_cm_from_cmid($cmid);
-            unset($course);
-            $map['page_contents'] = $this->get_cm_file_map($cm, 'mod_lesson', 'page_contents');
-            $map['page_answers'] = $this->get_cm_file_map($cm, 'mod_lesson', 'page_answers');
-            $map['page_responses'] = $this->get_cm_file_map($cm, 'mod_lesson', 'page_responses');
-        }
-
-        return $map;
-    }
-
-    /**
-     * Section ids hashed by section-numbers.
-     * @return array
-     */
-    protected function map_sections_to_ids() {
-        global $PAGE, $COURSE;
-
-        $sectionmap = [];
-        if (strpos($PAGE->pagetype, 'course-view-') === 0) {
-
-            $component = local_content::component_instance('course');
-            $sections = $component->get_course_section_summary_rows($COURSE->id);
-
-            foreach ($sections as $section) {
-                $sectionmap['section-'.$section->section] = intval($section->id);
-            }
-        }
-
-        return $sectionmap;
-    }
-
-    /**
      * Get params for lesson module instance to pass into amd init.
      * @return stdClass
      * @throws coding_exception
@@ -389,7 +87,7 @@ class text_filter extends \core_filters\text_filter {
     private function get_mod_lesson_params() {
         global $DB;
 
-        $params = new stdClass;
+        $params = new stdClass();
 
         $pageid = optional_param('pageid', null, PARAM_INT);
         if ($pageid === null) {
@@ -416,7 +114,7 @@ class text_filter extends \core_filters\text_filter {
     private function get_mod_book_params() {
         global $DB, $PAGE;
 
-        $params = new stdClass;
+        $params = new stdClass();
 
         $chapterid = optional_param('chapterid', null, PARAM_INT);
         if ($chapterid === null) {
@@ -464,6 +162,9 @@ class text_filter extends \core_filters\text_filter {
             }
         } else if ($this->filteractive === false) {
             return;
+        } else if (!empty($CFG->upgraderunning)) {
+            // Do not run during upgrade.
+            return;
         }
         $this->filteractive = true;
 
@@ -471,9 +172,11 @@ class text_filter extends \core_filters\text_filter {
             return;
         }
 
-        if ($PAGE->pagetype === 'admin-setting-additionalhtml' ||
+        if (
+            $PAGE->pagetype === 'admin-setting-additionalhtml' ||
             $PAGE->pagetype === 'admin-settings' ||
-            $PAGE->pagetype === 'admin-search') {
+            $PAGE->pagetype === 'admin-search'
+        ) {
             return;
         }
 
@@ -506,39 +209,17 @@ class text_filter extends \core_filters\text_filter {
         }
 
         if ($jsinit) {
-
-            $sectionmap = $this->map_sections_to_ids();
-            $sectionjson = json_encode($sectionmap);
-
-            // Possible course cache build recursion avoidance, by adding the course if to a static array.
-            self::start_annotating($COURSE->id);
-            $annotationmaps = json_encode(local_content::annotation_maps($COURSE->id));
-            self::end_annotating($COURSE->id);
-
-            require_once($CFG->libdir.'/filelib.php');
-
-            // Note, we only have to build maps for modules that don't pass their file containing content
-            // through the filter.
-            $modulefilemapping = $this->map_resource_file_paths_to_pathhash($COURSE);
-            $assignmentmap = $this->map_assignment_file_paths_to_pathhash();
-            $forummap = $this->map_forum_attachment_file_paths_to_pathhash();
-            $foldermap = $this->map_folder_file_paths_to_pathhash();
-            $glossarymap = $this->map_glossary_file_paths_to_pathhash();
-            $lessonmap = $this->map_lesson_file_paths_to_pathhash();
             $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
             $coursecontext = context_course::instance($COURSE->id);
             $canviewfeedback = has_capability('filter/ally:viewfeedback', $coursecontext);
             $candownload = has_capability('filter/ally:viewdownload', $coursecontext);
 
-            $modulemaps = [
-                'file_resources' => $modulefilemapping,
-                'assignment_files' => $assignmentmap,
-                'forum_files' => $forummap,
-                'folder_files' => $foldermap,
-                'glossary_files' => $glossarymap,
-                'lesson_files' => $lessonmap,
-            ];
-            $filejson = json_encode($modulemaps);
+            $entitymapper = new entity_mapper($COURSE->id);
+            $maps = $entitymapper->get_maps();
+
+            $filejson = json_encode($maps->modulemaps);
+            $sectionjson = json_encode($maps->sectionmaps);
+            $annotationmaps = json_encode($maps->annotationmaps);
 
             $script = <<<EOF
             <script>
@@ -587,14 +268,17 @@ EOF;
      */
     private function verify_and_fix_if_applied($type, DOMElement $element, $text) {
         $feedbackfound = false;
-        if ($element->parentNode->tagName === 'span'
-            && $element->parentNode->getAttribute('class') === 'filter-ally-wrapper ally-'.$type.'-wrapper') {
-
+        if (
+            $element->parentNode->tagName === 'span'
+            && $element->parentNode->getAttribute('class') === 'filter-ally-wrapper ally-' . $type . '-wrapper'
+        ) {
             $feedbacknodes = $element->parentNode->getElementsByTagName('span');
             foreach ($feedbacknodes as $feedbacknode) {
-                if (is_object($feedbacknode->attributes)
+                if (
+                    is_object($feedbacknode->attributes)
                     && is_object($feedbacknode->attributes->getNamedItem('data-file-id'))
-                    && is_object($feedbacknode->attributes->getNamedItem('data-file-url'))) {
+                    && is_object($feedbacknode->attributes->getNamedItem('data-file-url'))
+                ) {
                     $feedbackfound = true;
                     break;
                 }
@@ -626,9 +310,9 @@ EOF;
                     $strtomatch = substr($text, $linkpos, $classend - $linkpos);
                     $strforreplacement = substr($text, $linkpos, $classpos - $linkpos);
 
-                    $strforreplacement .= $spanclass.'" ';
-                    $strforreplacement .= 'data-file-id="'.self::$fileidsbyurl[$href].'" ';
-                    $strforreplacement .= 'data-file-url="'.$href.'"';
+                    $strforreplacement .= $spanclass . '" ';
+                    $strforreplacement .= 'data-file-id="' . self::$fileidsbyurl[$href] . '" ';
+                    $strforreplacement .= 'data-file-url="' . $href . '"';
                     $text = str_replace($strtomatch, $strforreplacement, $text);
                 }
                 return $text;
@@ -724,6 +408,24 @@ EOF;
             }
             $href = $result->attributes->getNamedItem('href')->nodeValue;
             if (strpos($href, 'pluginfile.php') !== false) {
+                // Skip anchor if it only contains an image with the same src as the href.
+                // This fixes an issue where dragging an image file onto a moodle course page allows you to add media to course page.
+                // This results in an image wrapped in an anchor tag with the same href as the image src.
+                // In these cases, we are only interested in the image, not the anchor.
+
+                if (
+                    $result->childNodes->length === 1 &&
+                    $result->firstChild->nodeType === XML_ELEMENT_NODE &&
+                    $result->firstChild->tagName === 'img'
+                ) {
+                    $imgSrc = $result->firstChild->attributes->getNamedItem('src');
+
+                    // Note - the s_ suffix is used by Moodle to indicate a small version of the image.
+                    if ($imgSrc && ($imgSrc->nodeValue === $href || str_replace('/s_', '/', $imgSrc->nodeValue) === $href)) {
+                        continue; // Skip this anchor as it's just wrapping an image with the same URL.
+                    }
+                }
+
                 $elements[] = (object) [
                     'type' => 'a',
                     'url' => $href,
@@ -749,7 +451,6 @@ EOF;
             $url = $element->url;
 
             if (strpos($url, 'pluginfile.php') !== false) {
-
                 $urlcomps = $this->process_url($url);
                 if (empty($urlcomps)) {
                     continue;
@@ -795,7 +496,10 @@ EOF;
 
                 if ($component === 'mod_lesson') {
                     $verifiedresult = $this->verify_and_fix_if_applied(
-                        $element->type === 'a' ? self::ANCHOR : self::IMAGE, $element->result, $text);
+                        $element->type === 'a' ? self::ANCHOR : self::IMAGE,
+                        $element->result,
+                        $text
+                    );
                     if ($verifiedresult !== false) {
                         $text = $verifiedresult;
                         continue;
@@ -844,7 +548,7 @@ EOF;
                 $wrapper = new wrapper();
                 $wrapper->fileid = $pathhash;
                 // Flag html as processed with #P# so that it doesn't get hit again with multiples of the same link or image.
-                $wrapper->html = str_replace('<'.$type, '<'.$type.'#P#', $html);
+                $wrapper->html = str_replace('<' . $type, '<' . $type . '#P#', $html);
                 $wrapper->url = $url;
                 $wrapper->candownload = $candownload;
                 $wrapper->canviewfeedback = $canviewfeedback;
@@ -867,8 +571,7 @@ EOF;
                     $htmltosrch = preg_quote($htmltosrch, '~');
                     $pattern = '/(\'|"|&quot;)/';
                     $htmltosrch = preg_replace($pattern, '(\'|"|&quot;)', $htmltosrch);
-                    $replaceregex = '~'.$htmltosrch.'(?:\s*|)(?:>|/>)~m';
-
+                    $replaceregex = '~' . $htmltosrch . '(?:\s*|)(?:>|/>)~m';
                 }
                 $text = preg_replace($replaceregex, $wrapped, $text);
             }
@@ -889,28 +592,20 @@ EOF;
      * @return bool
      */
     public static function is_annotating($courseid): bool {
-        return array_key_exists($courseid, self::$isannotating);
+        return entity_mapper::is_annotating($courseid);
     }
 
     /**
      * @param $courseid
      */
-    public static function start_annotating($courseid) {
-        if (self::is_annotating($courseid)) {
-            throw new coding_exception('Can\'t start annotating this course.'
-                    . ' Ally filter is already annotating course with id: ' . $courseid);
-        }
-        self::$isannotating[$courseid] = true;
+    public static function start_annotating($courseid): void {
+        entity_mapper::start_annotating($courseid);
     }
 
     /**
      * @param $courseid
      */
-    public static function end_annotating($courseid) {
-        if (!self::is_annotating($courseid)) {
-            throw new coding_exception('Can\'t end annotating this course.'
-                . ' Ally filter was not annotating course with id: ' . $courseid);
-        }
-        unset(self::$isannotating[$courseid]);
+    public static function end_annotating($courseid): void {
+        entity_mapper::end_annotating($courseid);
     }
 }
