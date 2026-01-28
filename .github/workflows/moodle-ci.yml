@@ -2,7 +2,7 @@ name: Ally automated testing
 
 env:
   DEFAULT_PHP_VERSION: "8.2"
-  DEFAULT_MOODLE_BRANCH: "MOODLE_500_STABLE"
+  DEFAULT_MOODLE_BRANCH: "MOODLE_405_STABLE"
 
 on:
   push:
@@ -20,7 +20,7 @@ on:
           - "MOODLE_405_STABLE"
           - "MOODLE_500_STABLE"
           - "MOODLE_501_STABLE"
-        default: "MOODLE_500_STABLE"
+        default: "MOODLE_405_STABLE"
       phpversion:
         type: choice
         description: Select PHP version
