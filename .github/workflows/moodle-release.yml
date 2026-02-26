@@ -11,7 +11,7 @@ on:
     tags:
       - AY*
     branches:
-      - 'MOODLE_501_STABLE'
+      - 'MOODLE_*_STABLE'
 
   workflow_dispatch:
     inputs:
