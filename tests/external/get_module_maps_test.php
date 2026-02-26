@@ -44,13 +44,13 @@ use externallib_advanced_testcase;
  * @runTestsInSeparateProcesses
  * @group     text_filter
  * @group     ally
+ * @covers    \filter_ally\external\get_module_maps
  */
 final class get_module_maps_test extends externallib_advanced_testcase {
-
     /**
      * Test the get_module_maps web service.
      */
-    public function test_get_module_maps() {
+    public function test_get_module_maps(): void {
         $this->resetAfterTest(true);
 
         // Create a course.
@@ -111,7 +111,7 @@ final class get_module_maps_test extends externallib_advanced_testcase {
     /**
      * Test get_module_maps with invalid course ID.
      */
-    public function test_get_module_maps_invalid_course() {
+    public function test_get_module_maps_invalid_course(): void {
         $this->resetAfterTest(true);
 
         // Create a user.
@@ -126,7 +126,7 @@ final class get_module_maps_test extends externallib_advanced_testcase {
     /**
      * Test get_module_maps without required capability.
      */
-    public function test_get_module_maps_no_capability() {
+    public function test_get_module_maps_no_capability(): void {
         $this->resetAfterTest(true);
 
         // Create a course.
@@ -147,7 +147,7 @@ final class get_module_maps_test extends externallib_advanced_testcase {
     /**
      * Test the web service return structure.
      */
-    public function test_get_module_maps_returns() {
+    public function test_get_module_maps_returns(): void {
         // Test that the return structure is correctly defined.
         $returns = get_module_maps::execute_returns();
         $this->assertInstanceOf(\external_single_structure::class, $returns);
@@ -164,7 +164,7 @@ final class get_module_maps_test extends externallib_advanced_testcase {
     /**
      * Test the web service parameters.
      */
-    public function test_get_module_maps_parameters() {
+    public function test_get_module_maps_parameters(): void {
         // Test that the parameters are correctly defined.
         $params = get_module_maps::execute_parameters();
         $this->assertInstanceOf(\external_function_parameters::class, $params);

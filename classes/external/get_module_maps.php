@@ -50,7 +50,6 @@ use moodle_exception;
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class get_module_maps extends external_api {
-
     /**
      * Returns description of method parameters.
      *
@@ -95,7 +94,6 @@ class get_module_maps extends external_api {
                 'success' => true,
                 'message' => '',
             ];
-
         } catch (\Exception $e) {
             return [
                 'modulemaps' => [],
@@ -156,13 +154,15 @@ class get_module_maps extends external_api {
                 new external_single_structure([
                     'maptype' => new external_value(PARAM_TEXT, 'Type of module map'),
                     'mapdata' => new external_value(PARAM_RAW, 'JSON encoded map data'),
-                ]), 'Module maps data'
+                ]),
+                'Module maps data'
             ),
             'sectionmaps' => new external_multiple_structure(
                 new external_single_structure([
                     'sectionkey' => new external_value(PARAM_TEXT, 'Section key identifier'),
                     'sectionid' => new external_value(PARAM_INT, 'Section ID'),
-                ]), 'Section maps data'
+                ]),
+                'Section maps data'
             ),
             'annotationmaps' => new external_value(PARAM_RAW, 'JSON encoded annotation maps'),
             'success' => new external_value(PARAM_BOOL, 'Whether the operation was successful'),

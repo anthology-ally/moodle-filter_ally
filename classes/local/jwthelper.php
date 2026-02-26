@@ -25,10 +25,14 @@
 namespace filter_ally\local;
 
 /**
- * Class jwthelper
- * @package filter_ally
+ * JSON Web Token helpers.
+ *
+ * @package   filter_ally
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class jwthelper {
+    /** The algorithm used to sign the JWT */
     const ALGO    = 'HS256';
 
     /**
@@ -67,7 +71,7 @@ class jwthelper {
 
             if (!class_exists('\Firebase\JWT\JWT')) {
                 /* @noinspection PhpIncludeInspection */
-                require_once($CFG->dirroot.'/filter/ally/vendor/autoload.php');
+                require_once($CFG->dirroot . '/filter/ally/vendor/autoload.php');
             }
 
             try {

@@ -24,14 +24,16 @@
 
 namespace filter_ally\local;
 
-require_once(__DIR__.'/../../../../mod/forum/lib.php');
+defined('MOODLE_INTERNAL') || die();
+
+require_once(__DIR__ . '/../../../../mod/forum/lib.php');
 
 use tool_ally\local_file;
 use tool_ally\local_content;
 use tool_ally\logging\logger;
 use cm_info;
 use stdClass;
-use \core\exception\coding_exception;
+use core\exception\coding_exception;
 
 /**
  * Class for generating module maps.
@@ -41,7 +43,6 @@ use \core\exception\coding_exception;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class entity_mapper {
-
     /**
      * @var object The course object.
      */
@@ -264,6 +265,13 @@ class entity_mapper {
         return $map;
     }
 
+    /**
+     * Map file paths to pathname hash for a given course module.
+     * @param string $modname The module name
+     * @return array
+     * @throws coding_exception
+     * @throws dml_exception
+     */
     protected function map_course_module_file_paths_to_pathhash(string $modname) {
         global $DB;
 
@@ -343,16 +351,16 @@ class entity_mapper {
         global $PAGE;
         $map = [];
 
-        // Check if we're in a lesson context (either via PAGE or assume true for web service)
+        // Check if we're in a lesson context (either via PAGE or assume true for web service).
         $islessoncontext = !$PAGE ||
             (isset($PAGE->pagetype) && ($PAGE->pagetype === 'mod-lesson-view' || $PAGE->pagetype === 'mod-lesson-continue'));
 
         if ($islessoncontext) {
-            // For web service context, get all lesson modules for this course
+            // For web service context, get all lesson modules for this course.
             if (!$PAGE) {
                 $map = $this->map_course_module_file_paths_to_pathhash('lesson');
             } else {
-                // For page context, get specific lesson module
+                // For page context, get specific lesson module.
                 $cmid = optional_param('id', false, PARAM_INT);
                 if ($cmid !== false) {
                     [$coursetemp, $cm] = get_course_and_cm_from_cmid($cmid);
@@ -374,7 +382,7 @@ class entity_mapper {
     protected function map_sections_to_ids() {
         global $PAGE;
 
-        // Ensure we're in a course context (either via PAGE or assume true for web service)
+        // Ensure we're in a course context (either via PAGE or assume true for web service).
         $iscourseviewpage = !empty($PAGE) && strpos($PAGE->pagetype ?? '', 'course-view-') === 0;
         $iscoursecontext = AJAX_SCRIPT || !$PAGE || $iscourseviewpage;
         if (!$iscoursecontext) {
@@ -386,7 +394,7 @@ class entity_mapper {
 
         $sectionmap = [];
         foreach ($sections as $section) {
-            $sectionmap['section-'.$section->section] = intval($section->id);
+            $sectionmap['section-' . $section->section] = intval($section->id);
         }
 
         return $sectionmap;
@@ -400,16 +408,16 @@ class entity_mapper {
     private function with_global_context($callback) {
         global $COURSE;
 
-        // Store original values
+        // Store original values.
         $originalcourse = $COURSE;
 
-        // Set course context - this is the main thing most methods need
+        // Set course context - this is the main thing most methods need.
         $COURSE = $this->course;
 
         try {
             return $callback();
         } finally {
-            // Restore original values
+            // Restore original values.
             $COURSE = $originalcourse;
         }
     }
@@ -419,17 +427,20 @@ class entity_mapper {
      *
      * Please remove this when MDL-67405 has been closed, as filters will be disabled from looping.
      *
-     * @param $courseid
+     * @param int $courseid
      * @return bool
      */
-    public static function is_annotating($courseid): bool {
+    public static function is_annotating(int $courseid): bool {
         return array_key_exists($courseid, self::$isannotating);
     }
 
     /**
-     * @param $courseid
+     * Start annotating a course.
+     *
+     * @param int $courseid
+     * @return void
      */
-    public static function start_annotating($courseid): void {
+    public static function start_annotating(int $courseid): void {
         if (self::is_annotating($courseid)) {
             throw new coding_exception('Can\'t start annotating this course.'
                     . ' Ally filter is already annotating course with id: ' . $courseid);
@@ -438,9 +449,12 @@ class entity_mapper {
     }
 
     /**
-     * @param $courseid
+     * End annotating a course.
+     *
+     * @param int $courseid
+     * @return void
      */
-    public static function end_annotating($courseid): void {
+    public static function end_annotating(int $courseid): void {
         if (!self::is_annotating($courseid)) {
             throw new coding_exception('Can\'t end annotating this course.'
                 . ' Ally filter was not annotating course with id: ' . $courseid);
@@ -454,13 +468,13 @@ class entity_mapper {
      * @return object
      */
     public function get_maps($courseid = null) {
-        // If courseid provided and different from constructor, create new instance
+        // If courseid provided and different from constructor, create new instance.
         if ($courseid !== null && $courseid != $this->course->id) {
             $mapper = new entity_mapper($courseid);
             return $mapper->get_maps();
         }
 
-        return $this->with_global_context(function() {
+        return $this->with_global_context(function () {
             global $CFG;
 
             $course = $this->course;
@@ -472,7 +486,7 @@ class entity_mapper {
             $annotationmaps = local_content::annotation_maps($course->id);
             self::end_annotating($course->id);
 
-            require_once($CFG->libdir.'/filelib.php');
+            require_once($CFG->libdir . '/filelib.php');
 
             // Note, we only have to build maps for modules that don't pass their file containing content
             // through the filter.

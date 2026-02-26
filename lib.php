@@ -37,22 +37,22 @@
  * @package filter_ally
  */
 function filter_ally_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload, array $options = []) {
-    $pluginpath = __DIR__.'/';
+    $pluginpath = __DIR__ . '/';
 
     if ($filearea === 'vendorjs') {
         // Typically CDN fall backs would go in vendorjs.
-        $path = $pluginpath.'vendorjs/'.implode('/', $args);
+        $path = $pluginpath . 'vendorjs/' . implode('/', $args);
         send_file($path, basename($path));
         return true;
     } else if ($filearea === 'vue') {
         // Vue components.
-        $jsfile = array_pop ($args);
+        $jsfile = array_pop($args);
         $compdir = basename($jsfile, '.js');
-        $umdfile = $compdir.'.umd.js';
+        $umdfile = $compdir . '.umd.js';
         $args[] = $compdir;
         $args[] = 'dist';
         $args[] = $umdfile;
-        $path = $pluginpath.'vue/'.implode('/', $args);
+        $path = $pluginpath . 'vue/' . implode('/', $args);
         send_file($path, basename($path));
         return true;
     } else {

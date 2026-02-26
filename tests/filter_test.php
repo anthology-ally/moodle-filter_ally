@@ -23,17 +23,25 @@
  */
 namespace filter_ally;
 use filter_ally\local\entity_mapper;
+use filter_ally\text_filter;
 use tool_ally\local_content;
 use tool_ally\local_file;
 
 /**
+ * Test filter lib.
+ * @author    Guy Thomas
+ * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ * @package   filter_ally
  * @group     filter_ally
  * @group     ally
- * @package   filter_ally
+ * @covers \filter_ally\text_filter
  */
 final class filter_test extends \advanced_testcase {
-
-    public $filter;
+    /**
+     * @var text_filter
+     */
+    public text_filter $filter;
 
     public function setUp(): void {
         global $PAGE, $CFG;
@@ -45,8 +53,8 @@ final class filter_test extends \advanced_testcase {
         // Filter must be on.
         filter_set_global_state('ally', TEXTFILTER_ON);
 
-        require_once($CFG->dirroot.'/mod/forum/lib.php');
-        $PAGE->set_url($CFG->wwwroot.'/course/view.php');
+        require_once($CFG->dirroot . '/mod/forum/lib.php');
+        $PAGE->set_url($CFG->wwwroot . '/course/view.php');
         $this->filter = $this->call_filter_setup();
     }
 
@@ -65,10 +73,10 @@ final class filter_test extends \advanced_testcase {
     public function test_is_course_page(): void {
         global $PAGE, $CFG;
 
-        $PAGE->set_url($CFG->wwwroot.'/course/view.php');
+        $PAGE->set_url($CFG->wwwroot . '/course/view.php');
         $iscoursepage = \phpunit_util::call_internal_method($this->filter, 'is_course_page', [], text_filter::class);
         $this->assertTrue($iscoursepage);
-        $PAGE->set_url($CFG->wwwroot.'/user/view.php');
+        $PAGE->set_url($CFG->wwwroot . '/user/view.php');
         $iscoursepage = \phpunit_util::call_internal_method($this->filter, 'is_course_page', [], text_filter::class);
         $this->assertFalse($iscoursepage);
     }
@@ -81,12 +89,18 @@ final class filter_test extends \advanced_testcase {
         $mapper = new entity_mapper($course);
 
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_assignment_file_paths_to_pathhash', [$course], entity_mapper::class
+            $mapper,
+            'map_assignment_file_paths_to_pathhash',
+            [$course],
+            entity_mapper::class
         );
         $this->assertEmpty($map);
 
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_assignment_file_paths_to_pathhash', [], entity_mapper::class
+            $mapper,
+            'map_assignment_file_paths_to_pathhash',
+            [],
+            entity_mapper::class
         );
         $this->assertEmpty($map);
 
@@ -95,7 +109,7 @@ final class filter_test extends \advanced_testcase {
         ];
         $assign = $gen->create_module('assign', $data);
 
-        $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
+        $fixturedir = $CFG->dirroot . '/filter/ally/tests/fixtures/';
         $files = scandir($fixturedir);
 
         foreach ($files as $file) {
@@ -103,7 +117,7 @@ final class filter_test extends \advanced_testcase {
                 continue;
             }
             $file = trim($file);
-            $fixturepath = $fixturedir.$file;
+            $fixturepath = $fixturedir . $file;
 
             // Add actual file there.
             $filerecord = ['component' => 'mod_assign', 'filearea' => 'introattachment',
@@ -114,14 +128,20 @@ final class filter_test extends \advanced_testcase {
         }
 
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_assignment_file_paths_to_pathhash', [], entity_mapper::class
+            $mapper,
+            'map_assignment_file_paths_to_pathhash',
+            [],
+            entity_mapper::class
         );
         $this->assertEmpty($map);
 
         $PAGE->set_pagetype('mod-assign-view');
         $_GET['id'] = $assign->cmid;
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_assignment_file_paths_to_pathhash', [], entity_mapper::class
+            $mapper,
+            'map_assignment_file_paths_to_pathhash',
+            [],
+            entity_mapper::class
         );
         $this->assertNotEmpty($map);
     }
@@ -136,7 +156,10 @@ final class filter_test extends \advanced_testcase {
         $mapper = new entity_mapper($course);
 
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_folder_file_paths_to_pathhash', [], entity_mapper::class
+            $mapper,
+            'map_folder_file_paths_to_pathhash',
+            [],
+            entity_mapper::class
         );
         $this->assertEmpty($map);
 
@@ -145,7 +168,7 @@ final class filter_test extends \advanced_testcase {
         ];
         $assign = $gen->create_module('folder', $data);
 
-        $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
+        $fixturedir = $CFG->dirroot . '/filter/ally/tests/fixtures/';
         $files = scandir($fixturedir);
 
         foreach ($files as $file) {
@@ -153,7 +176,7 @@ final class filter_test extends \advanced_testcase {
                 continue;
             }
             $file = trim($file);
-            $fixturepath = $fixturedir.$file;
+            $fixturepath = $fixturedir . $file;
 
             // Add actual file there.
             $filerecord = [
@@ -171,18 +194,27 @@ final class filter_test extends \advanced_testcase {
         // Test map returns empty when age type is folder view but no cmid has been provided.
         $PAGE->set_pagetype('mod-folder-view');
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_folder_file_paths_to_pathhash', [], entity_mapper::class
+            $mapper,
+            'map_folder_file_paths_to_pathhash',
+            [],
+            entity_mapper::class
         );
         $this->assertEmpty($map);
 
         // Test map does not return empty when cmid provided.
         $_GET['id'] = $assign->cmid;
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_folder_file_paths_to_pathhash', [], entity_mapper::class
+            $mapper,
+            'map_folder_file_paths_to_pathhash',
+            [],
+            entity_mapper::class
         );
         $this->assertNotEmpty($map);
     }
 
+    /**
+     * Assert map resource file paths to pathhash works.
+     */
     public function map_resource_file_paths_to_pathhash() {
         global $PAGE, $CFG;
 
@@ -193,11 +225,14 @@ final class filter_test extends \advanced_testcase {
         $gen->enrol_user($student->id, $course->id, 'student');
 
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_resource_file_paths_to_pathhash', [$course], entity_mapper::class
+            $mapper,
+            'map_resource_file_paths_to_pathhash',
+            [$course],
+            entity_mapper::class
         );
         $this->assertEmpty($map);
 
-        $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
+        $fixturedir = $CFG->dirroot . '/filter/ally/tests/fixtures/';
         $files = scandir($fixturedir);
 
         $this->setAdminUser();
@@ -207,7 +242,7 @@ final class filter_test extends \advanced_testcase {
                 continue;
             }
             $file = trim($file);
-            $fixturepath = $fixturedir.$file;
+            $fixturepath = $fixturedir . $file;
 
             $data = (object) [
                 'course'  => $course->id,
@@ -226,29 +261,39 @@ final class filter_test extends \advanced_testcase {
         }
 
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_resource_file_paths_to_pathhash', [$course], entity_mapper::class
+            $mapper,
+            'map_resource_file_paths_to_pathhash',
+            [$course],
+            entity_mapper::class
         );
         $this->assertNotEmpty($map);
 
         // Check students don't get anything as all the resources were invisible.
         $this->setUser($student);
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_resource_file_paths_to_pathhash', [$course], entity_mapper::class
+            $mapper,
+            'map_resource_file_paths_to_pathhash',
+            [$course],
+            entity_mapper::class
         );
         $this->assertEmpty($map);
 
         // Check that admin user doesn't get anything when not on the appropriate page.
         $this->setAdminUser();
-        $PAGE->set_url($CFG->wwwroot.'/user/view.php');
+        $PAGE->set_url($CFG->wwwroot . '/user/view.php');
         $PAGE->set_pagetype('course-view-topics');
         $map = \phpunit_util::call_internal_method(
-            $this->filter, 'map_resource_file_paths_to_pathhash', [$course], text_filter::class
+            $this->filter,
+            'map_resource_file_paths_to_pathhash',
+            [$course],
+            text_filter::class
         );
 
         $this->assertEmpty($map);
     }
 
     /**
+     * Test processing of pluginfile.php URLs.
      * @param bool $fileparam
      */
     public function test_process_url($fileparam = false): void {
@@ -256,14 +301,17 @@ final class filter_test extends \advanced_testcase {
         $fileparam = $fileparam ? '?file=' : '';
 
         $urlformats = [
-            'somecomponent' => $CFG->wwwroot.'/pluginfile.php'.$fileparam.'/123/somecomponent/somearea/myfile.test',
-            'label' => $CFG->wwwroot.'/pluginfile.php'.$fileparam.'/123/label/somearea/0/myfile.test',
-            'question' => $CFG->wwwroot.'/pluginfile.php'.$fileparam.'/123/question/somearea/123/5/0/myfile.test',
+            'somecomponent' => $CFG->wwwroot . '/pluginfile.php' . $fileparam . '/123/somecomponent/somearea/myfile.test',
+            'label' => $CFG->wwwroot . '/pluginfile.php' . $fileparam . '/123/label/somearea/0/myfile.test',
+            'question' => $CFG->wwwroot . '/pluginfile.php' . $fileparam . '/123/question/somearea/123/5/0/myfile.test',
         ];
 
         foreach ($urlformats as $expectedcomponent => $url) {
-            list($contextid, $component, $filearea, $itemid, $filename) = \phpunit_util::call_internal_method(
-                $this->filter, 'process_url', [$url], text_filter::class
+            [$contextid, $component, $filearea, $itemid, $filename] = \phpunit_util::call_internal_method(
+                $this->filter,
+                'process_url',
+                [$url],
+                text_filter::class
             );
             $this->assertEquals(123, $contextid);
             $this->assertEquals($expectedcomponent, $component);
@@ -273,9 +321,12 @@ final class filter_test extends \advanced_testcase {
         }
 
         // Make sure URLs belonging to different sites are *not* processed.
-        $badurl = 'http://test.com/pluginfile.php'.$fileparam.'/123/somecomponent/somearea/myfile.test';
+        $badurl = 'http://test.com/pluginfile.php' . $fileparam . '/123/somecomponent/somearea/myfile.test';
         $result = \phpunit_util::call_internal_method(
-            $this->filter, 'process_url', [$badurl], text_filter::class
+            $this->filter,
+            'process_url',
+            [$badurl],
+            text_filter::class
         );
         $this->assertNull($result);
     }
@@ -303,7 +354,7 @@ EOF;
     public function test_filter_img(): void {
         global $PAGE, $CFG;
 
-        $PAGE->set_url($CFG->wwwroot.'/course/view.php');
+        $PAGE->set_url($CFG->wwwroot . '/course/view.php');
 
         $gen = $this->getDataGenerator();
 
@@ -337,8 +388,8 @@ EOF;
         // As we are not logged in as a teacher, we shouldn't get the feedback placeholder.
         $this->assertStringNotContainsString('<span class="ally-feedback"', $filteredtext);
         // Make sure both images were processed.
-        $regex = '~<span class="filter-ally-wrapper ally-image-wrapper">'.
-            '\\n'.'(?:\s*|)<img src="'.preg_quote($url, '~').'"~';
+        $regex = '~<span class="filter-ally-wrapper ally-image-wrapper">' .
+            '\\n' . '(?:\s*|)<img src="' . preg_quote($url, '~') . '"~';
         preg_match_all($regex, $filteredtext, $matches);
         $count = count($matches[0]);
         $this->assertEquals(2, $count);
@@ -407,7 +458,7 @@ EOF;
 
         $this->setAdminUser();
 
-        $PAGE->set_url($CFG->wwwroot.'/course/view.php');
+        $PAGE->set_url($CFG->wwwroot . '/course/view.php');
 
         $gen = $this->getDataGenerator();
 
@@ -494,9 +545,9 @@ EOF;
             $file = $fs->create_file_from_string($filerecord, $teststring);
             $url = local_file::url($file);
             $urls[] = $url;
-            $text .= '<img src="'.$url.'"/>test';
+            $text .= '<img src="' . $url . '"/>test';
         }
-        $text = '<p>'.$text.'</p>';
+        $text = '<p>' . $text . '</p>';
         $filteredtext = $this->filter->filter($text);
         // Make sure all images were processed.
         $substr = '<span class="ally-image-cover"';
@@ -506,8 +557,8 @@ EOF;
         $count = substr_count($filteredtext, $substr);
         $this->assertEquals(count($regextestfilenames), $count);
         foreach ($urls as $url) {
-            $regex = '~<span class="filter-ally-wrapper ally-image-wrapper">'.
-                '\\n'.'(?:\s*|)<img src="'.preg_quote($url, '~').'"~';
+            $regex = '~<span class="filter-ally-wrapper ally-image-wrapper">' .
+                '\\n' . '(?:\s*|)<img src="' . preg_quote($url, '~') . '"~';
             preg_match_all($regex, $filteredtext, $matches);
             $count = count($matches[0]);
             $this->assertEquals(1, $count);
@@ -568,8 +619,8 @@ EOF;
         // As we are not logged in as a teacher, we shouldn't get the feedback placeholder.
         $this->assertStringNotContainsString('<span class="ally-feedback"', $filteredtext);
         // Make sure both anchors were processed.
-        $regex = '~<span class="filter-ally-wrapper ally-anchor-wrapper">'.
-            '\\n'.'(?:\s*|)<a href="'.preg_quote($url, '~').'"~';
+        $regex = '~<span class="filter-ally-wrapper ally-anchor-wrapper">' .
+            '\\n' . '(?:\s*|)<a href="' . preg_quote($url, '~') . '"~';
         preg_match_all($regex, $filteredtext, $matches);
         $count = count($matches[0]);
         $this->assertEquals(2, $count);
@@ -648,7 +699,7 @@ EOF;
         $file = $fs->create_file_from_string($filerecord, $teststring);
         $url = local_file::url($file);
 
-        $text = '<a href="'.$url.'" ';
+        $text = '<a href="' . $url . '" ';
         $text .= 'style="font-size: 1rem; font-family: Georgia, Times, &quot;Times New Roman&quot;, serif;';
         $text .= 'background-color: rgb(255, 255, 255);">';
         $text .= 'test.txt</a>';
@@ -666,7 +717,7 @@ EOF;
 
         $this->setAdminUser();
 
-        $PAGE->set_url($CFG->wwwroot.'/course/view.php');
+        $PAGE->set_url($CFG->wwwroot . '/course/view.php');
 
         $gen = $this->getDataGenerator();
 
@@ -704,8 +755,8 @@ EOF;
             $this->assertStringNotContainsString('<span class="ally-download"', $filteredtext);
             $this->assertStringNotContainsString('<span class="ally-feedback"', $filteredtext);
             // Make sure wrappers do not exist - i.e not processed.
-            $regex = '~<span class="filter-ally-wrapper ally-anchor-wrapper">'.
-                '\\n'.'(?:\s*|)<a href="'.preg_quote($url, '~').'"~';
+            $regex = '~<span class="filter-ally-wrapper ally-anchor-wrapper">' .
+                '\\n' . '(?:\s*|)<a href="' . preg_quote($url, '~') . '"~';
             preg_match_all($regex, $filteredtext, $matches);
             $count = count($matches[0]);
             $this->assertEquals(0, $count);
@@ -751,9 +802,9 @@ EOF;
             $file = $fs->create_file_from_string($filerecord, $teststring);
             $url = local_file::url($file);
             $urls[] = $url;
-            $text .= '<a href="'.$url.'">test</a>';
+            $text .= '<a href="' . $url . '">test</a>';
         }
-        $text = '<p>'.$text.'</p>';
+        $text = '<p>' . $text . '</p>';
         $filteredtext = $this->filter->filter($text);
         // Make sure all anchors were processed.
         $substr = '<span class="ally-download"';
@@ -763,8 +814,8 @@ EOF;
         $count = substr_count($filteredtext, $substr);
         $this->assertEquals(count($regextestfilenames), $count);
         foreach ($urls as $url) {
-            $regex = '~<span class="filter-ally-wrapper ally-anchor-wrapper">'.
-                '\\n'.'(?:\s*|)<a href="'.preg_quote($url, '~').'"~';
+            $regex = '~<span class="filter-ally-wrapper ally-anchor-wrapper">' .
+                '\\n' . '(?:\s*|)<a href="' . preg_quote($url, '~') . '"~';
             preg_match_all($regex, $filteredtext, $matches);
             $count = count($matches[0]);
             $this->assertEquals(1, $count);
@@ -794,7 +845,10 @@ EOF;
 
         // Should be empty when nothing added.
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_forum_attachment_file_paths_to_pathhash', [], entity_mapper::class
+            $mapper,
+            'map_forum_attachment_file_paths_to_pathhash',
+            [],
+            entity_mapper::class
         );
         $this->assertEmpty($map);
 
@@ -818,7 +872,10 @@ EOF;
 
         // Add an file.
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_forum_attachment_file_paths_to_pathhash', [], entity_mapper::class
+            $mapper,
+            'map_forum_attachment_file_paths_to_pathhash',
+            [],
+            entity_mapper::class
         );
         $this->assertNotEmpty($map);
 
@@ -828,13 +885,16 @@ EOF;
             'contextid' => \context_module::instance($forum->cmid)->id, 'itemid' => $post->id,
             'filename' => $testfile, 'filepath' => '/', ];
         $fs = get_file_storage();
-        $fixturedir = $CFG->dirroot.'/filter/ally/tests/fixtures/';
-        $fixturepath = $fixturedir.'/'.$testfile;
+        $fixturedir = $CFG->dirroot . '/filter/ally/tests/fixtures/';
+        $fixturepath = $fixturedir . '/' . $testfile;
         $fs->create_file_from_pathname($filerecord, $fixturepath);
 
         // Shouldn't be empty when an image file has been added (only image files are mapped).
         $map = \phpunit_util::call_internal_method(
-            $mapper, 'map_forum_attachment_file_paths_to_pathhash', [], entity_mapper::class
+            $mapper,
+            'map_forum_attachment_file_paths_to_pathhash',
+            [],
+            entity_mapper::class
         );
         $this->assertNotEmpty($map);
     }
@@ -870,7 +930,7 @@ EOF;
             $teststring = 'moodletest';
             $file = $fs->create_file_from_string($filerecord, $teststring);
             $url = local_file::url($file);
-            $anchortext = '<a href="'.$url.'">test</a>';
+            $anchortext = '<a href="' . $url . '">test</a>';
             $text .= $anchortext;
 
             $renderer = $PAGE->get_renderer('filter_ally');
@@ -882,8 +942,8 @@ EOF;
             $wrapped = $renderer->render_wrapper($wrapper);
             $datalesstext .= str_replace(' data-file-id="" data-file-url=""', '', $wrapped);
         }
-        $text = '<p>'.$text.'</p>';
-        $datalesstext = '<p>'.$datalesstext.'</p>';
+        $text = '<p>' . $text . '</p>';
+        $datalesstext = '<p>' . $datalesstext . '</p>';
         $filteredtext = $this->filter->filter($text); // The links have been processed, so they have been added to the fileids.
         $datalessfilteredtext = $this->filter->filter($datalesstext); // This should add the file ids to the data less spans.
 
@@ -909,19 +969,26 @@ EOF;
             '<div title="Hover > Get text" class="no-overflow">Hover for more</div>',
         ];
         foreach ($tests as $test) {
-            $parsed = \phpunit_util::call_internal_method($filter, 'apply_content_annotation',
-                [$test], get_class($filter));
+            $parsed = \phpunit_util::call_internal_method(
+                $filter,
+                'apply_content_annotation',
+                [$test],
+                get_class($filter)
+            );
             $body = local_content::build_dom_doc($parsed)->getElementsByTagName('body')->item(0);
 
             // Check that there is just one element which should be the ally wrapper.
             $this->assertEquals(1, $body->childNodes->count());
             $firstitem = $body->childNodes->item(0);
             $this->assertTrue($firstitem->hasAttributes());
-            $this->assertEquals('label:label:intro:'.$label->id, $firstitem->attributes['data-ally-richcontent']->textContent);
+            $this->assertEquals('label:label:intro:' . $label->id, $firstitem->attributes['data-ally-richcontent']->textContent);
         }
-
     }
 
+    /**
+     * Setup filter for testing.
+     * @return text_filter
+     */
     private function call_filter_setup(): text_filter {
         global $PAGE;
         $context = \context_system::instance();
