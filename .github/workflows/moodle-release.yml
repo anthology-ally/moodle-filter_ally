@@ -10,6 +10,8 @@ on:
   push:
     tags:
       - AY*
+    branches:
+      - 'MOODLE_501_STABLE'
 
   workflow_dispatch:
     inputs:
