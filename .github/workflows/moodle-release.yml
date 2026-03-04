@@ -32,13 +32,18 @@ jobs:
       ENDPOINT: https://moodle.org/webservice/rest/server.php
       TOKEN: ${{ secrets.MOODLE_ORG_TOKEN }}
       FUNCTION: local_plugins_add_version
+      INPUT_TAG: ${{ github.event.inputs.tag }}
 
     steps:
       - name: Call the service function
         id: add-version
         run: |
-          if [[ ! -z "${{ github.event.inputs.tag }}" ]]; then
-            TAGNAME="${{ github.event.inputs.tag }}"
+          if [[ ! -z "${INPUT_TAG}" ]]; then
+            TAGNAME="${INPUT_TAG}"
+            if [[ ! "${TAGNAME}" =~ ^AY ]]; then
+              echo "Tag must start with 'AY'"
+              exit 1
+            fi
           elif [[ $GITHUB_REF = refs/tags/* ]]; then
             TAGNAME="${GITHUB_REF##*/}"
           fi
@@ -47,16 +52,22 @@ jobs:
             exit 1
           fi
           ZIPURL="https://api.github.com/repos/${{ github.repository }}/zipball/${TAGNAME}"
-          RESPONSE=$(${CURL} ${ENDPOINT} --data-urlencode "wstoken=${TOKEN}" \
-                                         --data-urlencode "wsfunction=${FUNCTION}" \
-                                         --data-urlencode "moodlewsrestformat=json" \
-                                         --data-urlencode "frankenstyle=${PLUGIN}" \
-                                         --data-urlencode "zipurl=${ZIPURL}" \
-                                         --data-urlencode "vcssystem=git" \
-                                         --data-urlencode "vcsrepositoryurl=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
-                                         --data-urlencode "vcstag=${TAGNAME}" \
-                                         --data-urlencode "changelogurl=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commits/${TAGNAME}" \
-                                         --data-urlencode "altdownloadurl=${ZIPURL}")
+          RETRIES=3
+          ATTEMPT=0
+          while [ $ATTEMPT -lt $RETRIES ]; do
+            RESPONSE=$(${CURL} ${ENDPOINT} --data-urlencode "wstoken=${TOKEN}" \
+                                           --data-urlencode "wsfunction=${FUNCTION}" \
+                                           --data-urlencode "moodlewsrestformat=json" \
+                                           --data-urlencode "frankenstyle=${PLUGIN}" \
+                                           --data-urlencode "zipurl=${ZIPURL}" \
+                                           --data-urlencode "vcssystem=git" \
+                                           --data-urlencode "vcsrepositoryurl=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
+                                           --data-urlencode "vcstag=${TAGNAME}" \
+                                           --data-urlencode "changelogurl=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commits/${TAGNAME}" \
+                                           --data-urlencode "altdownloadurl=${ZIPURL}") && break
+            ATTEMPT=$((ATTEMPT + 1))
+            [ $ATTEMPT -lt $RETRIES ] && sleep $((2 ** ATTEMPT))
+          done
           echo "response=${RESPONSE}" >> $GITHUB_OUTPUT
 
       - name: Evaluate the response
