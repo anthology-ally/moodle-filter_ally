@@ -55,7 +55,7 @@ jobs:
           RETRIES=3
           ATTEMPT=0
           while [ $ATTEMPT -lt $RETRIES ]; do
-            RESPONSE=$(${CURL} ${ENDPOINT} --data-urlencode "wstoken=${TOKEN}" \
+            RESPONSE=$(${CURL} -w "\n%{http_code}" ${ENDPOINT} --data-urlencode "wstoken=${TOKEN}" \
                                            --data-urlencode "wsfunction=${FUNCTION}" \
                                            --data-urlencode "moodlewsrestformat=json" \
                                            --data-urlencode "frankenstyle=${PLUGIN}" \
@@ -64,10 +64,22 @@ jobs:
                                            --data-urlencode "vcsrepositoryurl=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
                                            --data-urlencode "vcstag=${TAGNAME}" \
                                            --data-urlencode "changelogurl=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commits/${TAGNAME}" \
-                                           --data-urlencode "altdownloadurl=${ZIPURL}") && break
+                                           --data-urlencode "altdownloadurl=${ZIPURL}" 2>&1) || true
+            HTTP_CODE=$(echo "${RESPONSE}" | tail -n1)
+            RESPONSE=$(echo "${RESPONSE}" | sed '$d')
+            if [[ "${HTTP_CODE}" =~ ^2 ]]; then
+              break
+            fi
             ATTEMPT=$((ATTEMPT + 1))
-            [ $ATTEMPT -lt $RETRIES ] && sleep $((2 ** ATTEMPT))
+            if [ $ATTEMPT -lt $RETRIES ]; then
+              echo "Attempt $ATTEMPT failed with HTTP ${HTTP_CODE}, retrying..."
+              sleep $((2 ** ATTEMPT))
+            fi
           done
+          if [[ ! "${HTTP_CODE}" =~ ^2 ]]; then
+            echo "Request failed after ${RETRIES} attempts with HTTP code ${HTTP_CODE}"
+            exit 1
+          fi
           echo "response=${RESPONSE}" >> $GITHUB_OUTPUT
 
       - name: Evaluate the response
