@@ -27,9 +27,13 @@ defined('MOODLE_INTERNAL') || die();
 /** @var stdClass $plugin */
 $plugin->component    = 'filter_ally';
 $plugin->release      = '5.0.1';
-$plugin->version      = 2026012825; // Sub version is bumped to 25 to avoid conflicts with backports in MOODLE_405.
+$plugin->version      = 2026032525; // Sub version is bumped to 25 to avoid conflicts with backports in MOODLE_405.
 $plugin->requires     = 2025041400;
 $plugin->maturity     = MATURITY_STABLE;
+$plugin->supported    = [
+    500,
+    500,
+];
 $plugin->dependencies = [
     'tool_ally'      => 2026012825,
     'report_allylti' => 2026012825,
