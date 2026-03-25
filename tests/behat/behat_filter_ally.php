@@ -25,6 +25,7 @@
 // NOTE: no MOODLE_INTERNAL test here, this file may be required by behat before including /config.php.
 require_once(__DIR__ . '/../../../../lib/behat/behat_base.php');
 
+use Behat\Gherkin\Node\TableNode;
 use Behat\Mink\Exception\ExpectationException;
 use Behat\Mink\Element\NodeElement;
 use Moodle\BehatExtension\Exception\SkippedException;
@@ -41,6 +42,76 @@ use tool_ally\models\component_content;
  * @package   filter_ally
  */
 class behat_filter_ally extends behat_base {
+    /**
+     * @Given forum type :forumtype is available
+     */
+    public function forum_module_exists(string $forumtype): void {
+        global $CFG;
+
+        $path = $CFG->dirroot . '/mod/' . $forumtype;
+
+        if (!is_dir($path)) {
+            throw new SkippedException("Open forums module not found at $path");
+        }
+    }
+
+    /**
+     * Wrapper - necessary to allow for execution where mod_hsuforum is not installed.
+     * Adds a new discussion to a forum of the given type.
+     *
+     * @When I add a new discussion to :forumname using forum type :forumtype with:
+     *
+     * @param string $forumname The forum name as seen on the course page.
+     * @param string $forumtype The short name of the forum module (e.g. 'forum', 'hsuforum').
+     * @param TableNode $data The discussion data (Subject, Message, Attachment, etc).
+     */
+    public function i_add_new_discussion_to_forumtype(
+        string $forumname,
+        string $forumtype,
+        TableNode $data
+    ): void {
+        global $CFG;
+
+        $path = $CFG->dirroot . '/mod/' . $forumtype;
+        if (!is_dir($path)) {
+            throw new \Moodle\BehatExtension\Exception\SkippedException("Forum type '$forumtype' not found at $path");
+        }
+
+        $step = "i_add_a_forum_discussion_to_forum_with";
+        $context = $forumtype === 'forum' ? 'behat_mod_forum' : 'behat_mod_hsuforum';
+        $this->execute("$context::$step", [$forumname, $data]);
+    }
+
+    /**
+     * Wrapper - necessary to allow for execution where mod_hsuforum is not installed.
+     * Replies to a post in a forum discussion of the given type.
+     *
+     * @When I reply :postname post from :discussion using forum type :forumtype with:
+     *
+     * @param string $postname
+     * @param string $discussion The subject of the original post to reply to.
+     * @param string $forumtype The short name of the forum module (e.g. 'forum', 'hsuforum').
+     * @param TableNode $data The reply data (Message, Attachment, etc).
+     */
+    public function i_reply_post_from_discussion_with_forumtype(
+        string $postname,
+        string $discussion,
+        string $forumtype,
+        TableNode $data
+    ): void {
+        global $CFG;
+
+        $path = $CFG->dirroot . '/mod/' . $forumtype;
+        if (!is_dir($path)) {
+            throw new \Moodle\BehatExtension\Exception\SkippedException("Forum type '$forumtype' not found at $path");
+        }
+
+        $context = $forumtype === 'forum' ? 'behat_mod_forum' : 'behat_mod_hsuforum';
+        $step = "i_reply_post_from_forum_with";
+
+        $this->execute("$context::$step", [$postname, $discussion, $data]);
+    }
+
     /**
      * @Given /^the ally filter is enabled$/
      */
