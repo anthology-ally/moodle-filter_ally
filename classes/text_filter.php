@@ -26,7 +26,7 @@ namespace filter_ally;
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once(__DIR__.'/../../../mod/forum/lib.php');
+require_once(__DIR__ . '/../../../mod/forum/lib.php');
 
 use filter_ally\renderables\wrapper;
 use filter_ally\local\entity_mapper;
@@ -46,7 +46,6 @@ use DOMElement;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class text_filter extends \core_filters\text_filter {
-
     /**
      * @var array File ids (path hashes) of all processed files by url.
      */
@@ -88,7 +87,7 @@ class text_filter extends \core_filters\text_filter {
     private function get_mod_lesson_params() {
         global $DB;
 
-        $params = new stdClass;
+        $params = new stdClass();
 
         $pageid = optional_param('pageid', null, PARAM_INT);
         if ($pageid === null) {
@@ -115,7 +114,7 @@ class text_filter extends \core_filters\text_filter {
     private function get_mod_book_params() {
         global $DB, $PAGE;
 
-        $params = new stdClass;
+        $params = new stdClass();
 
         $chapterid = optional_param('chapterid', null, PARAM_INT);
         if ($chapterid === null) {
@@ -163,6 +162,9 @@ class text_filter extends \core_filters\text_filter {
             }
         } else if ($this->filteractive === false) {
             return;
+        } else if (!empty($CFG->upgraderunning)) {
+            // Do not run during upgrade.
+            return;
         }
         $this->filteractive = true;
 
@@ -170,9 +172,11 @@ class text_filter extends \core_filters\text_filter {
             return;
         }
 
-        if ($PAGE->pagetype === 'admin-setting-additionalhtml' ||
+        if (
+            $PAGE->pagetype === 'admin-setting-additionalhtml' ||
             $PAGE->pagetype === 'admin-settings' ||
-            $PAGE->pagetype === 'admin-search') {
+            $PAGE->pagetype === 'admin-search'
+        ) {
             return;
         }
 
@@ -264,14 +268,17 @@ EOF;
      */
     private function verify_and_fix_if_applied($type, DOMElement $element, $text) {
         $feedbackfound = false;
-        if ($element->parentNode->tagName === 'span'
-            && $element->parentNode->getAttribute('class') === 'filter-ally-wrapper ally-'.$type.'-wrapper') {
-
+        if (
+            $element->parentNode->tagName === 'span'
+            && $element->parentNode->getAttribute('class') === 'filter-ally-wrapper ally-' . $type . '-wrapper'
+        ) {
             $feedbacknodes = $element->parentNode->getElementsByTagName('span');
             foreach ($feedbacknodes as $feedbacknode) {
-                if (is_object($feedbacknode->attributes)
+                if (
+                    is_object($feedbacknode->attributes)
                     && is_object($feedbacknode->attributes->getNamedItem('data-file-id'))
-                    && is_object($feedbacknode->attributes->getNamedItem('data-file-url'))) {
+                    && is_object($feedbacknode->attributes->getNamedItem('data-file-url'))
+                ) {
                     $feedbackfound = true;
                     break;
                 }
@@ -303,9 +310,9 @@ EOF;
                     $strtomatch = substr($text, $linkpos, $classend - $linkpos);
                     $strforreplacement = substr($text, $linkpos, $classpos - $linkpos);
 
-                    $strforreplacement .= $spanclass.'" ';
-                    $strforreplacement .= 'data-file-id="'.self::$fileidsbyurl[$href].'" ';
-                    $strforreplacement .= 'data-file-url="'.$href.'"';
+                    $strforreplacement .= $spanclass . '" ';
+                    $strforreplacement .= 'data-file-id="' . self::$fileidsbyurl[$href] . '" ';
+                    $strforreplacement .= 'data-file-url="' . $href . '"';
                     $text = str_replace($strtomatch, $strforreplacement, $text);
                 }
                 return $text;
@@ -406,9 +413,11 @@ EOF;
                 // This results in an image wrapped in an anchor tag with the same href as the image src.
                 // In these cases, we are only interested in the image, not the anchor.
 
-                if ($result->childNodes->length === 1 &&
+                if (
+                    $result->childNodes->length === 1 &&
                     $result->firstChild->nodeType === XML_ELEMENT_NODE &&
-                    $result->firstChild->tagName === 'img') {
+                    $result->firstChild->tagName === 'img'
+                ) {
                     $imgSrc = $result->firstChild->attributes->getNamedItem('src');
 
                     // Note - the s_ suffix is used by Moodle to indicate a small version of the image.
@@ -442,7 +451,6 @@ EOF;
             $url = $element->url;
 
             if (strpos($url, 'pluginfile.php') !== false) {
-
                 $urlcomps = $this->process_url($url);
                 if (empty($urlcomps)) {
                     continue;
@@ -488,7 +496,10 @@ EOF;
 
                 if ($component === 'mod_lesson') {
                     $verifiedresult = $this->verify_and_fix_if_applied(
-                        $element->type === 'a' ? self::ANCHOR : self::IMAGE, $element->result, $text);
+                        $element->type === 'a' ? self::ANCHOR : self::IMAGE,
+                        $element->result,
+                        $text
+                    );
                     if ($verifiedresult !== false) {
                         $text = $verifiedresult;
                         continue;
@@ -537,7 +548,7 @@ EOF;
                 $wrapper = new wrapper();
                 $wrapper->fileid = $pathhash;
                 // Flag html as processed with #P# so that it doesn't get hit again with multiples of the same link or image.
-                $wrapper->html = str_replace('<'.$type, '<'.$type.'#P#', $html);
+                $wrapper->html = str_replace('<' . $type, '<' . $type . '#P#', $html);
                 $wrapper->url = $url;
                 $wrapper->candownload = $candownload;
                 $wrapper->canviewfeedback = $canviewfeedback;
@@ -560,8 +571,7 @@ EOF;
                     $htmltosrch = preg_quote($htmltosrch, '~');
                     $pattern = '/(\'|"|&quot;)/';
                     $htmltosrch = preg_replace($pattern, '(\'|"|&quot;)', $htmltosrch);
-                    $replaceregex = '~'.$htmltosrch.'(?:\s*|)(?:>|/>)~m';
-
+                    $replaceregex = '~' . $htmltosrch . '(?:\s*|)(?:>|/>)~m';
                 }
                 $text = preg_replace($replaceregex, $wrapped, $text);
             }
