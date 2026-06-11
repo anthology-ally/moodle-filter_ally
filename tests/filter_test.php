@@ -74,10 +74,10 @@ final class filter_test extends \advanced_testcase {
         global $PAGE, $CFG;
 
         $PAGE->set_url($CFG->wwwroot . '/course/view.php');
-        $iscoursepage = \phpunit_util::call_internal_method($this->filter, 'is_course_page', [], text_filter::class);
+        $iscoursepage = \core\test\phpunit\phpunit_util::call_internal_method($this->filter, 'is_course_page', [], text_filter::class);
         $this->assertTrue($iscoursepage);
         $PAGE->set_url($CFG->wwwroot . '/user/view.php');
-        $iscoursepage = \phpunit_util::call_internal_method($this->filter, 'is_course_page', [], text_filter::class);
+        $iscoursepage = \core\test\phpunit\phpunit_util::call_internal_method($this->filter, 'is_course_page', [], text_filter::class);
         $this->assertFalse($iscoursepage);
     }
 
@@ -88,7 +88,7 @@ final class filter_test extends \advanced_testcase {
         $course = $gen->create_course();
         $mapper = new entity_mapper($course);
 
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_assignment_file_paths_to_pathhash',
             [$course],
@@ -96,7 +96,7 @@ final class filter_test extends \advanced_testcase {
         );
         $this->assertEmpty($map);
 
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_assignment_file_paths_to_pathhash',
             [],
@@ -127,7 +127,7 @@ final class filter_test extends \advanced_testcase {
             $fs->create_file_from_pathname($filerecord, $fixturepath);
         }
 
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_assignment_file_paths_to_pathhash',
             [],
@@ -137,7 +137,7 @@ final class filter_test extends \advanced_testcase {
 
         $PAGE->set_pagetype('mod-assign-view');
         $_GET['id'] = $assign->cmid;
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_assignment_file_paths_to_pathhash',
             [],
@@ -155,7 +155,7 @@ final class filter_test extends \advanced_testcase {
         $course = $gen->create_course();
         $mapper = new entity_mapper($course);
 
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_folder_file_paths_to_pathhash',
             [],
@@ -193,7 +193,7 @@ final class filter_test extends \advanced_testcase {
 
         // Test map returns empty when age type is folder view but no cmid has been provided.
         $PAGE->set_pagetype('mod-folder-view');
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_folder_file_paths_to_pathhash',
             [],
@@ -203,7 +203,7 @@ final class filter_test extends \advanced_testcase {
 
         // Test map does not return empty when cmid provided.
         $_GET['id'] = $assign->cmid;
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_folder_file_paths_to_pathhash',
             [],
@@ -224,7 +224,7 @@ final class filter_test extends \advanced_testcase {
         $student = $gen->create_user();
         $gen->enrol_user($student->id, $course->id, 'student');
 
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_resource_file_paths_to_pathhash',
             [$course],
@@ -260,7 +260,7 @@ final class filter_test extends \advanced_testcase {
             $fs->create_file_from_pathname($filerecord, $fixturepath);
         }
 
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_resource_file_paths_to_pathhash',
             [$course],
@@ -270,7 +270,7 @@ final class filter_test extends \advanced_testcase {
 
         // Check students don't get anything as all the resources were invisible.
         $this->setUser($student);
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_resource_file_paths_to_pathhash',
             [$course],
@@ -282,7 +282,7 @@ final class filter_test extends \advanced_testcase {
         $this->setAdminUser();
         $PAGE->set_url($CFG->wwwroot . '/user/view.php');
         $PAGE->set_pagetype('course-view-topics');
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $this->filter,
             'map_resource_file_paths_to_pathhash',
             [$course],
@@ -307,7 +307,7 @@ final class filter_test extends \advanced_testcase {
         ];
 
         foreach ($urlformats as $expectedcomponent => $url) {
-            [$contextid, $component, $filearea, $itemid, $filename] = \phpunit_util::call_internal_method(
+            [$contextid, $component, $filearea, $itemid, $filename] = \core\test\phpunit\phpunit_util::call_internal_method(
                 $this->filter,
                 'process_url',
                 [$url],
@@ -322,7 +322,7 @@ final class filter_test extends \advanced_testcase {
 
         // Make sure URLs belonging to different sites are *not* processed.
         $badurl = 'http://test.com/pluginfile.php' . $fileparam . '/123/somecomponent/somearea/myfile.test';
-        $result = \phpunit_util::call_internal_method(
+        $result = \core\test\phpunit\phpunit_util::call_internal_method(
             $this->filter,
             'process_url',
             [$badurl],
@@ -844,7 +844,7 @@ EOF;
         $mapper = new entity_mapper($course);
 
         // Should be empty when nothing added.
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_forum_attachment_file_paths_to_pathhash',
             [],
@@ -871,7 +871,7 @@ EOF;
         $fs->create_file_from_string($filerecord, 'Test content');
 
         // Add an file.
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_forum_attachment_file_paths_to_pathhash',
             [],
@@ -890,7 +890,7 @@ EOF;
         $fs->create_file_from_pathname($filerecord, $fixturepath);
 
         // Shouldn't be empty when an image file has been added (only image files are mapped).
-        $map = \phpunit_util::call_internal_method(
+        $map = \core\test\phpunit\phpunit_util::call_internal_method(
             $mapper,
             'map_forum_attachment_file_paths_to_pathhash',
             [],
@@ -969,7 +969,7 @@ EOF;
             '<div title="Hover > Get text" class="no-overflow">Hover for more</div>',
         ];
         foreach ($tests as $test) {
-            $parsed = \phpunit_util::call_internal_method(
+            $parsed = \core\test\phpunit\phpunit_util::call_internal_method(
                 $filter,
                 'apply_content_annotation',
                 [$test],
