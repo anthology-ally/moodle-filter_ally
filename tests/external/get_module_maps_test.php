@@ -28,11 +28,6 @@ namespace filter_ally\external;
 
 defined('MOODLE_INTERNAL') || die();
 
-global $CFG;
-require_once($CFG->dirroot . '/webservice/tests/helpers.php');
-
-use externallib_advanced_testcase;
-
 /**
  * Unit tests for the get_module_maps external API.
  *
@@ -46,7 +41,7 @@ use externallib_advanced_testcase;
  * @group     ally
  * @covers    \filter_ally\external\get_module_maps
  */
-final class get_module_maps_test extends externallib_advanced_testcase {
+final class get_module_maps_test extends \core_external\tests\externallib_testcase {
     /**
      * Test the get_module_maps web service.
      */
