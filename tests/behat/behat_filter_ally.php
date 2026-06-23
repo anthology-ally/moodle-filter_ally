@@ -907,17 +907,34 @@ XPATH;
             $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')][$anchorx]";
             $path .= "//*[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
         } else if ($type === 'file in folder') {
-            $path = "//div[contains(@id, 'folder_tree0')]//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
-            $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')][$anchorx]";
+            // Legacy (<5.2) tree.
+            $legacy = "//div[contains(@id, 'folder_tree0')]//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
+            $legacy .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')][$anchorx]";
+
+            // Moodle 5.2+ tree: top-level files only (exclude subfolders).
+            $m52 = "(//ul[contains(concat(' ', @class, ' '), ' foldertree ')]";
+            $m52 .= "/li[@role='treeitem']/ul[@role='group']";
+            $m52 .= "//li[@role='treeitem' and not(.//ul[@role='group'])])[$anchorx]";
+
+            $path = "($legacy|$m52)";
             $path .= "//*[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
         } else if ($type === 'file in subfolder') {
-            $path = "//div[contains(@id, 'folder_tree0')]//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
-            $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')]";
-            $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
-            $path .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')][$anchorx]";
+            // Legacy (<5.2) tree.
+            $legacy = "//div[contains(@id, 'folder_tree0')]//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
+            $legacy .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')]";
+            $legacy .= "//div[contains(concat(' ', @class, ' '), ' ygtvchildren ')]";
+            $legacy .= "//div[contains(concat(' ', @class, ' '), ' ygtvitem ')][$anchorx]";
+
+            // Moodle 5.2+ tree: files inside any subfolder.
+            $m52 = "(//ul[contains(concat(' ', @class, ' '), ' foldertree ')]";
+            $m52 .= "/li[@role='treeitem']/ul[@role='group']";
+            $m52 .= "/li[@role='treeitem'][.//ul[@role='group']]";
+            $m52 .= "//ul[@role='group']//li[@role='treeitem' and not(.//ul[@role='group'])])[$anchorx]";
+
+            $path = "($legacy|$m52)";
             $path .= "//*[contains(concat(' ', @class, ' '), ' ally-anchor-wrapper ')]";
         } else if ($type === 'glossary attachment') {
-            $path = "//td[contains(concat(' ', @class, ' '), ' entry ')]";
+            $path = "(//td[contains(concat(' ', @class, ' '), ' entry ')]|//div[contains(concat(' ', @class, ' '), ' entry ')])";
             $path .= "//div[contains(concat(' ', @class, ' '), ' attachments ')]";
             $path .= "//div[contains(concat(' ', @class, ' '), ' ally-glossary-attachment-row ')][$anchorx]";
         } else {
@@ -1323,7 +1340,7 @@ XPATH;
         }
         $wsparams = explode(':', $annotation);
         if (count($wsparams) < 4) {
-            throw new ExpectationException('Incorrect number of params in ' . $modname . ' annotation ' . $annotation);
+            throw new ExpectationException('Incorrect number of params in ' . $modname . ' annotation ' . $annotation, $this->getSession);
         }
     }
 

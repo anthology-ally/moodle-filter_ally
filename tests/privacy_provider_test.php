@@ -26,17 +26,20 @@ use core_privacy\local\metadata\collection;
 use core_privacy\local\metadata\types\external_location;
 use core_privacy\tests\provider_testcase;
 use filter_ally\privacy\provider;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Test case for privacy implementation.
  *
  * @package   filter_ally
  * @copyright Copyright (c) 2018 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
- * @group     filter_ally
- * @group     ally
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @covers    \filter_ally\privacy\provider
  */
+#[CoversClass(\filter_ally\privacy\provider::class)]
+#[Group('text_filter')]
+#[Group('filter_ally')]
+#[Group('ally')]
 final class privacy_provider_test extends provider_testcase {
     /**
      * Test for provider::get_metadata().

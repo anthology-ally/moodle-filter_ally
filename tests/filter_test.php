@@ -26,6 +26,8 @@ use filter_ally\local\entity_mapper;
 use filter_ally\text_filter;
 use tool_ally\local_content;
 use tool_ally\local_file;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Test filter lib.
@@ -33,10 +35,11 @@ use tool_ally\local_file;
  * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @package   filter_ally
- * @group     filter_ally
- * @group     ally
- * @covers \filter_ally\text_filter
  */
+#[CoversClass(text_filter::class)]
+#[Group('text_filter')]
+#[Group('filter_ally')]
+#[Group('ally')]
 final class filter_test extends \advanced_testcase {
     /**
      * @var text_filter
@@ -939,6 +942,8 @@ EOF;
             $wrapper->candownload = true;
             $wrapper->canviewfeedback = true;
             $wrapper->isimage = false;
+            $wrapper->fileid = '';
+            $wrapper->url = '';
             $wrapped = $renderer->render_wrapper($wrapper);
             $datalesstext .= str_replace(' data-file-id="" data-file-url=""', '', $wrapped);
         }
