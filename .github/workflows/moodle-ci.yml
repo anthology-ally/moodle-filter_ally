@@ -213,6 +213,18 @@ jobs:
           set -euo pipefail
 
           base_branch="${{ steps.extract_branches.outputs.stable_branch }}"
+
+          # If stable_branch is empty (branch name didn't match MOODLE_NNN pattern),
+          # gracefully skip rather than failing the entire job.
+          if [[ -z "$base_branch" ]]; then
+            echo "⚠️  No stable branch derived; skipping hsuforum/snap resolution."
+            echo "branch_hsuforum=" >> $GITHUB_OUTPUT
+            echo "repo_hsuforum=" >> $GITHUB_OUTPUT
+            echo "branch_snap=" >> $GITHUB_OUTPUT
+            echo "repo_snap=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
           openlms_branch="${base_branch/STABLE/CITRICITY}"
 
           check_remote_branch_exists() {
@@ -261,7 +273,7 @@ jobs:
           moodle-plugin-ci add-plugin --branch ${{ steps.extract_branches.outputs.tool_ally_branch }} --clone=https://github.com/$GITHUB_REPOSITORY_OWNER/moodle-tool_ally
           moodle-plugin-ci add-plugin --branch ${{ steps.extract_branches.outputs.report_allylti_branch }} --clone=https://github.com/$GITHUB_REPOSITORY_OWNER/moodle-report_allylti
 
-          if [[ "${{ steps.check_skip.outputs.skip_openlms }}" == "false" ]]; then
+          if [[ "${{ steps.check_skip.outputs.skip_openlms }}" == "false" ]] && [[ -n "${{ steps.openlms_branches.outputs.branch_hsuforum }}" ]] && [[ -n "${{ steps.openlms_branches.outputs.branch_snap }}" ]]; then
             moodle-plugin-ci add-plugin --branch ${{ steps.openlms_branches.outputs.branch_hsuforum }} --clone=${{ steps.openlms_branches.outputs.repo_hsuforum }}
             moodle-plugin-ci add-plugin --branch ${{ steps.openlms_branches.outputs.branch_snap }} --clone=${{ steps.openlms_branches.outputs.repo_snap }}
           else
