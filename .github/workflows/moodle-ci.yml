@@ -157,8 +157,11 @@ jobs:
             tool_ally_branch="$stable_branch"
           elif [[ -n "$wip_branch" ]] && check_remote_branch_exists "moodle-tool_ally" "$wip_branch"; then
             tool_ally_branch="$wip_branch"
+          elif check_remote_branch_exists "moodle-tool_ally" "$DEFAULT_MOODLE_BRANCH"; then
+            echo "⚠️  Falling back to default branch ($DEFAULT_MOODLE_BRANCH) for tool_ally"
+            tool_ally_branch="$DEFAULT_MOODLE_BRANCH"
           else
-            echo "❌ Corresponding branch missing for tool_ally (tried: $branch, fallback: $stable_branch)"
+            echo "❌ Corresponding branch missing for tool_ally (tried: $branch, fallback: $stable_branch, default: $DEFAULT_MOODLE_BRANCH)"
             exit 1
           fi
 
@@ -169,8 +172,11 @@ jobs:
             report_allylti_branch="$stable_branch"
           elif [[ -n "$wip_branch" ]] && check_remote_branch_exists "moodle-report_allylti" "$wip_branch"; then
             report_allylti_branch="$wip_branch"
+          elif check_remote_branch_exists "moodle-report_allylti" "$DEFAULT_MOODLE_BRANCH"; then
+            echo "⚠️  Falling back to default branch ($DEFAULT_MOODLE_BRANCH) for report_allylti"
+            report_allylti_branch="$DEFAULT_MOODLE_BRANCH"
           else
-            echo "❌ Corresponding branch missing for report_allylti (tried: $branch, fallbacks: $stable_branch, $wip_branch)"
+            echo "❌ Corresponding branch missing for report_allylti (tried: $branch, fallbacks: $stable_branch, $wip_branch, default: $DEFAULT_MOODLE_BRANCH)"
             exit 1
           fi
 
