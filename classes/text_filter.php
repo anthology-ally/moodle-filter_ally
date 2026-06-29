@@ -164,6 +164,16 @@ class text_filter extends \core_filters\text_filter {
                 $this->filteractive = false;
                 return;
             }
+
+            // Early exit if the user has neither ally capability.
+            // This avoids the expensive get_maps() call for users who will not benefit from
+            // any filter output (no feedback indicators, no alternative format downloads).
+            $coursecontext = context_course::instance($COURSE->id);
+            if (!has_capability('filter/ally:viewfeedback', $coursecontext)
+                    && !has_capability('filter/ally:viewdownload', $coursecontext)) {
+                $this->filteractive = false;
+                return;
+            }
         } else if ($this->filteractive === false) {
             return;
         } else if (!empty($CFG->upgraderunning)) {

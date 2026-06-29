@@ -41,6 +41,7 @@ use context_module;
 /**
  * Performance tests for the Ally filter.
  *
+ * @runTestsInSeparateProcesses
  * @package   filter_ally
  * @group     filter_ally
  * @group     ally
@@ -303,12 +304,12 @@ final class filter_performance_test extends \advanced_testcase {
     /**
      * Test 5: Contrast reads for teacher vs student on the same course.
      *
-     * Both roles currently pay the full setup() cost. This test documents
-     * whether the per-element capability checks in filter() cause different
-     * read counts for different roles.
+     * Teachers have both filter/ally:viewfeedback and filter/ally:viewdownload,
+     * so they pay the full setup() cost. Students have only viewdownload, so
+     * they also get the full setup — but their filter() may differ due to
+     * per-element capability checks skipping feedback placeholders.
      *
-     * After implementing a capability-based early exit in setup(), this test
-     * can be adapted to verify that users without capabilities pay near-zero cost.
+     * Users with NEITHER capability (tested in test 7) skip setup entirely.
      */
     public function test_read_comparison_teacher_vs_student(): void {
         global $DB, $PAGE, $COURSE, $CFG;
@@ -408,15 +409,13 @@ final class filter_performance_test extends \advanced_testcase {
     }
 
     /**
-     * Test 7: Verify that a user with no Ally capabilities still triggers full setup.
+     * Test 7: Verify that a user with no Ally capabilities skips expensive setup.
      *
-     * This test documents the CURRENT PROBLEM: even a user who will gain nothing
-     * from the filter (no viewfeedback, no viewdownload) still pays the full
-     * setup() cost including get_maps().
-     *
-     * BEFORE FIX: This test passes — confirming the problem exists.
-     * AFTER FIX: This test should be updated to assert zero/minimal reads for
-     *            users without capabilities, confirming the fix works.
+     * With the capability-based early exit in setup(), a user who has neither
+     * filter/ally:viewfeedback nor filter/ally:viewdownload should pay only
+     * the cost of checking filter-active state and capabilities — not the
+     * full get_maps() pipeline. The filter() call should do zero reads since
+     * filteractive is set to false.
      */
     public function test_setup_reads_for_user_without_capabilities(): void {
         global $DB, $PAGE, $COURSE, $CFG;
@@ -439,30 +438,28 @@ final class filter_performance_test extends \advanced_testcase {
         $this->assertFalse(has_capability('filter/ally:viewfeedback', $context));
         $this->assertFalse(has_capability('filter/ally:viewdownload', $context));
 
-        // Measure reads — currently these will be > 0, demonstrating the problem.
+        // Measure setup reads — should be minimal (filter-active check + capability checks only).
         $readsbefore = $DB->perf_get_reads();
         $filter = $this->create_and_setup_filter($PAGE, $context);
         $setupreads = $DB->perf_get_reads() - $readsbefore;
 
+        // Measure filter reads — should be zero since filteractive is false.
         $html = $this->generate_pluginfile_html($data->files);
         $readsbefore = $DB->perf_get_reads();
-        $filter->filter($html);
+        $filtered = $filter->filter($html);
         $filterreads = $DB->perf_get_reads() - $readsbefore;
 
         fwrite(STDOUT, "\n[PERF NO-CAP USER] setup={$setupreads}, filter={$filterreads}\n");
 
-        // ---------------------------------------------------------------
-        // DOCUMENTING THE CURRENT BEHAVIOR (pre-fix):
-        //
-        // setup() currently performs reads even for users without capabilities
-        // because the capability check only happens inside filter(), per-element.
-        //
-        // After implementing an early capability check in setup(), change this
-        // assertion to:
-        //   $this->assertEquals(0, $filterreads, 'filter() should skip work for users without capabilities');
-        //   And assert $setupreads is minimal (just the capability + filter-active checks).
-        // ---------------------------------------------------------------
-        $this->assertGreaterThan(0, $setupreads,
-            '[PRE-FIX] setup() currently runs full pipeline even for users without capabilities');
+        // setup() should only perform reads for the filter-active check and capability checks,
+        // not the full get_maps() pipeline. A reasonable upper bound is 10 reads.
+        $this->assertLessThan(10, $setupreads,
+            'setup() should perform minimal reads for users without Ally capabilities');
+
+        // filter() should do zero work since filteractive was set to false.
+        $this->assertEquals(0, $filterreads,
+            'filter() should do zero DB reads for users without Ally capabilities');
+        $this->assertEquals($html, $filtered,
+            'filter() should return text unchanged for users without Ally capabilities');
     }
 }
