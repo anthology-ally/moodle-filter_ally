@@ -164,16 +164,6 @@ class text_filter extends \core_filters\text_filter {
                 $this->filteractive = false;
                 return;
             }
-
-            // Early exit if the user has neither ally capability.
-            // This avoids the expensive get_maps() call for users who will not benefit from
-            // any filter output (no feedback indicators, no alternative format downloads).
-            $coursecontext = context_course::instance($COURSE->id);
-            if (!has_capability('filter/ally:viewfeedback', $coursecontext)
-                    && !has_capability('filter/ally:viewdownload', $coursecontext)) {
-                $this->filteractive = false;
-                return;
-            }
         } else if ($this->filteractive === false) {
             return;
         } else if (!empty($CFG->upgraderunning)) {
@@ -227,10 +217,21 @@ class text_filter extends \core_filters\text_filter {
         }
 
         if ($jsinit) {
-            $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
             $coursecontext = context_course::instance($COURSE->id);
             $canviewfeedback = has_capability('filter/ally:viewfeedback', $coursecontext);
             $candownload = has_capability('filter/ally:viewdownload', $coursecontext);
+
+            // Skip the expensive map-building and JS initialization for users who
+            // have neither capability. They won't see feedback indicators or download
+            // options, so there's no point loading the module maps and AMD module.
+            // The filter() method's per-element capability checks will also skip
+            // wrapping for these users.
+            if (!$canviewfeedback && !$candownload) {
+                $jsinitialised = true;
+                return;
+            }
+
+            $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
 
             $entitymapper = new entity_mapper($COURSE->id);
             $maps = $entitymapper->get_maps();
