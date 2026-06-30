@@ -74,6 +74,7 @@ final class filter_test extends \advanced_testcase {
         $PAGE->set_url('/course/view.php', ['id' => $course->id]);
         $COURSE = $course;
         $this->call_filter_setup();
+        fwrite(STDOUT, "\n[PERF NO-CAP USER] cfg={$CFG}\n");
         $this->assertStringContainsString('ally_section_maps', $CFG->additionalhtmlfooter);
     }
 
