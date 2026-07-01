@@ -43,8 +43,11 @@ use tool_ally\models\component_content;
  */
 class behat_filter_ally extends behat_base {
     /**
+<<<<<<< HEAD
      * Check specific forum type is installed.
      *
+=======
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
      * @Given forum type :forumtype is available
      */
     public function forum_module_exists(string $forumtype): void {
@@ -115,8 +118,11 @@ class behat_filter_ally extends behat_base {
     }
 
     /**
+<<<<<<< HEAD
      * Check that the ally filter is enabled.
      *
+=======
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
      * @Given /^the ally filter is enabled$/
      */
     public function the_ally_filter_is_enabled() {

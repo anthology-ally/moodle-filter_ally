@@ -44,6 +44,7 @@ use externallib_advanced_testcase;
  * @runTestsInSeparateProcesses
  * @group     text_filter
  * @group     ally
+<<<<<<< HEAD
  * @covers    \filter_ally\external\get_module_maps
  */
 final class get_module_maps_test extends externallib_advanced_testcase {
@@ -51,6 +52,15 @@ final class get_module_maps_test extends externallib_advanced_testcase {
      * Test the get_module_maps web service.
      */
     public function test_get_module_maps(): void {
+=======
+ */
+final class get_module_maps_test extends externallib_advanced_testcase {
+
+    /**
+     * Test the get_module_maps web service.
+     */
+    public function test_get_module_maps() {
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         $this->resetAfterTest(true);
 
         // Create a course.
@@ -111,7 +121,11 @@ final class get_module_maps_test extends externallib_advanced_testcase {
     /**
      * Test get_module_maps with invalid course ID.
      */
+<<<<<<< HEAD
     public function test_get_module_maps_invalid_course(): void {
+=======
+    public function test_get_module_maps_invalid_course() {
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         $this->resetAfterTest(true);
 
         // Create a user.
@@ -126,7 +140,11 @@ final class get_module_maps_test extends externallib_advanced_testcase {
     /**
      * Test get_module_maps without required capability.
      */
+<<<<<<< HEAD
     public function test_get_module_maps_no_capability(): void {
+=======
+    public function test_get_module_maps_no_capability() {
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         $this->resetAfterTest(true);
 
         // Create a course.
@@ -147,7 +165,11 @@ final class get_module_maps_test extends externallib_advanced_testcase {
     /**
      * Test the web service return structure.
      */
+<<<<<<< HEAD
     public function test_get_module_maps_returns(): void {
+=======
+    public function test_get_module_maps_returns() {
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         // Test that the return structure is correctly defined.
         $returns = get_module_maps::execute_returns();
         $this->assertInstanceOf(\external_single_structure::class, $returns);
@@ -164,7 +186,11 @@ final class get_module_maps_test extends externallib_advanced_testcase {
     /**
      * Test the web service parameters.
      */
+<<<<<<< HEAD
     public function test_get_module_maps_parameters(): void {
+=======
+    public function test_get_module_maps_parameters() {
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         // Test that the parameters are correctly defined.
         $params = get_module_maps::execute_parameters();
         $this->assertInstanceOf(\external_function_parameters::class, $params);

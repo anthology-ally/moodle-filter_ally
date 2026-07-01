@@ -23,7 +23,10 @@
  */
 namespace filter_ally;
 use filter_ally\local\entity_mapper;
+<<<<<<< HEAD
 use filter_ally\text_filter;
+=======
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
 use tool_ally\local_content;
 use tool_ally\local_file;
 
@@ -35,7 +38,11 @@ use tool_ally\local_file;
  * @package   filter_ally
  * @group     filter_ally
  * @group     ally
+<<<<<<< HEAD
  * @covers \filter_ally\text_filter
+=======
+ * @package   filter_ally
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
  */
 final class filter_test extends \advanced_testcase {
     /**
@@ -89,18 +96,26 @@ final class filter_test extends \advanced_testcase {
         $mapper = new entity_mapper($course);
 
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_assignment_file_paths_to_pathhash',
             [$course],
             entity_mapper::class
+=======
+            $mapper, 'map_assignment_file_paths_to_pathhash', [$course], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertEmpty($map);
 
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_assignment_file_paths_to_pathhash',
             [],
             entity_mapper::class
+=======
+            $mapper, 'map_assignment_file_paths_to_pathhash', [], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertEmpty($map);
 
@@ -128,20 +143,28 @@ final class filter_test extends \advanced_testcase {
         }
 
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_assignment_file_paths_to_pathhash',
             [],
             entity_mapper::class
+=======
+            $mapper, 'map_assignment_file_paths_to_pathhash', [], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertEmpty($map);
 
         $PAGE->set_pagetype('mod-assign-view');
         $_GET['id'] = $assign->cmid;
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_assignment_file_paths_to_pathhash',
             [],
             entity_mapper::class
+=======
+            $mapper, 'map_assignment_file_paths_to_pathhash', [], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertNotEmpty($map);
     }
@@ -156,10 +179,14 @@ final class filter_test extends \advanced_testcase {
         $mapper = new entity_mapper($course);
 
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_folder_file_paths_to_pathhash',
             [],
             entity_mapper::class
+=======
+            $mapper, 'map_folder_file_paths_to_pathhash', [], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertEmpty($map);
 
@@ -194,20 +221,28 @@ final class filter_test extends \advanced_testcase {
         // Test map returns empty when age type is folder view but no cmid has been provided.
         $PAGE->set_pagetype('mod-folder-view');
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_folder_file_paths_to_pathhash',
             [],
             entity_mapper::class
+=======
+            $mapper, 'map_folder_file_paths_to_pathhash', [], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertEmpty($map);
 
         // Test map does not return empty when cmid provided.
         $_GET['id'] = $assign->cmid;
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_folder_file_paths_to_pathhash',
             [],
             entity_mapper::class
+=======
+            $mapper, 'map_folder_file_paths_to_pathhash', [], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertNotEmpty($map);
     }
@@ -225,10 +260,14 @@ final class filter_test extends \advanced_testcase {
         $gen->enrol_user($student->id, $course->id, 'student');
 
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_resource_file_paths_to_pathhash',
             [$course],
             entity_mapper::class
+=======
+            $mapper, 'map_resource_file_paths_to_pathhash', [$course], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertEmpty($map);
 
@@ -261,20 +300,28 @@ final class filter_test extends \advanced_testcase {
         }
 
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_resource_file_paths_to_pathhash',
             [$course],
             entity_mapper::class
+=======
+            $mapper, 'map_resource_file_paths_to_pathhash', [$course], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertNotEmpty($map);
 
         // Check students don't get anything as all the resources were invisible.
         $this->setUser($student);
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_resource_file_paths_to_pathhash',
             [$course],
             entity_mapper::class
+=======
+            $mapper, 'map_resource_file_paths_to_pathhash', [$course], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertEmpty($map);
 
@@ -845,10 +892,14 @@ EOF;
 
         // Should be empty when nothing added.
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_forum_attachment_file_paths_to_pathhash',
             [],
             entity_mapper::class
+=======
+            $mapper, 'map_forum_attachment_file_paths_to_pathhash', [], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertEmpty($map);
 
@@ -872,10 +923,14 @@ EOF;
 
         // Add an file.
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_forum_attachment_file_paths_to_pathhash',
             [],
             entity_mapper::class
+=======
+            $mapper, 'map_forum_attachment_file_paths_to_pathhash', [], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertNotEmpty($map);
 
@@ -891,10 +946,14 @@ EOF;
 
         // Shouldn't be empty when an image file has been added (only image files are mapped).
         $map = \phpunit_util::call_internal_method(
+<<<<<<< HEAD
             $mapper,
             'map_forum_attachment_file_paths_to_pathhash',
             [],
             entity_mapper::class
+=======
+            $mapper, 'map_forum_attachment_file_paths_to_pathhash', [], entity_mapper::class
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
         );
         $this->assertNotEmpty($map);
     }
@@ -930,7 +989,11 @@ EOF;
             $teststring = 'moodletest';
             $file = $fs->create_file_from_string($filerecord, $teststring);
             $url = local_file::url($file);
+<<<<<<< HEAD
             $anchortext = '<a href="' . $url . '">test</a>';
+=======
+            $anchortext = '<a href="'.$url.'">test</a>';
+>>>>>>> 5163998 (Moodle 405 500 backports (#99))
             $text .= $anchortext;
 
             $renderer = $PAGE->get_renderer('filter_ally');
