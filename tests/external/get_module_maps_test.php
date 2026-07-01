@@ -111,11 +111,7 @@ final class get_module_maps_test extends externallib_advanced_testcase {
     /**
      * Test get_module_maps with invalid course ID.
      */
-<<<<<<< HEAD
     public function test_get_module_maps_invalid_course(): void {
-=======
-    public function test_get_module_maps_invalid_course() {
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
         $this->resetAfterTest(true);
 
         // Create a user.
@@ -130,11 +126,7 @@ final class get_module_maps_test extends externallib_advanced_testcase {
     /**
      * Test get_module_maps without required capability.
      */
-<<<<<<< HEAD
     public function test_get_module_maps_no_capability(): void {
-=======
-    public function test_get_module_maps_no_capability() {
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
         $this->resetAfterTest(true);
 
         // Create a course.
@@ -161,7 +153,7 @@ final class get_module_maps_test extends externallib_advanced_testcase {
         $this->assertInstanceOf(\external_single_structure::class, $returns);
 
         // Test the structure keys.
-        $keys = $returns->keys;
+        $keys = $returns->properties;
         $this->assertArrayHasKey('success', $keys);
         $this->assertArrayHasKey('message', $keys);
         $this->assertArrayHasKey('modulemaps', $keys);
@@ -178,7 +170,7 @@ final class get_module_maps_test extends externallib_advanced_testcase {
         $this->assertInstanceOf(\external_function_parameters::class, $params);
 
         // Test the parameter keys.
-        $keys = $params->keys;
+        $keys = $params->properties;
         $this->assertArrayHasKey('courseid', $keys);
         $this->assertEquals(PARAM_INT, $keys['courseid']->type);
     }
