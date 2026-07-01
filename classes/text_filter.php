@@ -223,10 +223,10 @@ class text_filter extends \core_filters\text_filter {
             // options, so there's no point loading the module maps and AMD module.
             // The filter() method's per-element capability checks will also skip
             // wrapping for these users.
-            if (!$canviewfeedback && !$candownload) {
+            /* if (!$canviewfeedback && !$candownload) {
                 $jsinitialised = true;
                 return;
-            }
+            } */
 
             $jwt = \filter_ally\local\jwthelper::get_token($USER, $COURSE->id);
 
