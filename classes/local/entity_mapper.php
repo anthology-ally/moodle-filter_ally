@@ -24,24 +24,16 @@
 
 namespace filter_ally\local;
 
-<<<<<<< HEAD
 defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__ . '/../../../../mod/forum/lib.php');
-=======
-require_once(__DIR__.'/../../../../mod/forum/lib.php');
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
 
 use tool_ally\local_file;
 use tool_ally\local_content;
 use tool_ally\logging\logger;
 use cm_info;
 use stdClass;
-<<<<<<< HEAD
 use core\exception\coding_exception;
-=======
-use \core\exception\coding_exception;
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
 
 /**
  * Class for generating module maps.
@@ -51,10 +43,6 @@ use \core\exception\coding_exception;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class entity_mapper {
-<<<<<<< HEAD
-=======
-
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
     /**
      * @var object The course object.
      */
@@ -277,7 +265,6 @@ class entity_mapper {
         return $map;
     }
 
-<<<<<<< HEAD
     /**
      * Map file paths to pathname hash for a given course module.
      * @param string $modname The module name
@@ -285,8 +272,6 @@ class entity_mapper {
      * @throws coding_exception
      * @throws dml_exception
      */
-=======
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
     protected function map_course_module_file_paths_to_pathhash(string $modname) {
         global $DB;
 
@@ -366,28 +351,16 @@ class entity_mapper {
         global $PAGE;
         $map = [];
 
-<<<<<<< HEAD
         // Check if we're in a lesson context (either via PAGE or assume true for web service).
-=======
-        // Check if we're in a lesson context (either via PAGE or assume true for web service)
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
         $islessoncontext = !$PAGE ||
             (isset($PAGE->pagetype) && ($PAGE->pagetype === 'mod-lesson-view' || $PAGE->pagetype === 'mod-lesson-continue'));
 
         if ($islessoncontext) {
-<<<<<<< HEAD
             // For web service context, get all lesson modules for this course.
             if (!$PAGE) {
                 $map = $this->map_course_module_file_paths_to_pathhash('lesson');
             } else {
                 // For page context, get specific lesson module.
-=======
-            // For web service context, get all lesson modules for this course
-            if (!$PAGE) {
-                $map = $this->map_course_module_file_paths_to_pathhash('lesson');
-            } else {
-                // For page context, get specific lesson module
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
                 $cmid = optional_param('id', false, PARAM_INT);
                 if ($cmid !== false) {
                     [$coursetemp, $cm] = get_course_and_cm_from_cmid($cmid);
@@ -409,11 +382,7 @@ class entity_mapper {
     protected function map_sections_to_ids() {
         global $PAGE;
 
-<<<<<<< HEAD
         // Ensure we're in a course context (either via PAGE or assume true for web service).
-=======
-        // Ensure we're in a course context (either via PAGE or assume true for web service)
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
         $iscourseviewpage = !empty($PAGE) && strpos($PAGE->pagetype ?? '', 'course-view-') === 0;
         $iscoursecontext = AJAX_SCRIPT || !$PAGE || $iscourseviewpage;
         if (!$iscoursecontext) {
@@ -425,11 +394,7 @@ class entity_mapper {
 
         $sectionmap = [];
         foreach ($sections as $section) {
-<<<<<<< HEAD
             $sectionmap['section-' . $section->section] = intval($section->id);
-=======
-            $sectionmap['section-'.$section->section] = intval($section->id);
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
         }
 
         return $sectionmap;
@@ -443,27 +408,16 @@ class entity_mapper {
     private function with_global_context($callback) {
         global $COURSE;
 
-<<<<<<< HEAD
         // Store original values.
         $originalcourse = $COURSE;
 
         // Set course context - this is the main thing most methods need.
-=======
-        // Store original values
-        $originalcourse = $COURSE;
-
-        // Set course context - this is the main thing most methods need
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
         $COURSE = $this->course;
 
         try {
             return $callback();
         } finally {
-<<<<<<< HEAD
             // Restore original values.
-=======
-            // Restore original values
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
             $COURSE = $originalcourse;
         }
     }
@@ -473,33 +427,20 @@ class entity_mapper {
      *
      * Please remove this when MDL-67405 has been closed, as filters will be disabled from looping.
      *
-<<<<<<< HEAD
      * @param int $courseid
      * @return bool
      */
     public static function is_annotating(int $courseid): bool {
-=======
-     * @param $courseid
-     * @return bool
-     */
-    public static function is_annotating($courseid): bool {
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
         return array_key_exists($courseid, self::$isannotating);
     }
 
     /**
-<<<<<<< HEAD
      * Start annotating a course.
      *
      * @param int $courseid
      * @return void
      */
     public static function start_annotating(int $courseid): void {
-=======
-     * @param $courseid
-     */
-    public static function start_annotating($courseid): void {
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
         if (self::is_annotating($courseid)) {
             throw new coding_exception('Can\'t start annotating this course.'
                     . ' Ally filter is already annotating course with id: ' . $courseid);
@@ -508,18 +449,12 @@ class entity_mapper {
     }
 
     /**
-<<<<<<< HEAD
      * End annotating a course.
      *
      * @param int $courseid
      * @return void
      */
     public static function end_annotating(int $courseid): void {
-=======
-     * @param $courseid
-     */
-    public static function end_annotating($courseid): void {
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
         if (!self::is_annotating($courseid)) {
             throw new coding_exception('Can\'t end annotating this course.'
                 . ' Ally filter was not annotating course with id: ' . $courseid);
@@ -533,21 +468,13 @@ class entity_mapper {
      * @return object
      */
     public function get_maps($courseid = null) {
-<<<<<<< HEAD
         // If courseid provided and different from constructor, create new instance.
-=======
-        // If courseid provided and different from constructor, create new instance
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
         if ($courseid !== null && $courseid != $this->course->id) {
             $mapper = new entity_mapper($courseid);
             return $mapper->get_maps();
         }
 
-<<<<<<< HEAD
         return $this->with_global_context(function () {
-=======
-        return $this->with_global_context(function() {
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
             global $CFG;
 
             $course = $this->course;
@@ -559,11 +486,7 @@ class entity_mapper {
             $annotationmaps = local_content::annotation_maps($course->id);
             self::end_annotating($course->id);
 
-<<<<<<< HEAD
             require_once($CFG->libdir . '/filelib.php');
-=======
-            require_once($CFG->libdir.'/filelib.php');
->>>>>>> 5163998 (Moodle 405 500 backports (#99))
 
             // Note, we only have to build maps for modules that don't pass their file containing content
             // through the filter.
