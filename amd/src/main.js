@@ -47,8 +47,6 @@ class FilterAllyMain {
     this.courseId = null;
     this.initTime = Date.now();
 
-    console.log('!!!FilterAllyMain constructor called');
-
     // Setup event listener for content updates
     this.debouncedContentUpdateHandler = Util.debounce(async() => {
       // Refresh entity maps and rerun stage two init when content is updated and
@@ -293,10 +291,8 @@ class FilterAllyMain {
     const dfd = $.Deferred();
     const selectors = getSelectors(this.config.moodleversion);
     Util.whenTrue(() => {
-      console.log(`!!! used selectors.folderFileItems: ${selectors.folderFileItems}`);
       return $(selectors.folderFileItems).length > 0;
     }, 10).done(() => {
-      console.log(`!!! received element count: ${$(selectors.folderFileItems).length}`);
       const unwrappedlinks = selectors.folderUnwrappedLinks;
       this.placeHoldSelector(unwrappedlinks, folderFileMapping).done(() => {
         dfd.resolve();

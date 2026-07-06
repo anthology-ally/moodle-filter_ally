@@ -26,7 +26,7 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
   Background:
     Given the ally filter is enabled
 
-  @javascript @wipz
+  @javascript
   Scenario Outline: Glossary attachments are processed appropriately.
     Given the following "courses" exist:
       | fullname | shortname | category | format |
