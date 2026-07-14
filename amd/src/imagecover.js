@@ -23,7 +23,7 @@
  */
 
 import $ from 'jquery';
-import Util from 'filter_ally/util';
+import ElementBoundsTracker from 'filter_ally/elementboundstracker';
 
 class ImageCover {
     #applySizing() {
@@ -39,31 +39,8 @@ class ImageCover {
 
             const img = $(wrapper).find('img');
             const cover = $(wrapper).find('.ally-image-cover');
-            const feedback = $(wrapper).find('.ally-feedback');
-            const marginTop = parseInt($(img).css('marginTop'));
-            const marginLeft = parseInt($(img).css('marginLeft'));
 
-            const debounceCoordsChanged = Util.debounce(function(coords) {
-                const width = (coords.right - coords.left);
-                const height = (coords.bottom - coords.top);
-                $(cover)
-                    .css('width', width + 'px')
-                    .css('height', height + 'px');
-                const topPos = $(img).position().top + marginTop;
-                const leftPos = $(img).position().left + marginLeft;
-                $(cover)
-                    .css('top', topPos + 'px')
-                    .css('left', leftPos + 'px');
-                if (feedback.length) {
-                    feedback
-                        .css('top', (topPos + height - feedback.height()) + 'px')
-                        .css('left', leftPos + 'px');
-                }
-            }, 1000);
-
-            Util.onCoordsChange(img, function(coords) {
-                debounceCoordsChanged(coords);
-            });
+            ElementBoundsTracker.register(img, null, cover, true);
         });
     }
 

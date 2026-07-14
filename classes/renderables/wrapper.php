@@ -67,4 +67,15 @@ class wrapper implements \renderable {
      * @var bool
      */
     public bool $isimage;
+
+    /**
+     * Whether the file is an image link (anchor tag with an image child).
+     */
+    public bool $isimagelink;
+
+    /**
+     * Alt text for the image.
+     * @var string
+     */
+    public string $imgalt = '';
 }

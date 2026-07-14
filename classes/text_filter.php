@@ -408,6 +408,7 @@ EOF;
 
         $elements = [];
         $results = $doc->getElementsByTagName('a');
+        $linkedImageIds = [];
         foreach ($results as $result) {
             if (
                 !is_object($result->attributes)
@@ -417,22 +418,28 @@ EOF;
             }
             $href = $result->attributes->getNamedItem('href')->nodeValue;
             if (strpos($href, 'pluginfile.php') !== false) {
-                // Skip anchor if it only contains an image with the same src as the href.
-                // This fixes an issue where dragging an image file onto a moodle course page allows you to
-                // add media to course page.
-                // This results in an image wrapped in an anchor tag with the same href as the image src.
-                // In these cases, we are only interested in the image, not the anchor.
-
+                $originalhtml = $doc->saveHTML($result); // Before any mutations have taken place.
+                $hasimagechild = false;
+                $imgalt = '';
                 if (
                     $result->childNodes->length === 1 &&
                     $result->firstChild->nodeType === XML_ELEMENT_NODE &&
                     $result->firstChild->tagName === 'img'
                 ) {
-                    $imgsrc = $result->firstChild->attributes->getNamedItem('src');
+                    $img = $result->firstChild;
+                    $imgsrc = $img->attributes->getNamedItem('src');
 
                     // Note - the s_ suffix is used by Moodle to indicate a small version of the image.
+                    // If we have an anchor that simply wraps an image with a link to the image, then
+                    // remove the anchor and leave the image. We will re-add the anchor at a different position when wrapped.
                     if ($imgsrc && ($imgsrc->nodeValue === $href || str_replace('/s_', '/', $imgsrc->nodeValue) === $href)) {
-                        continue; // Skip this anchor as it's just wrapping an image with the same URL.
+                       if ($result->parentNode) {
+                            $result->parentNode->replaceChild($img, $result);
+                            $result = $img;
+                       }
+                       $linkedImageIds[] = spl_object_id($img);
+                       $hasimagechild = true;
+                       $imgalt = $img->attributes->getNamedItem('alt') ? $img->attributes->getNamedItem('alt')->nodeValue : '';
                     }
                 }
 
@@ -440,25 +447,41 @@ EOF;
                     'type' => 'a',
                     'url' => $href,
                     'result' => $result,
+                    'hasimagechild' => $hasimagechild,
+                    'html' => $originalhtml,
+                    'alteredhtml' => $doc->saveHTML($result),
+                    'imgalt' => $imgalt
                 ];
             }
         }
+
         $results = $doc->getElementsByTagName('img');
         foreach ($results as $result) {
+            $id = spl_object_id($result);
+            if (in_array($id, $linkedImageIds, true)) {
+                // Skip this image as it is already processed as part of an anchor tag.
+                continue;
+            }
             if (!is_object($result->attributes) || !is_object($result->attributes->getNamedItem('src'))) {
                 continue;
             }
             $src = $result->attributes->getNamedItem('src')->nodeValue;
             if (strpos($src, 'pluginfile.php') !== false) {
+                $imgalt = $result->attributes->getNamedItem('alt') ? $result->attributes->getNamedItem('alt')->nodeValue : '';
                 $elements[] = (object) [
                     'type' => 'img',
                     'url' => $src,
                     'result' => $result,
+                    'hasimagechild' => false,
+                    'html' => $doc->saveHTML($result),
+                    'imgalt' => $imgalt
                 ];
             }
         }
         foreach ($elements as $key => $element) {
             $url = $element->url;
+            // Important - we need the original html before any mutations take place.
+            $html = $element->html;
 
             if (strpos($url, 'pluginfile.php') !== false) {
                 $urlcomps = $this->process_url($url);
@@ -550,25 +573,30 @@ EOF;
                 // Store the path hash in case it's needed again.
                 self::$fileidsbyurl[$url] = $pathhash;
 
-                $html = $doc->saveHTML($element->result);
                 $type = $element->type;
 
                 /** @var filter_ally_renderer $renderer */
                 $renderer = $PAGE->get_renderer('filter_ally');
                 $wrapper = new wrapper();
                 $wrapper->fileid = $pathhash;
+
                 // Flag html as processed with #P# so that it doesn't get hit again with multiples of the same link or image.
-                $wrapper->html = str_replace('<' . $type, '<' . $type . '#P#', $html);
+                $wrapperhtml = $element->alteredhtml ?? $element->html;
+                $wrapper->html = str_replace('<' . $type, '<' . $type . '#P#', $wrapperhtml);
                 $wrapper->url = $url;
                 $wrapper->candownload = $candownload;
                 $wrapper->canviewfeedback = $canviewfeedback;
-                $wrapper->isimage = $type === 'img';
+                $wrapper->isimage = $type === 'img' || $element->hasimagechild;
+                $wrapper->isimagelink = $element->hasimagechild;
+                $wrapper->imgalt = $element->imgalt ?? '';
                 $wrapped = $renderer->render_wrapper($wrapper);
 
                 if ($component === 'mod_folder' && $filearea !== 'intro') {
                     $ampencodedurl = str_replace('&', '&amp;', $url);
                     $replaceregex = '/<a href="' . preg_quote($ampencodedurl, '/') . '">.*?<\/a>/';
                 } else {
+                    // Note $html is the original html before any mutations have taken place.
+                    // We need to use this to find the correct anchor or image tag to replace.
                     // To cope with void tags closed by /> or >.
                     if (substr($html, -2) === '/>') {
                         $htmltosrch = substr($html, 0, strlen($html) - 2);
@@ -583,13 +611,13 @@ EOF;
                     $htmltosrch = preg_replace($pattern, '(\'|"|&quot;)', $htmltosrch);
                     $replaceregex = '~' . $htmltosrch . '(?:\s*|)(?:>|/>)~m';
                 }
+
                 $text = preg_replace($replaceregex, $wrapped, $text);
             }
         }
 
         // Remove temporary processed flags.
         $text = str_replace('#P#', '', $text);
-
         return $text;
     }
 
