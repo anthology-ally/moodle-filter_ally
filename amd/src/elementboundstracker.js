@@ -26,15 +26,24 @@ import $ from 'jquery';
 import Util from 'filter_ally/util';
 
 class ElementBoundsTracker {
-    constructor() {
+    constructor(fullBoundsCheckLoop = true) {
         this.intervalHandle = null;
-        this.intervalMs = 5000; // Every five seconds for full bounds check.
+        this.fullBoundsCheckLoop = fullBoundsCheckLoop;
+        this.intervalMs = 10000; // Every ten seconds for full bounds check.
         this.registry = new Set();
         this.stateByElement = new WeakMap();
         this.resizeObserver = null;
         this.documentResizeObserver = null;
         this.documentResizeObservedElement = null;
         this.documentResizeRafId = null;
+        this.visibilityRafId = null;
+        this.boundScheduleEvaluateVisibleElements = this.scheduleEvaluateVisibleElements.bind(this);
+        this.boundHandleFocusIn = this.handleFocusIn.bind(this);
+        this.boundHandlePointerEnter = this.handlePointerEnter.bind(this);
+        this.testMode = document.body.classList.contains('ally-test-mode');
+
+        // Allow visibility markers to be ready as soon as elements are tracked.
+        this.evaluateVisibleElements();
     }
 
     /**
@@ -73,6 +82,7 @@ class ElementBoundsTracker {
 
             this.observeElementResize(element);
             this.start();
+            this.evaluateVisibleElements();
             this.checkElement(element);
             return;
         }
@@ -88,6 +98,7 @@ class ElementBoundsTracker {
 
         this.observeElementResize(element);
         this.start();
+        this.evaluateVisibleElements();
         this.checkElement(element);
     }
 
@@ -104,6 +115,7 @@ class ElementBoundsTracker {
         this.unobserveElementResize(element);
         this.registry.delete(element);
         this.stateByElement.delete(element);
+        this.setVisibilityClasses(element, false);
 
         if (!this.registry.size) {
             this.stop();
@@ -119,9 +131,15 @@ class ElementBoundsTracker {
         }
 
         this.observeDocumentResize();
-        this.intervalHandle = setInterval(() => {
-            this.loop();
-        }, this.intervalMs);
+        this.observeVisibilityRelatedEvents();
+
+        if (this.fullBoundsCheckLoop) {
+            this.intervalHandle = setInterval(() => {
+                this.loop();
+            }, this.intervalMs);
+        } else {
+            this.loop(); // Only loop once.
+        }
     }
 
     /**
@@ -133,9 +151,15 @@ class ElementBoundsTracker {
             this.documentResizeRafId = null;
         }
 
+        if (this.visibilityRafId !== null) {
+            cancelAnimationFrame(this.visibilityRafId);
+            this.visibilityRafId = null;
+        }
+
         if (!this.intervalHandle) {
             this.maybeDisconnectResizeObserver();
             this.maybeDisconnectDocumentResizeObserver();
+            this.unobserveVisibilityRelatedEvents();
             return;
         }
 
@@ -143,6 +167,7 @@ class ElementBoundsTracker {
         this.intervalHandle = null;
         this.maybeDisconnectResizeObserver();
         this.maybeDisconnectDocumentResizeObserver();
+        this.unobserveVisibilityRelatedEvents();
     }
 
     /**
@@ -356,6 +381,167 @@ class ElementBoundsTracker {
     }
 
     /**
+     * Schedule a visibility evaluation in one animation frame.
+     */
+    scheduleEvaluateVisibleElements() {
+        if (this.visibilityRafId !== null) {
+            return;
+        }
+
+        this.visibilityRafId = requestAnimationFrame(() => {
+            this.visibilityRafId = null;
+            this.evaluateVisibleElements();
+        });
+    }
+
+    /**
+     * Evaluate tracked element visibility, update debug classes and sync visible elements.
+     */
+    evaluateVisibleElements() {
+        this.registry.forEach((element) => {
+            if (!this.stateByElement.has(element)) {
+                this.registry.delete(element);
+                this.setVisibilityClasses(element, false);
+                return;
+            }
+
+            if (!$.contains(document.documentElement, element)) {
+                this.unobserveElementResize(element);
+                this.registry.delete(element);
+                this.stateByElement.delete(element);
+                this.setVisibilityClasses(element, false);
+                return;
+            }
+
+            const isVisible = this.isVisibleOrHalfOutOfBounds(element);
+            this.setVisibilityClasses(element, isVisible);
+
+            if (isVisible) {
+                this.checkElement(element);
+            }
+        });
+    }
+
+    /**
+     * Determine whether an element is visible in viewport or up to half out of viewport bounds.
+     * @param {Element} element
+     * @returns {boolean}
+     */
+    isVisibleOrHalfOutOfBounds(element) {
+        const rect = element.getBoundingClientRect();
+        const width = rect.width;
+        const height = rect.height;
+        if (!width || !height) {
+            return false;
+        }
+
+        const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+        const horizontalBuffer = width / 2;
+        const verticalBuffer = height / 2;
+
+        return rect.right >= -horizontalBuffer &&
+            rect.left <= viewportWidth + horizontalBuffer &&
+            rect.bottom >= -verticalBuffer &&
+            rect.top <= viewportHeight + verticalBuffer;
+    }
+
+    /**
+     * In test mode, set visibility debug classes on tracked elements.
+     * @param {Element} element
+     * @param {boolean} isVisible
+     */
+    setVisibilityClasses(element, isVisible) {
+        if (!this.testMode) {
+            return;
+        }
+        if (!element || !element.classList) {
+            return;
+        }
+
+        element.classList.toggle('ally-el-visible', isVisible);
+        element.classList.toggle('ally-el-not-visible', !isVisible);
+    }
+
+    /**
+     * Observe visibility-related events.
+     */
+    observeVisibilityRelatedEvents() {
+        document.addEventListener('focusin', this.boundHandleFocusIn, true);
+        document.addEventListener('pointerenter', this.boundHandlePointerEnter, true);
+        document.addEventListener('scroll', this.boundScheduleEvaluateVisibleElements, true);
+        window.addEventListener('resize', this.boundScheduleEvaluateVisibleElements);
+    }
+
+    /**
+     * Stop observing visibility-related events.
+     */
+    unobserveVisibilityRelatedEvents() {
+        document.removeEventListener('focusin', this.boundHandleFocusIn, true);
+        document.removeEventListener('pointerenter', this.boundHandlePointerEnter, true);
+        document.removeEventListener('scroll', this.boundScheduleEvaluateVisibleElements, true);
+        window.removeEventListener('resize', this.boundScheduleEvaluateVisibleElements);
+    }
+
+    /**
+     * On focus, immediately re-evaluate and sync tracked element visibility.
+     * @param {FocusEvent} event
+     */
+    handleFocusIn(event) {
+        const target = event.target;
+        if (!target || target.nodeType !== 1) {
+            return;
+        }
+
+        const tracked = this.findTrackedElementFromTarget(target);
+        if (!tracked) {
+            return;
+        }
+
+        this.setVisibilityClasses(tracked, true);
+        this.checkElement(tracked);
+    }
+
+    /**
+     * On pointer enter, immediately re-evaluate and sync tracked element visibility.
+     * @param {PointerEvent} event
+     */
+    handlePointerEnter(event) {
+        const target = event.target;
+        if (!target || target.nodeType !== 1) {
+            return;
+        }
+
+        const tracked = this.findTrackedElementFromTarget(target);
+        if (!tracked) {
+            return;
+        }
+
+        this.setVisibilityClasses(tracked, true);
+        this.checkElement(tracked);
+    }
+
+    /**
+     * Resolve a tracked element from an event target by direct match or containment.
+     * @param {Element} target
+     * @returns {Element|null}
+     */
+    findTrackedElementFromTarget(target) {
+        if (this.registry.has(target)) {
+            return target;
+        }
+
+        let found = null;
+        this.registry.forEach((element) => {
+            if (!found && element.contains(target)) {
+                found = element;
+            }
+        });
+
+        return found;
+    }
+
+    /**
      * Update mirror element bounds to match tracked element coordinates.
      * @param {Element} sourceElement
      * @param {Element|null} mirrorElement
@@ -488,4 +674,4 @@ class ElementBoundsTracker {
     }
 }
 
-export default new ElementBoundsTracker();
+export default ElementBoundsTracker;

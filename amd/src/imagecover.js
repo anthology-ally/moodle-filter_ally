@@ -24,28 +24,48 @@
 
 import $ from 'jquery';
 import ElementBoundsTracker from 'filter_ally/elementboundstracker';
+import {eventTypes} from 'core_filters/events';
 
 class ImageCover {
+    #wrapperApplySizing(wrapper) {
+        // Note - we are using .attr and not .data so that we can observe what is happening to the dom elements.
+        if ($(wrapper).attr('data-processed')) {
+            return;
+        }
+
+        $(wrapper).attr('data-processed', 1);
+
+        const img = $(wrapper).find('img');
+        const cover = $(wrapper).find('.ally-image-cover');
+
+        this.tracker.register(img, null, cover, true);
+    }
+
     #applySizing() {
-        $('.ally-image-wrapper').each(function() {
-            const wrapper = this;
-
-            // Note - we are using .attr and not .data so that we can observe what is happening to the dom elements.
-            if ($(wrapper).attr('data-processed')) {
-                return;
-            }
-
-            $(wrapper).attr('data-processed', 1);
-
-            const img = $(wrapper).find('img');
-            const cover = $(wrapper).find('.ally-image-cover');
-
-            ElementBoundsTracker.register(img, null, cover, true);
-        });
+        for (const wrapper of $('.ally-image-wrapper')) {
+            this.#wrapperApplySizing(wrapper);
+        }
     }
 
     init() {
-        $(document).ready(this.#applySizing);
+        this.tracker = new ElementBoundsTracker(false);
+        $(document).ready(() => this.#applySizing());
+
+        // Listen for new content and apply sizing to any new image wrappers.
+        document.addEventListener(eventTypes.filterContentUpdated, e => {
+            const nodes = e.detail.nodes;
+            for (const node of nodes) {
+                if ($(node).hasClass('ally-image-wrapper')) {
+                    this.#wrapperApplySizing(node);
+                }
+                for (const wrapper of $(node).find('.ally-image-wrapper')) {
+                    this.#wrapperApplySizing(wrapper);
+                }
+            }
+            // Also reApply sizing to all visible wrappers.
+            this.tracker.evaluateVisibleElements();
+        });
+
         const targetNode = document;
         const observerOptions = {
             childList: true,
