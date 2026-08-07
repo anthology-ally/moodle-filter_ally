@@ -27,6 +27,10 @@
     * canviewfeedback - If true renders feedback placeholder.
     * candownload - If true renders download placeholder.
 
+    Context variables optionally required for this template:
+    * isimagelink
+    * imgalt
+
     Example context (json):
     {
         "isimage": false,
@@ -34,17 +38,23 @@
         "fileid": "ABCD123",
         "html: "",
         "canviewfeedback" : true,
-        "candownload" : true
+        "candownload" : true,
+        "isimagelink": true,
+        "imgalt": "test"
     }
 }}
 {{#isimage}}
 <span class="filter-ally-wrapper ally-image-wrapper">
     {{{html}}}
-    <span class="ally-image-cover" data-file-id="{{fileid}}"></span>
-    <span class="ally-actions" aria-hidden="true">
-        {{#canviewfeedback}}
+    <span class="ally-image-cover" data-file-id="{{fileid}}">
+        {{#isimagelink}}
+        <a aria-label="{{imgalt}}" class="ally-image-link" href="{{url}}"></a>
+        {{/isimagelink}}
+        <span class="ally-actions" aria-hidden="true">
+            {{#canviewfeedback}}
             <span class="ally-feedback" data-file-id="{{fileid}}" data-file-url="{{url}}"></span>
-        {{/canviewfeedback}}
+            {{/canviewfeedback}}
+        </span>
     </span>
 </span>
 {{/isimage}}

@@ -26,12 +26,20 @@
 
 namespace filter_ally\external;
 
+use core_external\tests\externallib_testcase;
+use core_external\external_single_structure;
+use core_external\external_function_parameters;
+use core\exception\required_capability_exception;
+
+use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
+use PHPUnit\Framework\Attributes\PreserveGlobalState;
+
 defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot . '/webservice/tests/helpers.php');
-
-use externallib_advanced_testcase;
 
 /**
  * Unit tests for the get_module_maps external API.
@@ -41,12 +49,14 @@ use externallib_advanced_testcase;
  * @author     Guy Thomas
  * @copyright  Copyright (c) 2017 Open LMS / 2025 Anthology Inc. and its affiliates
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
- * @runTestsInSeparateProcesses
- * @group     text_filter
- * @group     ally
- * @covers    \filter_ally\external\get_module_maps
  */
-final class get_module_maps_test extends externallib_advanced_testcase {
+#[RunTestsInSeparateProcesses]
+#[PreserveGlobalState(false)]
+#[CoversClass(get_module_maps::class)]
+#[Group('text_filter')]
+#[Group('filter_ally')]
+#[Group('ally')]
+final class get_module_maps_test extends externallib_testcase {
     /**
      * Test the get_module_maps web service.
      */
@@ -140,7 +150,7 @@ final class get_module_maps_test extends externallib_advanced_testcase {
         $this->setUser($user);
 
         // Test the web service - should throw an exception.
-        $this->expectException(\required_capability_exception::class);
+        $this->expectException(required_capability_exception::class);
         get_module_maps::execute($course->id);
     }
 
@@ -150,7 +160,7 @@ final class get_module_maps_test extends externallib_advanced_testcase {
     public function test_get_module_maps_returns(): void {
         // Test that the return structure is correctly defined.
         $returns = get_module_maps::execute_returns();
-        $this->assertInstanceOf(\external_single_structure::class, $returns);
+        $this->assertInstanceOf(external_single_structure::class, $returns);
 
         // Test the structure keys.
         $keys = $returns->keys;
@@ -167,11 +177,17 @@ final class get_module_maps_test extends externallib_advanced_testcase {
     public function test_get_module_maps_parameters(): void {
         // Test that the parameters are correctly defined.
         $params = get_module_maps::execute_parameters();
-        $this->assertInstanceOf(\external_function_parameters::class, $params);
+        $this->assertInstanceOf(external_function_parameters::class, $params);
 
         // Test the parameter keys.
         $keys = $params->keys;
         $this->assertArrayHasKey('courseid', $keys);
         $this->assertEquals(PARAM_INT, $keys['courseid']->type);
+    }
+
+    public function test_get_module_maps_shabadoo(): void {
+        $this->resetAfterTest(true);
+
+        $this->assertEquals(1, 1);
     }
 }

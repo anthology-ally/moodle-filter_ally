@@ -28,6 +28,7 @@ import {get_strings} from "core/str";
 import Ally from "filter_ally/ally";
 import ImageCover from "filter_ally/imagecover";
 import Util from "filter_ally/util";
+import {getSelectors} from "filter_ally/selectors";
 import {eventTypes as filterEventTypes} from "core_filters/events";
 import Log from "core/log";
 
@@ -159,6 +160,15 @@ class FilterAllyMain {
     }
 
     $(selector).each((_idx, el) => {
+      if ($(el).data("filter-ally-annotated") === 1) {
+        // Skip if already processed.
+        c++;
+        if (c === length) {
+          dfd.resolve();
+        }
+        return;
+      }
+
       /**
        * Check that all selectors have been processed.
        */
@@ -227,6 +237,7 @@ class FilterAllyMain {
 
       this.renderTemplate(data, pathHash, element).done(() => {
         c++;
+        element.data("filter-ally-annotated", 1);
         checkComplete();
       });
     });
@@ -278,11 +289,11 @@ class FilterAllyMain {
    */
   placeHoldFolderModule(folderFileMapping) {
     const dfd = $.Deferred();
+    const selectors = getSelectors(this.config.moodleversion);
     Util.whenTrue(() => {
-      return $(".foldertree > .filemanager .ygtvitem").length > 0;
+      return $(selectors.folderFileItems).length > 0;
     }, 10).done(() => {
-      const unwrappedlinks =
-        '.foldertree > .filemanager span:not(.filter-ally-wrapper) > a[href*="pluginfile.php"]';
+      const unwrappedlinks = selectors.folderUnwrappedLinks;
       this.placeHoldSelector(unwrappedlinks, folderFileMapping).done(() => {
         dfd.resolve();
       });

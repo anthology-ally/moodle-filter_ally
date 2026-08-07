@@ -15,22 +15,19 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Plugin version and other meta-data are defined here.
+ * Hook callbacks for Ally filter.
  *
  * @package   filter_ally
- * @copyright Copyright (c) 2017 Open LMS (https://www.openlms.net) / 2023 Anthology Inc. and its affiliates
+ * @copyright Copyright (c) 2026 Open LMS / Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-/** @var stdClass $plugin */
-$plugin->component    = 'filter_ally';
-$plugin->release      = '5.2.0';
-$plugin->version      = 2026070600;
-$plugin->requires     = 2025041400;
-$plugin->maturity     = MATURITY_STABLE;
-$plugin->dependencies = [
-    'tool_ally'      => 2026012850,
-    'report_allylti' => 2026012850,
+$callbacks = [
+    [
+        'hook' => \core\hook\output\before_http_headers::class,
+        'callback' => [\filter_ally\hook_callbacks::class, 'before_http_headers'],
+        'priority' => 0,
+    ],
 ];

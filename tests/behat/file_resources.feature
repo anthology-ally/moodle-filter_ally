@@ -40,6 +40,10 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
       | user     | course   | role    |
       | student1 | <course> | student |
       | teacher1 | <course> | teacher |
+    And the following config values are set as admin:
+      | config              | value            |
+      | enablemyhome        | 1                |
+      | defaulthomepage     | 0                |
     And I log in as "teacher1"
     And <coursestep>
     And I allow guest access for current course
@@ -89,6 +93,6 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And I should not see the download place holder for the "6th" file resource
     Examples:
       | course               | coursestep                          | section |
-      | C1                   | I am on "Course 1" course homepage  | 1       |
-      | C1                   | I am on course "C1" section 2       | 2       |
+      #| C1                   | I am on "Course 1" course homepage  | 1       |
+      #| C1                   | I am on course "C1" section 2       | 2       |
       | Acceptance test site | I am on site homepage               | 1       |

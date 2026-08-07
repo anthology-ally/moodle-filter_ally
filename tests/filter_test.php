@@ -26,6 +26,8 @@ use filter_ally\local\entity_mapper;
 use filter_ally\text_filter;
 use tool_ally\local_content;
 use tool_ally\local_file;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Test filter lib.
@@ -33,10 +35,11 @@ use tool_ally\local_file;
  * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @package   filter_ally
- * @group     filter_ally
- * @group     ally
- * @covers \filter_ally\text_filter
  */
+#[CoversClass(text_filter::class)]
+#[Group('text_filter')]
+#[Group('filter_ally')]
+#[Group('ally')]
 final class filter_test extends \advanced_testcase {
     /**
      * @var text_filter
@@ -351,6 +354,22 @@ EOF;
         return $text;
     }
 
+    /**
+     * Get mock html for testing anchors containing images.
+     * @param string $url
+     * @param string $alt
+     * @return string
+     */
+    protected function linked_img_mock_html($url, $alt = 'test linked image') {
+        $text = <<<EOF
+        <p>
+            <span>text</span>
+            <a href="$url"><img src="$url" alt="$alt"></a>
+        </p>
+EOF;
+        return $text;
+    }
+
     public function test_filter_img(): void {
         global $PAGE, $CFG;
 
@@ -451,6 +470,56 @@ EOF;
         global $CFG;
         $CFG->slasharguments = 0;
         $this->test_filter_img();
+    }
+
+    /**
+     * Ensure anchor-wrapped images are processed as image wrappers and preserve link + alt semantics.
+     */
+    public function test_filter_linked_image_anchor(): void {
+        global $PAGE, $CFG;
+
+        $PAGE->set_url($CFG->wwwroot . '/course/view.php');
+
+        $gen = $this->getDataGenerator();
+
+        $course = $gen->create_course();
+        $teacher = $gen->create_user();
+        $gen->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        $this->setUser($teacher);
+
+        $fs = get_file_storage();
+        $filerecord = [
+            'contextid' => \context_course::instance($course->id)->id,
+            'component' => 'mod_label',
+            'filearea' => 'intro',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'test-linked-image.png',
+        ];
+        $teststring = 'moodletest';
+        $file = $fs->create_file_from_string($filerecord, $teststring);
+        $url = local_file::url($file);
+
+        $alt = 'Linked image alt text';
+        $text = $this->linked_img_mock_html($url, $alt);
+        $filteredtext = $this->filter->filter($text);
+
+        $this->assertStringContainsString('<span class="filter-ally-wrapper ally-image-wrapper">', $filteredtext);
+        $this->assertStringNotContainsString('<span class="filter-ally-wrapper ally-anchor-wrapper">', $filteredtext);
+        $this->assertStringContainsString('class="ally-image-link"', $filteredtext);
+        $this->assertStringContainsString('aria-label="' . $alt . '"', $filteredtext);
+        $this->assertStringContainsString('<span class="ally-feedback"', $filteredtext);
+
+        $regex = '~<a(?:\s+|\s+[^>]*\s+)class="ally-image-link"(?:\s+|\s+[^>]*\s+)href="' .
+            preg_quote($url, '~') . '"~';
+        $this->assertSame(1, preg_match($regex, $filteredtext));
+    }
+
+    public function test_filter_linked_image_anchor_noslashargs(): void {
+        global $CFG;
+        $CFG->slasharguments = 0;
+        $this->test_filter_linked_image_anchor();
     }
 
     public function test_filter_img_blacklistedcontexts(): void {
@@ -939,6 +1008,8 @@ EOF;
             $wrapper->candownload = true;
             $wrapper->canviewfeedback = true;
             $wrapper->isimage = false;
+            $wrapper->fileid = '';
+            $wrapper->url = '';
             $wrapped = $renderer->render_wrapper($wrapper);
             $datalesstext .= str_replace(' data-file-id="" data-file-url=""', '', $wrapped);
         }

@@ -23,52 +23,49 @@
  */
 
 import $ from 'jquery';
-import Util from 'filter_ally/util';
+import ElementBoundsTracker from 'filter_ally/elementboundstracker';
+import {eventTypes} from 'core_filters/events';
 
 class ImageCover {
+    #wrapperApplySizing(wrapper) {
+        // Note - we are using .attr and not .data so that we can observe what is happening to the dom elements.
+        if ($(wrapper).attr('data-processed')) {
+            return;
+        }
+
+        $(wrapper).attr('data-processed', 1);
+
+        const img = $(wrapper).find('img');
+        const cover = $(wrapper).find('.ally-image-cover');
+
+        this.tracker.register(img, null, cover, true);
+    }
+
     #applySizing() {
-        $('.ally-image-wrapper').each(function() {
-            const wrapper = this;
-
-            // Note - we are using .attr and not .data so that we can observe what is happening to the dom elements.
-            if ($(wrapper).attr('data-processed')) {
-                return;
-            }
-
-            $(wrapper).attr('data-processed', 1);
-
-            const img = $(wrapper).find('img');
-            const cover = $(wrapper).find('.ally-image-cover');
-            const feedback = $(wrapper).find('.ally-feedback');
-            const marginTop = parseInt($(img).css('marginTop'));
-            const marginLeft = parseInt($(img).css('marginLeft'));
-
-            const debounceCoordsChanged = Util.debounce(function(coords) {
-                const width = (coords.right - coords.left);
-                const height = (coords.bottom - coords.top);
-                $(cover)
-                    .css('width', width + 'px')
-                    .css('height', height + 'px');
-                const topPos = $(img).position().top + marginTop;
-                const leftPos = $(img).position().left + marginLeft;
-                $(cover)
-                    .css('top', topPos + 'px')
-                    .css('left', leftPos + 'px');
-                if (feedback.length) {
-                    feedback
-                        .css('top', (topPos + height - feedback.height()) + 'px')
-                        .css('left', leftPos + 'px');
-                }
-            }, 1000);
-
-            Util.onCoordsChange(img, function(coords) {
-                debounceCoordsChanged(coords);
-            });
-        });
+        for (const wrapper of $('.ally-image-wrapper')) {
+            this.#wrapperApplySizing(wrapper);
+        }
     }
 
     init() {
-        $(document).ready(this.#applySizing);
+        this.tracker = new ElementBoundsTracker(false);
+        $(document).ready(() => this.#applySizing());
+
+        // Listen for new content and apply sizing to any new image wrappers.
+        document.addEventListener(eventTypes.filterContentUpdated, e => {
+            const nodes = e.detail.nodes;
+            for (const node of nodes) {
+                if ($(node).hasClass('ally-image-wrapper')) {
+                    this.#wrapperApplySizing(node);
+                }
+                for (const wrapper of $(node).find('.ally-image-wrapper')) {
+                    this.#wrapperApplySizing(wrapper);
+                }
+            }
+            // Also reApply sizing to all visible wrappers.
+            this.tracker.evaluateVisibleElements();
+        });
+
         const targetNode = document;
         const observerOptions = {
             childList: true,

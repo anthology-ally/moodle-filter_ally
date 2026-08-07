@@ -25,6 +25,8 @@
 namespace filter_ally;
 
 use Firebase\JWT\Key;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
 
 /**
  * Test jwthelper lib.
@@ -32,10 +34,11 @@ use Firebase\JWT\Key;
  * @copyright Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  * @package   filter_ally
- * @group     filter_ally
- * @group     ally
- * @covers    \filter_ally\local\jwthelper
  */
+#[CoversClass(\filter_ally\local\jwthelper::class)]
+#[Group('text_filter')]
+#[Group('filter_ally')]
+#[Group('ally')]
 final class jwthelper_test extends \advanced_testcase {
     /**
      * Set config for valid JWT token generation.

@@ -23,13 +23,17 @@
  */
 namespace filter_ally;
 
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\Group;
+
 /**
  * Test filter loop avoidance.
- * @group     text_filter
- * @group     ally
  * @package filter_ally
- * @covers \filter_ally\text_filter
  */
+#[Group('text_filter')]
+#[Group('filter_ally')]
+#[Group('ally')]
+#[CoversClass(\filter_ally\text_filter::class)]
 final class annotating_state_test extends \advanced_testcase {
     public function test_annotating_state(): void {
         $this->resetAfterTest();

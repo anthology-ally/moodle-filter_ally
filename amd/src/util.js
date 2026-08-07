@@ -73,69 +73,6 @@ class Util {
     }
 
     /**
-     * Listen for the offset/size of a given element to change. Whenever it changes, invoke the given function.
-     * @author Branden Visser
-     * @param  {jQuery}     $el                     The element to watch
-     * @param  {Function}   callback                The function that is invoked when the coords change
-     * @param  {Object}     callback.coords         The new set of coords
-     * @param  {Number}     callback.coords.top     The top offset of the element
-     * @param  {Number}     callback.coords.right   The right offset of the element
-     * @param  {Number}     callback.coords.bottom  The bottom offset of the element
-     * @param  {Number}     callback.coords.left    The left offset of the element
-     * @api private
-     */
-    onCoordsChange($el, callback) {
-
-        // Maintains the last known set of coords
-        let lastCoords = {};
-
-        // Maintains a handle to the interval timer, so it can be cleaned up when the element is removed
-        let intervalHandle = null;
-
-        /**
-         * The function that is continuously run to determine if there was a change in coords
-         */
-        const _loop = () => {
-            const offset = $el.offset();
-            const width = $el.width();
-            const height = $el.height();
-
-            const currCoords = {
-                'top': offset.top,
-                'right': offset.left + width,
-                'bottom': offset.top + height,
-                'left': offset.left
-            };
-
-            // Only continue if the coordinates have changed. Otherwise we do nothing
-            if (currCoords.top !== lastCoords.top || currCoords.right !== lastCoords.right ||
-                currCoords.bottom !== lastCoords.bottom || currCoords.left !== lastCoords.left) {
-                // Set the new set of coords
-                lastCoords = currCoords;
-
-                // First ensure the element is still on the DOM. If not, we're going to clean everything up here
-                if (!$.contains(document.documentElement, $el[0])) {
-                    if (intervalHandle) {
-                        clearInterval(intervalHandle);
-                        intervalHandle = null;
-                    }
-                    return;
-                }
-
-                // Finally, run the callback and exit.
-                callback(lastCoords);
-                return;
-            }
-        };
-
-        // Start the interval timer
-        intervalHandle = setInterval(_loop, 200);
-
-        // Perform an immediate initial run
-        _loop();
-    }
-
-    /**
      * Builds an object which contains all the parameters passed in a URL.
      * @param {string} url URL which has parameters
      * @returns {Object}
@@ -177,6 +114,54 @@ class Util {
                 dfd.resolve(func.apply(context, args));
             }
             return dfd;
+        };
+    }
+
+    /**
+     * Throttle a function while preserving the latest call arguments for the trailing run.
+     *
+     * We intentionally keep this local implementation for Ally image cover positioning and
+     * do not rely on core throttle behavior, so that trailing executions always receive
+     * the latest args/context observed during the cooldown window.
+     *
+     * @param {function} func
+     * @param {int} wait
+     * @returns {Function}
+     */
+    throttle(func, wait) {
+        let onCooldown = false;
+        let hasQueuedCall = false;
+        let queuedArgs = null;
+        let queuedContext = null;
+
+        const run = (context, args) => {
+            func.apply(context, args);
+            onCooldown = true;
+
+            setTimeout(() => {
+                if (!hasQueuedCall) {
+                    onCooldown = false;
+                    return;
+                }
+
+                const latestContext = queuedContext;
+                const latestArgs = queuedArgs;
+                hasQueuedCall = false;
+                queuedArgs = null;
+                queuedContext = null;
+                run(latestContext, latestArgs);
+            }, wait);
+        };
+
+        return function(...args) {
+            if (!onCooldown) {
+                run(this, args);
+                return;
+            }
+
+            hasQueuedCall = true;
+            queuedArgs = args;
+            queuedContext = this;
         };
     }
 }

@@ -19,7 +19,7 @@
 # @copyright  Copyright (c) 2017 Open LMS / 2023 Anthology Inc. and its affiliates
 # @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
 
-@filter @filter_ally @_file_upload @suite_ally
+@filter @filter_ally @filter_ally_folder_files @_file_upload @suite_ally
 Feature: When the ally filter is enabled ally place holders are inserted when appropriate for files in mod folder.
 
   Background:
@@ -107,6 +107,8 @@ Feature: When the ally filter is enabled ally place holders are inserted when ap
     And the following config values are set as admin:
       | config              | value            |
       | slasharguments      | <slasharguments> |
+      | enablemyhome        | 1                |
+      | defaulthomepage     | 0                |
     When I log in as "teacher1"
     And <coursestep>
     And I allow guest access for current course
