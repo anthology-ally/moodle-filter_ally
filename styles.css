@@ -87,6 +87,7 @@
     background-color: #FFF;
     visibility: hidden;
     z-index: -1;
+    bottom: 0;
 }
 
 .filter-ally-wrapper.ally-image-wrapper .ally-actions .ally-feedback.ally-active {
