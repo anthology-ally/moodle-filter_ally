@@ -203,7 +203,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          base_branch="${{ steps.extract_branches.outputs.stable_branch }}"
+          # Match the Moodle core branch under test; hsuforum/snap may not have a branch for newer plugin versions yet.
+          base_branch="${{ steps.resolve_versions.outputs.moodle_branch }}"
           openlms_branch="${base_branch/STABLE/CITRICITY}"
 
           check_remote_branch_exists() {
