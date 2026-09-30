@@ -123,6 +123,10 @@ jobs:
           if [[ "$branch" =~ ^(MOODLE_[0-9]+) ]]; then
             stable_branch="${BASH_REMATCH[1]}_STABLE"
             wip_branch="${BASH_REMATCH[1]}_WIP"
+          elif [[ "$branch" =~ (^|[^0-9])([0-9]{3})([^0-9]|$) ]]; then
+            # Feature branches such as "AB#701575-502-some-fix" carry the Moodle version as a 3-digit token.
+            stable_branch="MOODLE_${BASH_REMATCH[2]}_STABLE"
+            wip_branch="MOODLE_${BASH_REMATCH[2]}_WIP"
           fi
 
           echo "Derived stable branch: $stable_branch"
@@ -199,7 +203,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          base_branch="${{ steps.extract_branches.outputs.stable_branch }}"
+          # Match the Moodle core branch under test; hsuforum/snap may not have a branch for newer plugin versions yet.
+          base_branch="${{ steps.resolve_versions.outputs.moodle_branch }}"
           openlms_branch="${base_branch/STABLE/CITRICITY}"
 
           check_remote_branch_exists() {
