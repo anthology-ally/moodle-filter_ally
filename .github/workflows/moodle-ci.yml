@@ -75,7 +75,6 @@ jobs:
           set -euo pipefail
 
           php_version="${{ github.event.inputs.phpversion }}"
-          php_version="${php_version:-${{ env.DEFAULT_PHP_VERSION }}}"
           moodle_branch="${{ github.event.inputs.moodlebranch }}"
           branch="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
 
@@ -85,6 +84,15 @@ jobs:
             moodle_branch="MOODLE_${BASH_REMATCH[2]}_STABLE"
           else
             moodle_branch="${{ env.DEFAULT_MOODLE_BRANCH }}"
+          fi
+
+          if [[ -z "$php_version" ]]; then
+            case "$moodle_branch" in
+              MOODLE_400_STABLE) php_version="8.0" ;;
+              MOODLE_401_STABLE) php_version="8.1" ;;
+              MOODLE_402_STABLE|MOODLE_403_STABLE) php_version="8.2" ;;
+              *) php_version="${{ env.DEFAULT_PHP_VERSION }}" ;;
+            esac
           fi
 
           echo "php_version=$php_version" >> "$GITHUB_OUTPUT"
