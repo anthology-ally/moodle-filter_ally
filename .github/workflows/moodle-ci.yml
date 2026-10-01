@@ -228,8 +228,12 @@ jobs:
             local repo="$2"
             local test_branch="$3"
             local output status
-            output=$(git ls-remote --exit-code --heads "https://github.com/${org}/${repo}.git" "refs/heads/${test_branch}" 2>&1)
-            status=$?
+            if output=$(git ls-remote --exit-code --heads "https://github.com/${org}/${repo}.git" "refs/heads/${test_branch}" 2>&1); then
+              status=0
+            else
+              status=$?
+            fi
+
             if [[ $status -eq 0 ]]; then
               return 0
             elif [[ $status -eq 2 || "$output" == *"Repository not found"* ]]; then
