@@ -242,11 +242,12 @@ jobs:
 
             if [[ $status -eq 0 ]]; then
               return 0
-            elif [[ $status -eq 2 || "$output" == *"Repository not found"* ]]; then
+            elif [[ $status -eq 2 || "$output" == *"Repository not found"* || "$output" == *"could not read Username"* ]]; then
               # Exit code 2 from `ls-remote --exit-code` means the ref was confirmed
-              # absent; a "Repository not found" message means the org/repo itself
-              # doesn't exist (e.g. not mirrored into this org). Both are confirmed
-              # misses, not errors.
+              # absent. A "Repository not found" message, or git failing to prompt
+              # for credentials ("could not read Username"), means the org/repo
+              # itself doesn't exist or isn't accessible with this job's token (e.g.
+              # not mirrored into this org). All are confirmed misses, not errors.
               return 1
             else
               # Any other failure (network, auth, DNS, ...) is not proof the branch is
