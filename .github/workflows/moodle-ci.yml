@@ -159,22 +159,26 @@ jobs:
           report_allylti_branch=""
 
           # Check for tool_ally branch
-          if check_remote_branch_exists "moodle-tool_ally" "$stable_branch"; then
+          if check_remote_branch_exists "moodle-tool_ally" "$branch"; then
+            tool_ally_branch="$branch"
+          elif check_remote_branch_exists "moodle-tool_ally" "$stable_branch"; then
             tool_ally_branch="$stable_branch"
           elif [[ -n "$wip_branch" ]] && check_remote_branch_exists "moodle-tool_ally" "$wip_branch"; then
             tool_ally_branch="$wip_branch"
           else
-            echo "Corresponding branch missing for tool_ally (tried: $stable_branch, $wip_branch)"
+            echo "Corresponding branch missing for tool_ally (tried: $branch, $stable_branch, $wip_branch)"
             exit 1
           fi
 
           # Check for report_allylti branch
-          if check_remote_branch_exists "moodle-report_allylti" "$stable_branch"; then
+          if check_remote_branch_exists "moodle-report_allylti" "$branch"; then
+            report_allylti_branch="$branch"
+          elif check_remote_branch_exists "moodle-report_allylti" "$stable_branch"; then
             report_allylti_branch="$stable_branch"
           elif [[ -n "$wip_branch" ]] && check_remote_branch_exists "moodle-report_allylti" "$wip_branch"; then
             report_allylti_branch="$wip_branch"
           else
-            echo "Corresponding branch missing for report_allylti (tried: $stable_branch, $wip_branch)"
+            echo "Corresponding branch missing for report_allylti (tried: $branch, $stable_branch, $wip_branch)"
             exit 1
           fi
 
