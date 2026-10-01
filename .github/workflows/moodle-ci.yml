@@ -69,9 +69,33 @@ jobs:
     steps:
       - name: Determine effective PHP and Moodle versions
         id: resolve_versions
+        shell: bash
         run: |
-          echo "php_version=${{ github.event.inputs.phpversion != '' && github.event.inputs.phpversion || env.DEFAULT_PHP_VERSION }}" >> $GITHUB_OUTPUT
-          echo "moodle_branch=${{ github.event.inputs.moodlebranch != '' && github.event.inputs.moodlebranch || env.DEFAULT_MOODLE_BRANCH }}" >> $GITHUB_OUTPUT
+          set -euo pipefail
+
+          php_version="${{ github.event.inputs.phpversion }}"
+          moodle_branch="${{ github.event.inputs.moodlebranch }}"
+          branch="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+
+          if [[ -n "$moodle_branch" ]]; then
+            echo "Using manually selected Moodle branch: $moodle_branch"
+          elif [[ "$branch" =~ (^|[^0-9])(40[0-5]|50[0-2])([^0-9]|$) ]]; then
+            moodle_branch="MOODLE_${BASH_REMATCH[2]}_STABLE"
+          else
+            moodle_branch="${{ env.DEFAULT_MOODLE_BRANCH }}"
+          fi
+
+          if [[ -z "$php_version" ]]; then
+            case "$moodle_branch" in
+              MOODLE_400_STABLE) php_version="8.0" ;;
+              MOODLE_401_STABLE) php_version="8.1" ;;
+              MOODLE_402_STABLE|MOODLE_403_STABLE) php_version="8.2" ;;
+              *) php_version="${{ env.DEFAULT_PHP_VERSION }}" ;;
+            esac
+          fi
+
+          echo "php_version=$php_version" >> "$GITHUB_OUTPUT"
+          echo "moodle_branch=$moodle_branch" >> "$GITHUB_OUTPUT"
 
       - name: Print resolved versions
         run: |
@@ -116,17 +140,10 @@ jobs:
           branch="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
           echo "Detected current branch: $branch"
 
-          # Derive stable / wip branch fallbacks, if possible
-          stable_branch=""
-          wip_branch=""
-          if [[ "$branch" =~ ^(MOODLE_[0-9]+) ]]; then
-            stable_branch="${BASH_REMATCH[1]}_STABLE"
-            wip_branch="${BASH_REMATCH[1]}_WIP"
-          elif [[ "$branch" =~ (^|[^0-9])([0-9]{3})([^0-9]|$) ]]; then
-            # Feature branches such as "AB#701575-500-some-fix" carry the Moodle version as a 3-digit token.
-            stable_branch="MOODLE_${BASH_REMATCH[2]}_STABLE"
-            wip_branch="MOODLE_${BASH_REMATCH[2]}_WIP"
-          fi
+          # Resolve dependency fallbacks from the same Moodle branch used for core.
+          base_branch="${{ steps.resolve_versions.outputs.moodle_branch }}"
+          stable_branch="$base_branch"
+          wip_branch="${base_branch%_STABLE}_WIP"
 
           echo "Derived stable branch: $stable_branch"
 
