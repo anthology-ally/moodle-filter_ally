@@ -148,7 +148,7 @@ jobs:
           elif [[ -n "$wip_branch" ]] && check_remote_branch_exists "moodle-tool_ally" "$wip_branch"; then
             tool_ally_branch="$wip_branch"
           else
-            echo "❌ Corresponding branch missing for tool_ally (tried: $branch, fallback: $stable_branch)"
+            echo "Corresponding branch missing for tool_ally (tried: $branch, fallback: $stable_branch)"
             exit 1
           fi
 
@@ -160,7 +160,7 @@ jobs:
           elif [[ -n "$wip_branch" ]] && check_remote_branch_exists "moodle-report_allylti" "$wip_branch"; then
             report_allylti_branch="$wip_branch"
           else
-            echo "❌ Corresponding branch missing for report_allylti (tried: $branch, fallbacks: $stable_branch, $wip_branch)"
+            echo "Corresponding branch missing for report_allylti (tried: $branch, fallbacks: $stable_branch, $wip_branch)"
             exit 1
           fi
 
@@ -210,7 +210,23 @@ jobs:
             local org="$1"
             local repo="$2"
             local test_branch="$3"
-            git ls-remote --exit-code --heads "https://github.com/${org}/${repo}.git" "refs/heads/${test_branch}" &>/dev/null
+            local output status
+            output=$(git ls-remote --exit-code --heads "https://github.com/${org}/${repo}.git" "refs/heads/${test_branch}" 2>&1)
+            status=$?
+            if [[ $status -eq 0 ]]; then
+              return 0
+            elif [[ $status -eq 2 || "$output" == *"Repository not found"* ]]; then
+              # Exit code 2 from `ls-remote --exit-code` means the ref was confirmed
+              # absent; a "Repository not found" message means the org/repo itself
+              # doesn't exist (e.g. not mirrored into this org). Both are confirmed
+              # misses, not errors.
+              return 1
+            else
+              # Any other failure (network, auth, DNS, ...) is not proof the branch is
+              # missing, so fail loudly instead of silently skipping plugin coverage.
+              echo "git ls-remote failed for ${org}/${repo} (exit ${status}): ${output}" >&2
+              exit 1
+            fi
           }
 
           # hsuforum logic
@@ -224,8 +240,9 @@ jobs:
             echo "branch_hsuforum=$base_branch" >> $GITHUB_OUTPUT
             echo "repo_hsuforum=https://github.com/open-lms-open-source/moodle-mod_hsuforum" >> $GITHUB_OUTPUT
           else
-            echo "❌ No valid branch found for moodle-mod_hsuforum"
-            exit 1
+            # No hsuforum branch for this Moodle version anywhere (e.g. it was never
+            # released for it); skip adding this plugin instead of failing the job.
+            echo "No valid branch found for moodle-mod_hsuforum matching $base_branch; skipping it"
           fi
 
           # snap logic
@@ -239,8 +256,9 @@ jobs:
             echo "branch_snap=$base_branch" >> $GITHUB_OUTPUT
             echo "repo_snap=https://github.com/open-lms-open-source/moodle-theme_snap" >> $GITHUB_OUTPUT
           else
-            echo "❌ No valid branch found for moodle-theme_snap"
-            exit 1
+            # No snap branch for this Moodle version anywhere (e.g. it was never
+            # released for it); skip adding this plugin instead of failing the job.
+            echo "No valid branch found for moodle-theme_snap matching $base_branch; skipping it"
           fi
 
       # See https://moodlehq.github.io/moodle-plugin-ci/AddExtraConfig.html
@@ -253,8 +271,16 @@ jobs:
           moodle-plugin-ci add-plugin --branch ${{ steps.extract_branches.outputs.report_allylti_branch }} --clone=https://github.com/$GITHUB_REPOSITORY_OWNER/moodle-report_allylti
 
           if [[ "${{ steps.check_skip.outputs.skip_openlms }}" == "false" ]]; then
-            moodle-plugin-ci add-plugin --branch ${{ steps.openlms_branches.outputs.branch_hsuforum }} --clone=${{ steps.openlms_branches.outputs.repo_hsuforum }}
-            moodle-plugin-ci add-plugin --branch ${{ steps.openlms_branches.outputs.branch_snap }} --clone=${{ steps.openlms_branches.outputs.repo_snap }}
+            if [[ -n "${{ steps.openlms_branches.outputs.branch_hsuforum }}" ]]; then
+              moodle-plugin-ci add-plugin --branch ${{ steps.openlms_branches.outputs.branch_hsuforum }} --clone=${{ steps.openlms_branches.outputs.repo_hsuforum }}
+            else
+              echo "Skipping hsuforum: no matching branch was found"
+            fi
+            if [[ -n "${{ steps.openlms_branches.outputs.branch_snap }}" ]]; then
+              moodle-plugin-ci add-plugin --branch ${{ steps.openlms_branches.outputs.branch_snap }} --clone=${{ steps.openlms_branches.outputs.repo_snap }}
+            else
+              echo "Skipping snap: no matching branch was found"
+            fi
           else
             echo "Skipping hsuforum and snap tests"
           fi
