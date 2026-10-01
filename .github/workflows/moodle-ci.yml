@@ -123,7 +123,7 @@ jobs:
           if [[ "$branch" =~ ^(MOODLE_[0-9]+) ]]; then
             stable_branch="${BASH_REMATCH[1]}_STABLE"
             wip_branch="${BASH_REMATCH[1]}_WIP"
-          elif [[ "$branch" =~ (^|[^0-9])([0-9]{3})([^0-9]|$) ]]; then
+          elif [[ "$branch" =~ (^|[^0-9])(40[0-5]|50[0-2])([^0-9]|$) ]]; then
             # Feature branches such as "AB#701575-502-some-fix" carry the Moodle version as a 3-digit token.
             stable_branch="MOODLE_${BASH_REMATCH[2]}_STABLE"
             wip_branch="MOODLE_${BASH_REMATCH[2]}_WIP"
@@ -149,7 +149,7 @@ jobs:
           elif [[ -n "$wip_branch" ]] && check_remote_branch_exists "moodle-tool_ally" "$wip_branch"; then
             tool_ally_branch="$wip_branch"
           else
-            echo "❌ Corresponding branch missing for tool_ally (tried: $branch, fallback: $stable_branch)"
+            echo "Corresponding branch missing for tool_ally (tried: $branch, fallback: $stable_branch)"
             exit 1
           fi
 
@@ -161,7 +161,7 @@ jobs:
           elif [[ -n "$wip_branch" ]] && check_remote_branch_exists "moodle-report_allylti" "$wip_branch"; then
             report_allylti_branch="$wip_branch"
           else
-            echo "❌ Corresponding branch missing for report_allylti (tried: $branch, fallbacks: $stable_branch, $wip_branch)"
+            echo "Corresponding branch missing for report_allylti (tried: $branch, fallbacks: $stable_branch, $wip_branch)"
             exit 1
           fi
 
@@ -225,7 +225,7 @@ jobs:
             echo "branch_hsuforum=$base_branch" >> $GITHUB_OUTPUT
             echo "repo_hsuforum=https://github.com/open-lms-open-source/moodle-mod_hsuforum" >> $GITHUB_OUTPUT
           else
-            echo "❌ No valid branch found for moodle-mod_hsuforum"
+            echo "No valid branch found for moodle-mod_hsuforum"
             exit 1
           fi
 
@@ -240,7 +240,7 @@ jobs:
             echo "branch_snap=$base_branch" >> $GITHUB_OUTPUT
             echo "repo_snap=https://github.com/open-lms-open-source/moodle-theme_snap" >> $GITHUB_OUTPUT
           else
-            echo "❌ No valid branch found for moodle-theme_snap"
+            echo "No valid branch found for moodle-theme_snap"
             exit 1
           fi
 
