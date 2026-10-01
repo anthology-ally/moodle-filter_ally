@@ -209,6 +209,12 @@ jobs:
         run: |
           set -euo pipefail
 
+          # actions/checkout injects an auth header scoped to this repo, which git
+          # then reuses for any https://github.com request. That breaks ls-remote
+          # probes against other orgs (e.g. open-lms-open-source) the token has no
+          # access to, so drop it before probing other repos.
+          git config --global --unset-all http.https://github.com/.extraheader || true
+
           # Match the Moodle core branch under test; hsuforum/snap may not have a branch for newer plugin versions yet.
           base_branch="${{ steps.resolve_versions.outputs.moodle_branch }}"
           openlms_branch="${base_branch/STABLE/CITRICITY}"
