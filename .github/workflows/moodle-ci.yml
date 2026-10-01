@@ -40,6 +40,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-24.04
+    env:
+      PLUGIN_DIR: ./plugin
 
     services:
       postgres:
