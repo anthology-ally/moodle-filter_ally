@@ -296,6 +296,40 @@ final class filter_test extends \advanced_testcase {
     }
 
     /**
+     * Assert the resource map ignores intro files, even when they sort before the resource file.
+     * This happens when the resource file is replaced (e.g. by an Ally fix) and has the same sort order as the intro file.
+     */
+    public function test_map_resource_file_paths_to_pathhash_ignores_intro_files(): void {
+        global $PAGE;
+
+        $this->setAdminUser();
+        $gen = $this->getDataGenerator();
+        $course = $gen->create_course();
+        $resource = $gen->create_module('resource', ['course' => $course->id]);
+        $context = \context_module::instance($resource->cmid);
+        $fs = get_file_storage();
+
+        // Recreate the files so that the intro image has the lower id and both have sort order 0.
+        $fs->delete_area_files($context->id, 'mod_resource', 'content');
+        $introfile = $fs->create_file_from_string(['contextid' => $context->id, 'component' => 'mod_resource',
+            'filearea' => 'intro', 'itemid' => 0, 'filepath' => '/', 'filename' => 'image.png', ], 'image');
+        $contentfile = $fs->create_file_from_string(['contextid' => $context->id, 'component' => 'mod_resource',
+            'filearea' => 'content', 'itemid' => 0, 'filepath' => '/', 'filename' => 'fixed.pdf', ], 'pdf');
+
+        $PAGE->set_url('/course/view.php', ['id' => $course->id]);
+        $mapper = new entity_mapper($course);
+        $map = \phpunit_util::call_internal_method(
+            $mapper,
+            'map_resource_file_paths_to_pathhash',
+            [],
+            entity_mapper::class
+        );
+
+        $this->assertSame(['content' => $contentfile->get_pathnamehash()], $map[$resource->cmid]);
+        $this->assertNotContains($introfile->get_pathnamehash(), $map[$resource->cmid]);
+    }
+
+    /**
      * Test processing of pluginfile.php URLs.
      * @param bool $fileparam
      */
