@@ -223,23 +223,26 @@ jobs:
             local org="$1"
             local repo="$2"
             local test_branch="$3"
-            local output status
-            output=$(git ls-remote --exit-code --heads "https://github.com/${org}/${repo}.git" "refs/heads/${test_branch}" 2>&1)
-            status=$?
-            if [[ $status -eq 0 ]]; then
-              return 0
-            elif [[ $status -eq 2 || "$output" == *"Repository not found"* ]]; then
-              # Exit code 2 from `ls-remote --exit-code` means the ref was confirmed
-              # absent; a "Repository not found" message means the org/repo itself
-              # doesn't exist (e.g. not mirrored into this org). Both are confirmed
-              # misses, not errors.
-              return 1
-            else
-              # Any other failure (network, auth, DNS, ...) is not proof the branch is
-              # missing, so fail loudly instead of silently skipping plugin coverage.
-              echo "git ls-remote failed for ${org}/${repo} (exit ${status}): ${output}" >&2
-              exit 1
-            fi
+            local output status attempt
+            for attempt in 1 2 3; do
+              status=0
+              output=$(GIT_TERMINAL_PROMPT=0 git ls-remote --exit-code --heads "https://github.com/${org}/${repo}.git" "refs/heads/${test_branch}" 2>&1 </dev/null) || status=$?
+              if [[ $status -eq 0 ]]; then
+                return 0
+              elif [[ $status -eq 2 || "$output" == *"Repository not found"* || "$output" == *"could not read Username"* || "$output" == *"terminal prompts disabled"* ]]; then
+                # Exit code 2 from `ls-remote --exit-code` means the ref was confirmed
+                # absent; "Repository not found" (or a credential prompt, which GitHub
+                # issues for private/missing repos) means this org has no accessible
+                # copy of the repo. Both are confirmed misses, not errors.
+                return 1
+              fi
+              echo "git ls-remote attempt ${attempt} failed for ${org}/${repo} (exit ${status}): ${output}" >&2
+              sleep $((attempt * 5))
+            done
+            # Repeated failures (network, rate limiting, DNS, ...) are not proof the branch
+            # is missing, so fail loudly instead of silently skipping plugin coverage.
+            echo "git ls-remote failed for ${org}/${repo} after ${attempt} attempts" >&2
+            exit 1
           }
 
           # hsuforum logic
@@ -277,6 +280,7 @@ jobs:
       # See https://moodlehq.github.io/moodle-plugin-ci/AddExtraConfig.html
       # for adding extra config.php values via moodle-plugin-ci.
       - name: Install moodle-plugin-ci
+        id: install
         continue-on-error: false
         run: |
           echo "NOTE: Using Moodle branch ${{ steps.resolve_versions.outputs.moodle_branch }}"
@@ -305,58 +309,58 @@ jobs:
           MOODLE_BRANCH: ${{ steps.resolve_versions.outputs.moodle_branch }}
 
       #      - name: PHP Lint
-      #        if: ${{ always() }}
+      #        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       #        run: moodle-plugin-ci phplint
 
       - name: PHP Copy/Paste Detector
         continue-on-error: true # This step will show errors but will not fail
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: moodle-plugin-ci phpcpd
 
       - name: PHP Mess Detector
         continue-on-error: true # This step will show errors but will not fail
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: moodle-plugin-ci phpmd
 
       - name: Moodle Code Checker
         continue-on-error: true # This step will show errors but will not fail
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: moodle-plugin-ci codechecker --max-warnings 0
 
       - name: Moodle PHPDoc Checker
         continue-on-error: true # This step will show errors but will not fail
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: moodle-plugin-ci phpdoc
 
       - name: Validating
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: moodle-plugin-ci validate
 
       - name: Check upgrade savepoints
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: moodle-plugin-ci savepoints
 
       - name: Mustache Lint
         continue-on-error: true # This step will show errors but will not fail
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: moodle-plugin-ci mustache
 
       - name: Grunt
         continue-on-error: true # This step will show errors but will not fail
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: moodle-plugin-ci grunt --max-lint-warnings 0
 
       #      - name: Setup upterm session
       #        uses: lhotari/action-upterm@v1
 
       - name: Ally filter PHPUnit test
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
           rm -rf moodledata/phpu_moodledata/cache
           moodle-plugin-ci phpunit --fail-on-warning
 
       - name: Ally tool PHPUnit test
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
           cd moodle
           composer config --unset repositories
@@ -365,12 +369,12 @@ jobs:
           cd ..
 
       - name: Ally report PHPUnit test
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: |
           cd moodle
           vendor/bin/phpunit --testsuite=report_allylti_testsuite
           cd ..
 
       - name: Ally filter Behat test
-        if: ${{ always() }}
+        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: moodle-plugin-ci behat --tags=@suite_ally --profile=chrome
