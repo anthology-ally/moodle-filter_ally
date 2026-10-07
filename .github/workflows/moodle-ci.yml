@@ -91,6 +91,7 @@ jobs:
               MOODLE_400_STABLE) php_version="8.0" ;;
               MOODLE_401_STABLE) php_version="8.1" ;;
               MOODLE_402_STABLE|MOODLE_403_STABLE) php_version="8.2" ;;
+              MOODLE_404_STABLE|MOODLE_405_STABLE|MOODLE_500_STABLE|MOODLE_501_STABLE|MOODLE_502_STABLE) php_version="8.3" ;;
               *) php_version="${{ env.DEFAULT_PHP_VERSION }}" ;;
             esac
           fi
@@ -144,7 +145,10 @@ jobs:
           # Resolve dependency fallbacks from the same Moodle branch used for core.
           base_branch="${{ steps.resolve_versions.outputs.moodle_branch }}"
           stable_branch="$base_branch"
-          wip_branch="${base_branch%_STABLE}_WIP"
+          wip_branch=""
+          if [[ "$base_branch" == *_STABLE ]]; then
+            wip_branch="${base_branch%_STABLE}_WIP"
+          fi
 
           echo "Derived stable branch: $stable_branch"
 
