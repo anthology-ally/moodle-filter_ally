@@ -69,9 +69,34 @@ jobs:
     steps:
       - name: Determine effective PHP and Moodle versions
         id: resolve_versions
+        shell: bash
         run: |
-          echo "php_version=${{ github.event.inputs.phpversion != '' && github.event.inputs.phpversion || env.DEFAULT_PHP_VERSION }}" >> $GITHUB_OUTPUT
-          echo "moodle_branch=${{ github.event.inputs.moodlebranch != '' && github.event.inputs.moodlebranch || env.DEFAULT_MOODLE_BRANCH }}" >> $GITHUB_OUTPUT
+          set -euo pipefail
+
+          php_version="${{ github.event.inputs.phpversion }}"
+          moodle_branch="${{ github.event.inputs.moodlebranch }}"
+          branch="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+
+          if [[ -n "$moodle_branch" ]]; then
+            echo "Using manually selected Moodle branch: $moodle_branch"
+          elif [[ "$branch" =~ (^|[^0-9])(40[0-5]|50[0-2])([^0-9]|$) ]]; then
+            moodle_branch="MOODLE_${BASH_REMATCH[2]}_STABLE"
+          else
+            moodle_branch="${{ env.DEFAULT_MOODLE_BRANCH }}"
+          fi
+
+          if [[ -z "$php_version" ]]; then
+            case "$moodle_branch" in
+              MOODLE_400_STABLE) php_version="8.0" ;;
+              MOODLE_401_STABLE) php_version="8.1" ;;
+              MOODLE_402_STABLE|MOODLE_403_STABLE) php_version="8.2" ;;
+              MOODLE_404_STABLE|MOODLE_405_STABLE|MOODLE_500_STABLE|MOODLE_501_STABLE|MOODLE_502_STABLE) php_version="8.3" ;;
+              *) php_version="${{ env.DEFAULT_PHP_VERSION }}" ;;
+            esac
+          fi
+
+          echo "php_version=$php_version" >> "$GITHUB_OUTPUT"
+          echo "moodle_branch=$moodle_branch" >> "$GITHUB_OUTPUT"
 
       - name: Print resolved versions
         run: |
@@ -116,12 +141,12 @@ jobs:
           branch="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
           echo "Detected current branch: $branch"
 
-          # Derive stable / wip branch fallbacks, if possible
-          stable_branch=""
+          # Resolve dependency fallbacks from the same Moodle branch used for core.
+          base_branch="${{ steps.resolve_versions.outputs.moodle_branch }}"
+          stable_branch="$base_branch"
           wip_branch=""
-          if [[ "$branch" =~ ^(MOODLE_[0-9]+) ]]; then
-            stable_branch="${BASH_REMATCH[1]}_STABLE"
-            wip_branch="${BASH_REMATCH[1]}_WIP"
+          if [[ "$base_branch" == *_STABLE ]]; then
+            wip_branch="${base_branch%_STABLE}_WIP"
           fi
 
           echo "Derived stable branch: $stable_branch"
@@ -144,7 +169,7 @@ jobs:
           elif [[ -n "$wip_branch" ]] && check_remote_branch_exists "moodle-tool_ally" "$wip_branch"; then
             tool_ally_branch="$wip_branch"
           else
-            echo "❌ Corresponding branch missing for tool_ally (tried: $branch, fallback: $stable_branch)"
+            echo "Corresponding branch missing for tool_ally (tried: $branch, fallback: $stable_branch)"
             exit 1
           fi
 
@@ -156,7 +181,7 @@ jobs:
           elif [[ -n "$wip_branch" ]] && check_remote_branch_exists "moodle-report_allylti" "$wip_branch"; then
             report_allylti_branch="$wip_branch"
           else
-            echo "❌ Corresponding branch missing for report_allylti (tried: $branch, fallbacks: $stable_branch, $wip_branch)"
+            echo "Corresponding branch missing for report_allylti (tried: $branch, fallbacks: $stable_branch, $wip_branch)"
             exit 1
           fi
 
@@ -198,14 +223,42 @@ jobs:
         run: |
           set -euo pipefail
 
-          base_branch="${{ steps.extract_branches.outputs.stable_branch }}"
+          # actions/checkout injects an auth header scoped to this repo, which git
+          # then reuses for any https://github.com request. That breaks ls-remote
+          # probes against other orgs (e.g. open-lms-open-source) the token has no
+          # access to, so drop it before probing other repos.
+          git config --global --unset-all http.https://github.com/.extraheader || true
+
+          # Match the Moodle core branch under test; hsuforum/snap may not have a branch for newer plugin versions yet.
+          base_branch="${{ steps.resolve_versions.outputs.moodle_branch }}"
           openlms_branch="${base_branch/STABLE/CITRICITY}"
 
           check_remote_branch_exists() {
             local org="$1"
             local repo="$2"
             local test_branch="$3"
-            git ls-remote --exit-code --heads "https://github.com/${org}/${repo}.git" "refs/heads/${test_branch}" &>/dev/null
+            local output status
+            if output=$(git ls-remote --exit-code --heads "https://github.com/${org}/${repo}.git" "refs/heads/${test_branch}" 2>&1); then
+              status=0
+            else
+              status=$?
+            fi
+
+            if [[ $status -eq 0 ]]; then
+              return 0
+            elif [[ $status -eq 2 || "$output" == *"Repository not found"* || "$output" == *"could not read Username"* ]]; then
+              # Exit code 2 from `ls-remote --exit-code` means the ref was confirmed
+              # absent. A "Repository not found" message, or git failing to prompt
+              # for credentials ("could not read Username"), means the org/repo
+              # itself doesn't exist or isn't accessible with this job's token (e.g.
+              # not mirrored into this org). All are confirmed misses, not errors.
+              return 1
+            else
+              # Any other failure (network, auth, DNS, ...) is not proof the branch is
+              # missing, so fail loudly instead of silently skipping plugin coverage.
+              echo "git ls-remote failed for ${org}/${repo} (exit ${status}): ${output}" >&2
+              exit 1
+            fi
           }
 
           # hsuforum logic
@@ -219,8 +272,9 @@ jobs:
             echo "branch_hsuforum=$base_branch" >> $GITHUB_OUTPUT
             echo "repo_hsuforum=https://github.com/open-lms-open-source/moodle-mod_hsuforum" >> $GITHUB_OUTPUT
           else
-            echo "❌ No valid branch found for moodle-mod_hsuforum"
-            exit 1
+            # No hsuforum branch for this Moodle version anywhere (e.g. it was never
+            # released for it); skip adding this plugin instead of failing the job.
+            echo "No valid branch found for moodle-mod_hsuforum matching $base_branch; skipping it"
           fi
 
           # snap logic
@@ -234,8 +288,9 @@ jobs:
             echo "branch_snap=$base_branch" >> $GITHUB_OUTPUT
             echo "repo_snap=https://github.com/open-lms-open-source/moodle-theme_snap" >> $GITHUB_OUTPUT
           else
-            echo "❌ No valid branch found for moodle-theme_snap"
-            exit 1
+            # No snap branch for this Moodle version anywhere (e.g. it was never
+            # released for it); skip adding this plugin instead of failing the job.
+            echo "No valid branch found for moodle-theme_snap matching $base_branch; skipping it"
           fi
 
       # See https://moodlehq.github.io/moodle-plugin-ci/AddExtraConfig.html
@@ -248,8 +303,16 @@ jobs:
           moodle-plugin-ci add-plugin --branch ${{ steps.extract_branches.outputs.report_allylti_branch }} --clone=https://github.com/$GITHUB_REPOSITORY_OWNER/moodle-report_allylti
 
           if [[ "${{ steps.check_skip.outputs.skip_openlms }}" == "false" ]]; then
-            moodle-plugin-ci add-plugin --branch ${{ steps.openlms_branches.outputs.branch_hsuforum }} --clone=${{ steps.openlms_branches.outputs.repo_hsuforum }}
-            moodle-plugin-ci add-plugin --branch ${{ steps.openlms_branches.outputs.branch_snap }} --clone=${{ steps.openlms_branches.outputs.repo_snap }}
+            if [[ -n "${{ steps.openlms_branches.outputs.branch_hsuforum }}" ]]; then
+              moodle-plugin-ci add-plugin --branch ${{ steps.openlms_branches.outputs.branch_hsuforum }} --clone=${{ steps.openlms_branches.outputs.repo_hsuforum }}
+            else
+              echo "Skipping hsuforum: no matching branch was found"
+            fi
+            if [[ -n "${{ steps.openlms_branches.outputs.branch_snap }}" ]]; then
+              moodle-plugin-ci add-plugin --branch ${{ steps.openlms_branches.outputs.branch_snap }} --clone=${{ steps.openlms_branches.outputs.repo_snap }}
+            else
+              echo "Skipping snap: no matching branch was found"
+            fi
           else
             echo "Skipping hsuforum and snap tests"
           fi
