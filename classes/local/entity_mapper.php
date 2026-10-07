@@ -268,11 +268,12 @@ class entity_mapper {
     /**
      * Map file paths to pathname hash for a given course module.
      * @param string $modname The module name
+     * @param string|null $filearea Only map files in this file area, e.g. to ignore files embedded in the intro
      * @return array
      * @throws coding_exception
      * @throws dml_exception
      */
-    protected function map_course_module_file_paths_to_pathhash(string $modname) {
+    protected function map_course_module_file_paths_to_pathhash(string $modname, ?string $filearea = null) {
         global $DB;
 
         $modinfo = get_fast_modinfo($this->course);
@@ -305,6 +306,10 @@ class entity_mapper {
             AND component = 'mod_{$modname}'
             AND mimetype IS NOT NULL
             AND filename != '.'";
+        if ($filearea !== null) {
+            $sql .= ' AND filearea = ?';
+            $params[] = $filearea;
+        }
 
         $files = $DB->get_records_select('files', $sql, $params, 'contextid ASC, sortorder DESC, id ASC');
         $pathhashbymoduleid = [];
@@ -338,7 +343,9 @@ class entity_mapper {
             return [];
         }
 
-        return $this->map_course_module_file_paths_to_pathhash('resource');
+        // Only the content area holds the resource file. Files embedded in the intro must not be picked up as the
+        // main file, which can happen when the resource file does not have a higher sort order (e.g. after a replace).
+        return $this->map_course_module_file_paths_to_pathhash('resource', 'content');
     }
 
     /**
