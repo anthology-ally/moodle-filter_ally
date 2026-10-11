@@ -391,4 +391,4 @@ jobs:
 
       - name: Ally filter Behat test
         if: ${{ always() }}
-        run: moodle-plugin-ci behat --tags=@suite_ally --profile=chrome
+        run: moodle-plugin-ci behat --tags=@suite_ally --profile=chrome ./plugin
