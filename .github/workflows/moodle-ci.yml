@@ -39,6 +39,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
 
     services:
       postgres:
@@ -220,6 +222,8 @@ jobs:
         id: openlms_branches
         if: steps.check_skip.outputs.skip_openlms == 'false'
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
@@ -233,7 +237,8 @@ jobs:
             local test_branch="$3"
             local optional_mirror="${4:-false}"
             local output status
-            if output=$(git -c http.https://github.com/.extraheader= -c credential.helper= ls-remote --exit-code --heads "https://github.com/${org}/${repo}.git" "refs/heads/${test_branch}" 2>&1); then
+            local auth_header="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+            if output=$(git -c "http.https://github.com/.extraheader=$auth_header" -c credential.helper= ls-remote --exit-code --heads "https://github.com/${org}/${repo}.git" "refs/heads/${test_branch}" 2>&1); then
               status=0
             else
               status=$?
