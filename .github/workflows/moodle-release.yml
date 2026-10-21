@@ -28,6 +28,7 @@ jobs:
           # Primary check: the branch ref the tag was actually pushed from.
           if [[ "$BASE" =~ ^refs/heads/MOODLE_[0-9]+_STABLE$ ]]; then
             echo "OK — pushed from ${BASE#refs/heads/}"
+            echo "RELEASE_BRANCH=${BASE#refs/heads/}" >> "$GITHUB_ENV"
             exit 0
           fi
 
@@ -41,6 +42,51 @@ jobs:
           fi
 
           echo "OK — tag is on:${BRANCHES}"
+          echo "RELEASE_BRANCH=$(echo $BRANCHES | sed 's#origin/##g')" >> "$GITHUB_ENV"
+
+      # Moodle refuses to install a lower version over a higher one, so each
+      # stable line must stay above every older line and below every newer one.
+      # Issue 109: a 4.5 release outranked 5.1 and blocked upgrades to 5.1.
+      - name: Version must sit between the older and newer stable lines
+        run: |
+          TAGNAME="${GITHUB_REF#refs/tags/}"
+          if [[ "$RELEASE_BRANCH" == *" "* ]]; then
+            echo "::error::Tag is on several stable branches ($RELEASE_BRANCH); tag a commit on one only"
+            exit 1
+          fi
+
+          version_of() {
+            git show "$1:version.php" | sed -n 's/^\$plugin->version *= *\([0-9]*\).*/\1/p'
+          }
+
+          OURS=$(version_of "refs/tags/${TAGNAME}")
+          LINE=${RELEASE_BRANCH//[!0-9]/}
+          if [[ -z "$OURS" || -z "$LINE" ]]; then
+            echo "::error::Could not read the version of '$TAGNAME' on '$RELEASE_BRANCH'"
+            exit 1
+          fi
+
+          FAILED=0
+          for REF in $(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/MOODLE_*_STABLE'); do
+            BRANCH=${REF#origin/}
+            [[ "$BRANCH" =~ ^MOODLE_([0-9]+)_STABLE$ ]] || continue
+            OTHER=${BASH_REMATCH[1]}
+            THEIRS=$(version_of "$REF")
+            [[ -n "$THEIRS" && "$OTHER" != "$LINE" ]] || continue
+
+            if (( OTHER < LINE && THEIRS >= OURS )); then
+              echo "::error::$BRANCH is at $THEIRS, which is not below $RELEASE_BRANCH ($OURS)"
+              FAILED=1
+            elif (( OTHER > LINE && THEIRS <= OURS )); then
+              echo "::error::$BRANCH is at $THEIRS, which is not above $RELEASE_BRANCH ($OURS)"
+              FAILED=1
+            fi
+          done
+
+          if (( FAILED )); then
+            exit 1
+          fi
+          echo "OK — $RELEASE_BRANCH at $OURS sits between the other stable lines"
 
   # Moodle HQ's official reusable workflow (revision 2026082501). Pinned to a
   # commit SHA on purpose: the repo has no version tags, and @main would let
