@@ -43,6 +43,12 @@ supported() {
   awk '/^\$plugin->supported/ { found = 1 } found { print; if (/;/) exit }' | tr -d ' \n' | grep -o '[0-9][0-9]*' | tr '\n' ' ' | sed 's/ $//'
 }
 
+# Every value must pass this before (( )): a non-number makes (( )) error and
+# the check pass, $(...) in an array subscript runs, and a leading 0 is octal.
+is_version() {
+  [[ "$1" =~ ^[1-9][0-9]*$ ]]
+}
+
 LINES=$(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/MOODLE_*_STABLE' \
   | sed -n 's#^origin/MOODLE_\([0-9]*\)_STABLE$#\1#p' \
   | awk -v min="$MIN_LINE" '$1 >= min' | sort -n)
@@ -91,6 +97,10 @@ while IFS='|' read -r LINE TIP REL SUP TAG TAG_VER TAG_REL; do
   B="MOODLE_${LINE}_STABLE"
 
   [[ -z "$TIP" ]] && { fail "$LINE" "$B: could not read \$plugin->version"; continue; }
+  is_version "$TIP" || { fail "$LINE" "$B: \$plugin->version '$TIP' is not a number"; continue; }
+  if [[ -n "$TAG_VER" ]] && ! is_version "$TAG_VER"; then
+    fail "$LINE" "$TAG: \$plugin->version '$TAG_VER' is not a number"; continue
+  fi
 
   if [[ -z "$SUP" ]]; then
     fail "$LINE" "$B: no \$plugin->supported; the Marketplace API would infer the Moodle range (want [$LINE, $LINE])"
@@ -111,6 +121,9 @@ while IFS='|' read -r LINE TIP REL SUP TAG TAG_VER TAG_REL; do
   while IFS='|' read -r OLINE OTIP _ _ OTAG OTAG_VER _; do
     [[ -z "$OLINE" ]] || (( OLINE <= LINE )) && continue
     OB="MOODLE_${OLINE}_STABLE"
+    # A bad value on the other line is reported on its own pass.
+    is_version "$OTIP" || OTIP=""
+    is_version "$OTAG_VER" || OTAG_VER=""
     if [[ -n "$OTIP" ]] && (( TIP >= OTIP )); then
       fail "$LINE $OLINE" "$B tip $TIP is not below newer $OB tip $OTIP"
     fi
