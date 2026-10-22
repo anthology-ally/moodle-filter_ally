@@ -42,7 +42,7 @@ In a review, report a break of any rule above as a blocking issue, even when the
 - With `FILE`, it reads that file for the line, for example `git show pr-head:version.php > /tmp/v.php`.
 - `SKIP_FETCH=1` skips the fetch. `REPORT_ONLY=1` turns every problem into a warning.
 
-`.github/workflows/version-order.yml` calls the script on every pull request, using the merged result of the pull request. If version.php is unchanged, or the base is not a stable branch, it only reports. The release workflow does not run this check, so nothing stops a bad tag from publishing. Run the check yourself before tagging (see Releasing).
+`.github/workflows/version-order.yml` calls the script on every pull request, using the merged result of the pull request. If version.php is unchanged, or the base is not a stable branch, it only reports. No release workflow runs this script. filter_ally's 5.1 and 5.2 release workflows (PRs 115 and 114) check rule 1 before they publish: the tag's version against the other lines' tips and last releases. They don't check rules 5 and 6, and every other release workflow checks nothing. Run the script yourself before tagging (see Releasing).
 
 A pull request on an older line fails while a newer line is out of order, even if the pull request's own number is correct. Fix the newer line first. For example, a 5.0 version bump on filter_ally fails until the 5.1 fix in PR 115 is merged.
 
@@ -51,7 +51,7 @@ A pull request on an older line fails while a newer line is out of order, even i
 1. Merge the version bump into `MOODLE_<line>_STABLE`.
 2. On an up-to-date checkout of that branch, run `.github/scripts/check-version-order.sh <line>`. Don't tag while it prints a `FAIL`, or a `WARN` saying this line would outrank a newer release.
 3. Tag that commit `AY-<line>-R<n>` (the next `n` for that line) and push the tag from that branch.
-4. `.github/workflows/moodle-release.yml` publishes the tag. It does not check the version order, so step 2 is the only check before release.
+4. `.github/workflows/moodle-release.yml` publishes the tag. Only filter_ally 5.1 and 5.2 check the version order first, and only rule 1, so step 2 is the main check before release.
 
 When several lines are released together, tag the newest line first. Release the three plugins together when their dependencies move.
 
