@@ -51,7 +51,7 @@ class ElementBoundsTracker {
      * @param {jQuery|Element} $el
      * @param {Function|null} callback
      * @param {jQuery|Element|null} mirrorElement Optional element to mirror tracked bounds to.
-     * @param {boolean} mirrorUsingOffsetParent Whether mirror position should use source offset parent coordinates.
+     * @param {boolean} mirrorUsingOffsetParent Whether mirror position should be relative to the mirror's containing block.
      */
     register($el, callback = null, mirrorElement = null, mirrorUsingOffsetParent = true) {
         if (typeof callback !== 'function' && mirrorElement === null) {
@@ -553,7 +553,11 @@ class ElementBoundsTracker {
             return;
         }
 
-        const mirrorPosition = this.calculateMirroredPosition(sourceElement, coords, mirrorUsingOffsetParent);
+        const mirrorPosition = this.calculateMirroredPosition(
+            mirrorElement,
+            coords,
+            mirrorUsingOffsetParent
+        );
 
         $(mirrorElement)
             .css('left', mirrorPosition.left + 'px')
@@ -563,24 +567,51 @@ class ElementBoundsTracker {
     }
 
     /**
+     * Find the ancestor that is the containing block of an absolutely positioned element.
+     *
+     * This is not the same as the offsetParent of the tracked source element: a static td, th or table is the
+     * offsetParent of an element inside a table cell, but it never is the containing block of an absolutely
+     * positioned element. Returns null when the containing block is the initial one (page origin).
+     * @param {Element} element
+     * @returns {Element|null}
+     */
+    getContainingBlock(element) {
+        let ancestor = element.parentElement;
+        while (ancestor && ancestor !== document.documentElement) {
+            const style = window.getComputedStyle(ancestor);
+            if (style.position !== 'static' || style.transform !== 'none') {
+                return ancestor;
+            }
+            ancestor = ancestor.parentElement;
+        }
+
+        return null;
+    }
+
+    /**
      * Calculate the expected mirror position and size.
-     * @param {Element} sourceElement
+     * @param {Element} mirrorElement
      * @param {Object} coords
-     * @param {boolean} mirrorUsingOffsetParent
+     * @param {boolean} mirrorUsingOffsetParent Whether the position is relative to the mirror's containing block
+     *                                          instead of the page.
      * @returns {Object}
      */
-    calculateMirroredPosition(sourceElement, coords, mirrorUsingOffsetParent) {
+    calculateMirroredPosition(mirrorElement, coords, mirrorUsingOffsetParent) {
         const width = (coords.right - coords.left);
         const height = (coords.bottom - coords.top);
         let top = coords.top;
         let left = coords.left;
 
         if (mirrorUsingOffsetParent) {
-            const marginTop = parseInt($(sourceElement).css('marginTop'), 10) || 0;
-            const marginLeft = parseInt($(sourceElement).css('marginLeft'), 10) || 0;
-            const localPosition = $(sourceElement).position();
-            top = localPosition.top + marginTop;
-            left = localPosition.left + marginLeft;
+            const containingBlock = this.getContainingBlock(mirrorElement);
+            if (containingBlock) {
+                const $containingBlock = $(containingBlock);
+                const blockOffset = $containingBlock.offset();
+                const borderTop = parseFloat($containingBlock.css('borderTopWidth')) || 0;
+                const borderLeft = parseFloat($containingBlock.css('borderLeftWidth')) || 0;
+                top = coords.top - blockOffset.top - borderTop + containingBlock.scrollTop;
+                left = coords.left - blockOffset.left - borderLeft + containingBlock.scrollLeft;
+            }
         }
 
         return {left, top, width, height};
@@ -599,7 +630,7 @@ class ElementBoundsTracker {
             return false;
         }
 
-        const expected = this.calculateMirroredPosition(sourceElement, coords, mirrorUsingOffsetParent);
+        const expected = this.calculateMirroredPosition(mirrorElement, coords, mirrorUsingOffsetParent);
         const actualLeft = parseFloat($(mirrorElement).css('left'));
         const actualTop = parseFloat($(mirrorElement).css('top'));
         const actualWidth = parseFloat($(mirrorElement).css('width'));
