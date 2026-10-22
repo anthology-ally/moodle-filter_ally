@@ -39,8 +39,12 @@ field() {
   sed -n "s/^\$plugin->$1 *= *'\{0,1\}\([^';]*\)'\{0,1\};.*/\1/p" | head -1
 }
 
+# Comments are dropped, and so is anything after the ';', even on the first line.
 supported() {
-  awk '/^\$plugin->supported/ { found = 1 } found { print; if (/;/) exit }' | tr -d ' \n' | grep -o '[0-9][0-9]*' | tr '\n' ' ' | sed 's/ $//'
+  awk '/^\$plugin->supported/ { found = 1 }
+    found { gsub(/\/\*[^*]*\*\//, ""); sub(/(\/\/|#).*/, ""); semi = index($0, ";")
+      if (semi) { print substr($0, 1, semi); exit } print }' \
+    | grep -o '[0-9][0-9]*' | tr '\n' ' ' | sed 's/ $//'
 }
 
 # Every value must pass this before (( )): a non-number makes (( )) error and
