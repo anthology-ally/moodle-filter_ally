@@ -40,7 +40,7 @@ field() {
 }
 
 supported() {
-  sed -n '/^\$plugin->supported/,/;/p' | tr -d ' \n' | grep -o '[0-9][0-9]*' | tr '\n' ' ' | sed 's/ $//'
+  awk '/^\$plugin->supported/ { found = 1 } found { print; if (/;/) exit }' | tr -d ' \n' | grep -o '[0-9][0-9]*' | tr '\n' ' ' | sed 's/ $//'
 }
 
 LINES=$(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/MOODLE_*_STABLE' \
@@ -101,6 +101,8 @@ while IFS='|' read -r LINE TIP REL SUP TAG TAG_VER TAG_REL; do
   if [[ -n "$TAG_VER" ]]; then
     if (( TIP < TAG_VER )); then
       fail "$LINE" "$B: tip $TIP is below its own release $TAG ($TAG_VER)"
+    elif (( TIP == TAG_VER )) && [[ "$REL" != "$TAG_REL" ]]; then
+      fail "$LINE" "$B: release changed to '$REL' but version $TIP is already published as $TAG; bump \$plugin->version"
     elif (( TIP > TAG_VER )) && [[ "$REL" == "$TAG_REL" ]]; then
       warn "$B: version moved past $TAG but release is still '$REL'; bump the release string before tagging"
     fi
