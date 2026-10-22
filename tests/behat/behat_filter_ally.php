@@ -1125,8 +1125,9 @@ XPATH;
      * @When /^I view all submissions$/
      */
     public function i_view_all_submissions() {
-        $path = "//a[contains(text(), 'Submissions')][contains(@role, 'menuitem')]";
-        $this->execute('behat_general::i_click_on', [$path, 'xpath_element']);
+        // Use the core navigation step: from Moodle 5.3 the secondary navigation is rendered by React (MDL-87830)
+        // and its links no longer carry role="menuitem".
+        $this->execute('behat_navigation::i_navigate_to_in_current_page_administration', ['Submissions']);
     }
 
     /**
