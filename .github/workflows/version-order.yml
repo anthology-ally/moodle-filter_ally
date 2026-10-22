@@ -1,0 +1,43 @@
+#
+# Runs on every pull request. When the pull request changes version.php on a
+# MOODLE_*_STABLE branch, the new number must keep that line between the older
+# and newer stable lines, or the check fails. Otherwise it only reports the
+# state of the lines. Issue 109: a 4.5 release outranked 5.1 and blocked
+# upgrades to 5.1.
+#
+name: Version order
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  version-order:
+    runs-on: ubuntu-latest
+    steps:
+      # fetch-depth: 0 brings every branch and tag, which the check compares against.
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: version.php must sit between the older and newer stable lines
+        # Passed as env vars, never interpolated: branch names may contain $().
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          SKIP_FETCH: 1
+        run: |
+          LINE=""
+          if [[ "$BASE_REF" =~ ^MOODLE_([0-9]+)_STABLE$ ]]; then
+            LINE=${BASH_REMATCH[1]}
+          fi
+
+          if [[ -n "$LINE" ]] && ! git diff --quiet "$BASE_SHA" HEAD -- version.php; then
+            echo "version.php changed for $BASE_REF"
+            bash .github/scripts/check-version-order.sh "$LINE"
+          else
+            echo "version.php unchanged or base is not a stable branch: report only"
+            REPORT_ONLY=1 bash .github/scripts/check-version-order.sh
+          fi
