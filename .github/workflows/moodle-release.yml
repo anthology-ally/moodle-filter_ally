@@ -66,21 +66,30 @@ jobs:
             exit 1
           fi
 
+          # Check each other line's branch tip and its last AY-<line>-R* release.
+          # The release is what sites have; the tip can be ahead of it until tagged.
           FAILED=0
           for REF in $(git for-each-ref --format='%(refname:short)' 'refs/remotes/origin/MOODLE_*_STABLE'); do
             BRANCH=${REF#origin/}
             [[ "$BRANCH" =~ ^MOODLE_([0-9]+)_STABLE$ ]] || continue
             OTHER=${BASH_REMATCH[1]}
-            THEIRS=$(version_of "$REF")
-            [[ -n "$THEIRS" && "$OTHER" != "$LINE" ]] || continue
+            [[ "$OTHER" != "$LINE" ]] || continue
+            LAST_TAG=$(git tag -l "AY-${OTHER}-R*" --sort=-version:refname | head -1)
 
-            if (( OTHER < LINE && THEIRS >= OURS )); then
-              echo "::error::$BRANCH is at $THEIRS, which is not below $RELEASE_BRANCH ($OURS)"
-              FAILED=1
-            elif (( OTHER > LINE && THEIRS <= OURS )); then
-              echo "::error::$BRANCH is at $THEIRS, which is not above $RELEASE_BRANCH ($OURS)"
-              FAILED=1
-            fi
+            for SOURCE in "$REF" ${LAST_TAG:+"refs/tags/$LAST_TAG"}; do
+              THEIRS=$(version_of "$SOURCE")
+              [[ -n "$THEIRS" ]] || continue
+              NAME=$BRANCH
+              [[ "$SOURCE" == refs/tags/* ]] && NAME="release $LAST_TAG"
+
+              if (( OTHER < LINE && THEIRS >= OURS )); then
+                echo "::error::$NAME is at $THEIRS, which is not below $RELEASE_BRANCH ($OURS)"
+                FAILED=1
+              elif (( OTHER > LINE && THEIRS <= OURS )); then
+                echo "::error::$NAME is at $THEIRS, which is not above $RELEASE_BRANCH ($OURS); release $BRANCH first"
+                FAILED=1
+              fi
+            done
           done
 
           if (( FAILED )); then
