@@ -81,6 +81,8 @@
    anything until they are "active". */
 .filter-ally-wrapper.ally-image-wrapper .ally-actions .ally-feedback {
     position: absolute;
+    bottom: 0;
+    left: 0;
     display: block;
     width: 30px;
     height: 30px;
