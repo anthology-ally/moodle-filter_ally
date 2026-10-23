@@ -25,6 +25,28 @@
 import $ from 'jquery';
 import Util from 'filter_ally/util';
 
+/**
+ * Find the ancestor that is the containing block of an absolutely positioned element.
+ *
+ * This is not the offsetParent of the image: a static td, th or table is the offsetParent of an image inside a
+ * table cell, but it never is the containing block of an absolutely positioned element.
+ * Returns null when the containing block is the initial one (page origin).
+ * @param {Element} element
+ * @returns {Element|null}
+ */
+const getContainingBlock = (element) => {
+    let ancestor = element.parentElement;
+    while (ancestor && ancestor !== document.documentElement) {
+        const style = window.getComputedStyle(ancestor);
+        if (style.position !== 'static' || style.transform !== 'none') {
+            return ancestor;
+        }
+        ancestor = ancestor.parentElement;
+    }
+
+    return null;
+};
+
 class ImageCover {
     #applySizing() {
         $('.ally-image-wrapper').each(function() {
@@ -40,8 +62,6 @@ class ImageCover {
             const img = $(wrapper).find('img');
             const cover = $(wrapper).find('.ally-image-cover');
             const feedback = $(wrapper).find('.ally-feedback');
-            const marginTop = parseInt($(img).css('marginTop'));
-            const marginLeft = parseInt($(img).css('marginLeft'));
 
             const debounceCoordsChanged = Util.debounce(function(coords) {
                 const width = (coords.right - coords.left);
@@ -49,8 +69,18 @@ class ImageCover {
                 $(cover)
                     .css('width', width + 'px')
                     .css('height', height + 'px');
-                const topPos = $(img).position().top + marginTop;
-                const leftPos = $(img).position().left + marginLeft;
+                const imgOffset = $(img).offset();
+                const containingBlock = getContainingBlock($(cover)[0]);
+                let topPos = imgOffset.top;
+                let leftPos = imgOffset.left;
+                if (containingBlock) {
+                    const $containingBlock = $(containingBlock);
+                    const blockOffset = $containingBlock.offset();
+                    topPos = topPos - blockOffset.top - (parseFloat($containingBlock.css('borderTopWidth')) || 0) +
+                        containingBlock.scrollTop;
+                    leftPos = leftPos - blockOffset.left - (parseFloat($containingBlock.css('borderLeftWidth')) || 0) +
+                        containingBlock.scrollLeft;
+                }
                 $(cover)
                     .css('top', topPos + 'px')
                     .css('left', leftPos + 'px');
