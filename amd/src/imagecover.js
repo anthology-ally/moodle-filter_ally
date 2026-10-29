@@ -26,6 +26,25 @@ import $ from 'jquery';
 import Util from 'filter_ally/util';
 
 /**
+ * Whether an element with the given computed style is the containing block of its absolutely positioned
+ * descendants: it is positioned, or it establishes one through a transform, perspective, filter, containment
+ * or will-change.
+ * @param {CSSStyleDeclaration} style
+ * @returns {boolean}
+ */
+const createsContainingBlock = (style) => {
+    const isSet = (value) => value !== undefined && value !== '' && value !== 'none';
+
+    return style.position !== 'static' ||
+        isSet(style.transform) ||
+        isSet(style.perspective) ||
+        isSet(style.filter) ||
+        isSet(style.backdropFilter) ||
+        /\b(layout|paint|strict|content)\b/.test(style.contain || '') ||
+        /\b(transform|perspective|filter)\b/.test(style.willChange || '');
+};
+
+/**
  * Find the ancestor that is the containing block of an absolutely positioned element.
  *
  * This is not the offsetParent of the image: a static td, th or table is the offsetParent of an image inside a
@@ -37,8 +56,7 @@ import Util from 'filter_ally/util';
 const getContainingBlock = (element) => {
     let ancestor = element.parentElement;
     while (ancestor && ancestor !== document.documentElement) {
-        const style = window.getComputedStyle(ancestor);
-        if (style.position !== 'static' || style.transform !== 'none') {
+        if (createsContainingBlock(window.getComputedStyle(ancestor))) {
             return ancestor;
         }
         ancestor = ancestor.parentElement;
