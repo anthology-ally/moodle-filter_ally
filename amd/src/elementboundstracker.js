@@ -51,9 +51,9 @@ class ElementBoundsTracker {
      * @param {jQuery|Element} $el
      * @param {Function|null} callback
      * @param {jQuery|Element|null} mirrorElement Optional element to mirror tracked bounds to.
-     * @param {boolean} mirrorUsingOffsetParent Whether mirror position should be relative to the mirror's containing block.
+     * @param {boolean} mirrorRelativeToContainingBlock Whether mirror position should be relative to the mirror's containing block.
      */
-    register($el, callback = null, mirrorElement = null, mirrorUsingOffsetParent = true) {
+    register($el, callback = null, mirrorElement = null, mirrorRelativeToContainingBlock = true) {
         if (typeof callback !== 'function' && mirrorElement === null) {
             throw new Error('Either a valid callback or a mirror element must be provided.');
         }
@@ -66,17 +66,16 @@ class ElementBoundsTracker {
         const existingState = this.stateByElement.get(element);
         if (existingState) {
             const mirrorConfigChanged = existingState.mirrorElement !== mirror ||
-                existingState.mirrorUsingOffsetParent !== mirrorUsingOffsetParent;
+                existingState.mirrorRelativeToContainingBlock !== mirrorRelativeToContainingBlock;
 
             existingState.callback = callback;
             existingState.mirrorElement = mirror;
-            existingState.mirrorUsingOffsetParent = mirrorUsingOffsetParent;
+            existingState.mirrorRelativeToContainingBlock = mirrorRelativeToContainingBlock;
 
             if (mirrorConfigChanged) {
                 existingState.throttledMirrorSync = this.createThrottledMirrorSync(
-                    element,
                     mirror,
-                    mirrorUsingOffsetParent
+                    mirrorRelativeToContainingBlock
                 );
             }
 
@@ -91,8 +90,8 @@ class ElementBoundsTracker {
         this.stateByElement.set(element, {
             callback,
             mirrorElement: mirror,
-            mirrorUsingOffsetParent,
-            throttledMirrorSync: this.createThrottledMirrorSync(element, mirror, mirrorUsingOffsetParent),
+            mirrorRelativeToContainingBlock,
+            throttledMirrorSync: this.createThrottledMirrorSync(mirror, mirrorRelativeToContainingBlock),
             lastCoords: null,
         });
 
@@ -216,10 +215,9 @@ class ElementBoundsTracker {
 
         const coordsChanged = this.hasCoordsChanged(state.lastCoords, currCoords);
         const mirrorOutOfSync = this.isMirrorOutOfSync(
-            element,
             state.mirrorElement,
             currCoords,
-            state.mirrorUsingOffsetParent
+            state.mirrorRelativeToContainingBlock
         );
 
         if (!coordsChanged && !mirrorOutOfSync) {
@@ -241,18 +239,17 @@ class ElementBoundsTracker {
 
     /**
      * Create a per-element throttled mirror sync function (leading + trailing).
-     * @param {Element} sourceElement
      * @param {Element|null} mirrorElement
-     * @param {boolean} mirrorUsingOffsetParent
+     * @param {boolean} mirrorRelativeToContainingBlock
      * @returns {Function|null}
      */
-    createThrottledMirrorSync(sourceElement, mirrorElement, mirrorUsingOffsetParent) {
+    createThrottledMirrorSync(mirrorElement, mirrorRelativeToContainingBlock) {
         if (!mirrorElement) {
             return null;
         }
 
         return Util.throttle((coords) => {
-            this.syncMirrorElementBounds(sourceElement, mirrorElement, coords, mirrorUsingOffsetParent);
+            this.syncMirrorElementBounds(mirrorElement, coords, mirrorRelativeToContainingBlock);
         }, 500);
     }
 
@@ -543,12 +540,11 @@ class ElementBoundsTracker {
 
     /**
      * Update mirror element bounds to match tracked element coordinates.
-     * @param {Element} sourceElement
      * @param {Element|null} mirrorElement
      * @param {Object} coords
-     * @param {boolean} mirrorUsingOffsetParent
+     * @param {boolean} mirrorRelativeToContainingBlock
      */
-    syncMirrorElementBounds(sourceElement, mirrorElement, coords, mirrorUsingOffsetParent) {
+    syncMirrorElementBounds(mirrorElement, coords, mirrorRelativeToContainingBlock) {
         if (!mirrorElement) {
             return;
         }
@@ -556,7 +552,7 @@ class ElementBoundsTracker {
         const mirrorPosition = this.calculateMirroredPosition(
             mirrorElement,
             coords,
-            mirrorUsingOffsetParent
+            mirrorRelativeToContainingBlock
         );
 
         $(mirrorElement)
@@ -564,6 +560,25 @@ class ElementBoundsTracker {
             .css('top', mirrorPosition.top + 'px')
             .css('width', mirrorPosition.width + 'px')
             .css('height', mirrorPosition.height + 'px');
+    }
+
+    /**
+     * Whether an element with the given computed style is the containing block of its absolutely positioned
+     * descendants: it is positioned, or it establishes one through a transform, perspective, filter, containment
+     * or will-change.
+     * @param {CSSStyleDeclaration} style
+     * @returns {boolean}
+     */
+    createsContainingBlock(style) {
+        const isSet = (value) => value !== undefined && value !== '' && value !== 'none';
+
+        return style.position !== 'static' ||
+            isSet(style.transform) ||
+            isSet(style.perspective) ||
+            isSet(style.filter) ||
+            isSet(style.backdropFilter) ||
+            /\b(layout|paint|strict|content)\b/.test(style.contain || '') ||
+            /\b(transform|perspective|filter)\b/.test(style.willChange || '');
     }
 
     /**
@@ -578,8 +593,7 @@ class ElementBoundsTracker {
     getContainingBlock(element) {
         let ancestor = element.parentElement;
         while (ancestor && ancestor !== document.documentElement) {
-            const style = window.getComputedStyle(ancestor);
-            if (style.position !== 'static' || style.transform !== 'none') {
+            if (this.createsContainingBlock(window.getComputedStyle(ancestor))) {
                 return ancestor;
             }
             ancestor = ancestor.parentElement;
@@ -592,17 +606,17 @@ class ElementBoundsTracker {
      * Calculate the expected mirror position and size.
      * @param {Element} mirrorElement
      * @param {Object} coords
-     * @param {boolean} mirrorUsingOffsetParent Whether the position is relative to the mirror's containing block
+     * @param {boolean} mirrorRelativeToContainingBlock Whether the position is relative to the mirror's containing block
      *                                          instead of the page.
      * @returns {Object}
      */
-    calculateMirroredPosition(mirrorElement, coords, mirrorUsingOffsetParent) {
+    calculateMirroredPosition(mirrorElement, coords, mirrorRelativeToContainingBlock) {
         const width = (coords.right - coords.left);
         const height = (coords.bottom - coords.top);
         let top = coords.top;
         let left = coords.left;
 
-        if (mirrorUsingOffsetParent) {
+        if (mirrorRelativeToContainingBlock) {
             const containingBlock = this.getContainingBlock(mirrorElement);
             if (containingBlock) {
                 const $containingBlock = $(containingBlock);
@@ -619,18 +633,17 @@ class ElementBoundsTracker {
 
     /**
      * Check whether mirror element differs from expected source-aligned bounds.
-     * @param {Element} sourceElement
      * @param {Element|null} mirrorElement
      * @param {Object} coords
-     * @param {boolean} mirrorUsingOffsetParent
+     * @param {boolean} mirrorRelativeToContainingBlock
      * @returns {boolean}
      */
-    isMirrorOutOfSync(sourceElement, mirrorElement, coords, mirrorUsingOffsetParent) {
+    isMirrorOutOfSync(mirrorElement, coords, mirrorRelativeToContainingBlock) {
         if (!mirrorElement) {
             return false;
         }
 
-        const expected = this.calculateMirroredPosition(mirrorElement, coords, mirrorUsingOffsetParent);
+        const expected = this.calculateMirroredPosition(mirrorElement, coords, mirrorRelativeToContainingBlock);
         const actualLeft = parseFloat($(mirrorElement).css('left'));
         const actualTop = parseFloat($(mirrorElement).css('top'));
         const actualWidth = parseFloat($(mirrorElement).css('width'));
