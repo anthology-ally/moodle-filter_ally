@@ -564,8 +564,8 @@ class ElementBoundsTracker {
 
     /**
      * Whether an element with the given computed style is the containing block of its absolutely positioned
-     * descendants: it is positioned, or it establishes one through a transform, perspective, filter, containment
-     * or will-change.
+     * descendants: it is positioned, or it establishes one through a transform (including the individual translate,
+     * rotate and scale properties), perspective, filter, containment or will-change.
      * @param {CSSStyleDeclaration} style
      * @returns {boolean}
      */
@@ -574,11 +574,14 @@ class ElementBoundsTracker {
 
         return style.position !== 'static' ||
             isSet(style.transform) ||
+            isSet(style.translate) ||
+            isSet(style.rotate) ||
+            isSet(style.scale) ||
             isSet(style.perspective) ||
             isSet(style.filter) ||
             isSet(style.backdropFilter) ||
             /\b(layout|paint|strict|content)\b/.test(style.contain || '') ||
-            /\b(transform|perspective|filter)\b/.test(style.willChange || '');
+            /\b(transform|translate|rotate|scale|perspective|filter)\b/.test(style.willChange || '');
     }
 
     /**
@@ -586,13 +589,14 @@ class ElementBoundsTracker {
      *
      * This is not the same as the offsetParent of the tracked source element: a static td, th or table is the
      * offsetParent of an element inside a table cell, but it never is the containing block of an absolutely
-     * positioned element. Returns null when the containing block is the initial one (page origin).
+     * positioned element. The root element is a candidate too, as it is the containing block when it is
+     * positioned. Returns null when the containing block is the initial one (page origin).
      * @param {Element} element
      * @returns {Element|null}
      */
     getContainingBlock(element) {
         let ancestor = element.parentElement;
-        while (ancestor && ancestor !== document.documentElement) {
+        while (ancestor) {
             if (this.createsContainingBlock(window.getComputedStyle(ancestor))) {
                 return ancestor;
             }
@@ -623,8 +627,10 @@ class ElementBoundsTracker {
                 const blockOffset = $containingBlock.offset();
                 const borderTop = parseFloat($containingBlock.css('borderTopWidth')) || 0;
                 const borderLeft = parseFloat($containingBlock.css('borderLeftWidth')) || 0;
-                top = coords.top - blockOffset.top - borderTop + containingBlock.scrollTop;
-                left = coords.left - blockOffset.left - borderLeft + containingBlock.scrollLeft;
+                // The offset is already relative to the document, so the scroll position of the root is not added.
+                const isRoot = containingBlock === document.documentElement;
+                top = coords.top - blockOffset.top - borderTop + (isRoot ? 0 : containingBlock.scrollTop);
+                left = coords.left - blockOffset.left - borderLeft + (isRoot ? 0 : containingBlock.scrollLeft);
             }
         }
 
