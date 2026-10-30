@@ -29,7 +29,8 @@ import Util from 'filter_ally/util';
  * Whether an element with the given computed style is the containing block of its absolutely positioned
  * descendants: it is positioned, or it establishes one through a transform (including the individual translate,
  * rotate and scale properties), perspective, filter, containment (including content-visibility) or
- * will-change. An element that generates no box (display: contents) never is one.
+ * will-change. An element that generates no box (display: contents) never is one, and transforms, perspective and
+ * containment do not apply to a non-replaced inline box, which only is one when positioned or filtered.
  * @param {CSSStyleDeclaration} style
  * @returns {boolean}
  */
@@ -40,18 +41,22 @@ const createsContainingBlock = (style) => {
 
     const isSet = (value) => value !== undefined && value !== '' && value !== 'none';
     const willChange = (style.willChange || '').split(',').map((name) => name.trim());
+    const isInline = style.display === 'inline';
 
     return style.position !== 'static' ||
-        isSet(style.transform) ||
-        isSet(style.translate) ||
-        isSet(style.rotate) ||
-        isSet(style.scale) ||
-        isSet(style.perspective) ||
         isSet(style.filter) ||
         isSet(style.backdropFilter) ||
-        /\b(layout|paint|strict|content)\b/.test(style.contain || '') ||
-        /^(auto|hidden)$/.test(style.contentVisibility || '') ||
-        willChange.some((name) => ['transform', 'translate', 'rotate', 'scale', 'perspective', 'filter'].includes(name));
+        willChange.includes('filter') ||
+        (!isInline && (
+            isSet(style.transform) ||
+            isSet(style.translate) ||
+            isSet(style.rotate) ||
+            isSet(style.scale) ||
+            isSet(style.perspective) ||
+            /\b(layout|paint|strict|content)\b/.test(style.contain || '') ||
+            /^(auto|hidden)$/.test(style.contentVisibility || '') ||
+            willChange.some((name) => ['transform', 'translate', 'rotate', 'scale', 'perspective'].includes(name))
+        ));
 };
 
 /**
