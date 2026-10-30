@@ -2,7 +2,7 @@ name: Ally automated testing
 
 env:
   DEFAULT_PHP_VERSION: "8.3"
-  DEFAULT_MOODLE_BRANCH: "MOODLE_501_STABLE"
+  DEFAULT_MOODLE_BRANCH: "MOODLE_503_STABLE"
 
 on:
   push:
@@ -21,7 +21,8 @@ on:
           - "MOODLE_500_STABLE"
           - "MOODLE_501_STABLE"
           - "MOODLE_502_STABLE"
-        default: "MOODLE_501_STABLE"
+          - "MOODLE_503_STABLE"
+        default: "MOODLE_503_STABLE"
       phpversion:
         type: choice
         description: Select PHP version
@@ -45,7 +46,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:16
+        image: postgres:17
         env:
           POSTGRES_USER: "postgres"
           POSTGRES_HOST_AUTH_METHOD: "trust"
@@ -53,7 +54,7 @@ jobs:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
       mariadb:
-        image: mariadb:10
+        image: mariadb:11.4
         env:
           MYSQL_USER: "root"
           MYSQL_ALLOW_EMPTY_PASSWORD: "true"
@@ -62,7 +63,7 @@ jobs:
 
         ports:
           - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval 10s --health-timeout 5s --health-retries 3
+        options: --health-cmd="healthcheck.sh --connect --innodb_initialized" --health-interval 10s --health-timeout 5s --health-retries 3
 
     strategy:
       fail-fast: false
@@ -83,7 +84,7 @@ jobs:
 
           if [[ -n "$moodle_branch" ]]; then
             echo "Using manually selected Moodle branch: $moodle_branch"
-          elif [[ "$branch" =~ (^|[^0-9])(40[0-5]|50[0-2])([^0-9]|$) ]]; then
+          elif [[ "$branch" =~ (^|[^0-9])(40[0-5]|50[0-3])([^0-9]|$) ]]; then
             moodle_branch="MOODLE_${BASH_REMATCH[2]}_STABLE"
           else
             moodle_branch="${{ env.DEFAULT_MOODLE_BRANCH }}"
