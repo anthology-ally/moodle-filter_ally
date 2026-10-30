@@ -1,62 +1,90 @@
 # AGENTS.md: Ally for Moodle
 
-This file is identical in moodle-filter_ally, moodle-tool_ally and moodle-report_allylti, on every maintained MOODLE_*_STABLE branch. Copilot code review reads it from the pull request's base branch and only reads the first 4,000 characters, so the version rules come first.
+Everything above `## This repo` is identical in moodle-tool_ally, moodle-filter_ally and moodle-report_allylti, on `master` and every supported `MOODLE_*_STABLE` branch. Change it in all of them together. Copilot code review reads only the first 4,000 characters, from the pull request's base branch, so the version rules come first.
 
-## Version rules: check every change to version.php against these
+## Version rules
 
-Each maintained MOODLE_<line>_STABLE branch is its own release line: 500 = Moodle 5.0, then 501, 502. Moodle 4.5 (405) and older are no longer supported. Moodle offers any higher `$plugin->version` as an update and refuses to install a lower one over a higher one. So a wrong number strands sites and can't be undone by a later release.
+Moodle offers any higher `$plugin->version` as an update and refuses to install a lower one over a higher one. A wrong number strands sites, and a later release can't undo it. In review, a break of any rule below is a blocking issue.
 
-1. **Order.** A line's version must be above every older line and below every newer line, both on the branch tips and on the last `AY-<line>-R<n>` tag of each line.
-2. **Format** `YYYYMMDDSS`. `SS` is the line's suffix: 500 = 25, 501 = 50, 502 = 75. Suffixes only keep lines apart when the lines share the same date.
-3. **Choosing a number.**
-   - Newest line: today's date plus its suffix.
-   - Older line: the date of the next newer line's last release plus this line's suffix. If that is not above this line's current version, add 1 to `SS`. It must stay below the next newer line's released version. If there is no room, bump the newer line in the same round.
-   - Never put today's date on an older line alone. That is what caused issue 109.
-4. **Release the newer line first**, or in the same round. A new number on an older line must not outrank the newer line's *released* version, even if the newer branch tip is already higher.
-5. **`$plugin->supported = [<line>, <line>]`** on every stable branch. The Marketplace API takes the Moodle range from it and it can't be overridden. Without it, the range is guessed.
-6. **`$plugin->release`** changes with every tagged version. A tag never reuses a version that was already released.
-7. **`$plugin->dependencies`** on the sibling plugins may not exceed the version that sibling has *released* on the same line.
-8. **`$plugin->requires`** stays as it is in a version bump. Change it only in its own PR that says why.
-9. **master and unsupported lines (405 and older)** are not release lines. Don't bump or tag them, and don't use them in the order checks.
+| Branch | Moodle | Frozen date |
+| --- | --- | --- |
+| `MOODLE_502_STABLE` | 5.2 | `20261102` |
+| `MOODLE_503_STABLE` | 5.3 | `20261103` |
 
-The `Version order` workflow runs on every pull request. When the pull request changes version.php on a stable branch, a `FAIL` that involves that line fails the check and blocks the merge. A `WARN` sets the release order. Before you push, run the same check locally, with the line the change targets:
+`MOODLE_501_STABLE` and older are no longer supported: no version bumps, no tags. `master` is not a release line.
 
-```bash
-.github/scripts/check-version-order.sh 501
-```
+1. **Version = frozen date + two digits.** Each release adds 1 to the last two digits: `2026110200`, `2026110201`, up to `99`. Never change the date and never use today's date: that let an older line outrank a newer one (filter_ally issue 109). The version line says so: `// 20261102 = frozen line date YYYYMMDD - do not modify!` This follows https://moodledev.io/docs/apis/commonfiles/version.php.
+2. **A new line** gets a date later than every existing line. The first commit on its branch sets version.php to `<date>00` with that comment and `supported`, and sets `requires` to that Moodle version's branch date from core's `public/version.php` (Moodle 5.3 = `2026100500`).
+3. **`$plugin->supported = [<line>, <line>]`**. The Marketplace lists the version under these Moodle versions only.
+4. **`$plugin->release`** changes with every tagged version (`5.2.3` → `5.2.4`). A version number that was published is never reused.
+5. **`$plugin->dependencies`** never exceed what the sibling plugin has released on the same line.
+6. **`$plugin->requires`** is the oldest Moodle a build installs on, and the only Moodle check Moodle enforces: `supported` only shows a warning. It stays as it is in a version bump. Change it only in its own pull request that says why.
 
-In a review, report a break of any rule above as a blocking issue, even when the check passes. When a dependency changes, check the sibling repo on the same line.
+Before you push a version.php change, run `.github/scripts/check-version-order.sh <line>`. The `Version order` workflow runs the same check on every pull request, and a `FAIL` blocks the merge.
 
-## Past incidents
+## Branches
 
-- **Issue 109 (filter_ally).** On 2026-03-25 the 4.5 and 5.0 backports took that day's date (`2026032500` and `2026032525`) while 5.1 was still at `2026012850`. Moodle 5.1 sites were offered 4.5.1, which declares `supported = [405, 405]`, and could not go back to the 5.1 line. PR 114 (5.2.1 = `2026102175`) and PR 115 (5.1.1 = `2026102150`) fix it. Release 5.2 first, because 5.1.1 alone would outrank the released 5.2.0 (`2026070600`).
-- **tool_ally, 2026-08-07 to 2026-10-15.** 5.1.1 was released as `2026080750` while the released 5.2.0 was `2026070600`. A 5.1 site that upgraded to Moodle 5.2 could not install tool_ally 5.2.0 until 5.2.1 (`2026101575`) came out.
-- **report_allylti AY-500-R2 and AY-500-R3** were both tagged at `2026012825`. A version that is already published can't be released again.
-
-## The check script
-
-`.github/scripts/check-version-order.sh [LINE [FILE]]` fetches the stable branches and tags. It prints the tip and the last release of each line from `MIN_LINE` (default 500, the oldest supported line), then tests rules 1, 4, 5 and 6.
-
-- With no argument it checks the branch tips as pushed, and any problem fails.
-- With `LINE`, it uses this checkout's version.php for that line in place of the branch tip. Only problems that involve `LINE` fail; the rest are warnings. Problems between releases that are already published are always warnings, because only a new release can fix them.
-- With `FILE`, it reads that file for the line, for example `git show pr-head:version.php > /tmp/v.php`.
-- `SKIP_FETCH=1` skips the fetch. `REPORT_ONLY=1` turns every problem into a warning.
-
-`.github/workflows/version-order.yml` calls the script on every pull request, using the merged result of the pull request. If version.php is unchanged, or the base is not a stable branch, it only reports. No release workflow runs this script. filter_ally's 5.1 and 5.2 release workflows (PRs 115 and 114) check rule 1 before they publish: the tag's version against the other lines' tips and last releases. They don't check rules 5 and 6, and every other release workflow checks nothing. Run the script yourself before tagging (see Releasing).
-
-A pull request on an older line fails while a newer line is out of order, even if the pull request's own number is correct. Fix the newer line first. For example, a 5.0 version bump on filter_ally fails until the 5.1 fix in PR 115 is merged.
+- A fix that isn't specific to one Moodle version goes to `master` first. Then `git cherry-pick -x` it onto each supported `MOODLE_*_STABLE` branch: one pull request per branch, each with its own version bump. A fix for one Moodle version only goes straight to that branch.
+- Never copy version.php between branches. The date, `supported`, `requires` and dependency minimums differ per line, so a cherry-pick that touches version.php needs fixing by hand.
+- filter_ally's CI checks out the branch with the same name in tool_ally and report_allylti, or else that line's `MOODLE_<line>_STABLE`. For a change across repos, push the branches to tool_ally and report_allylti first.
 
 ## Releasing
 
-1. Merge the version bump into `MOODLE_<line>_STABLE`.
-2. On an up-to-date checkout of that branch, run `.github/scripts/check-version-order.sh <line>`. Don't tag while it prints a `FAIL`, or a `WARN` saying this line would outrank a newer release.
-3. Tag that commit `AY-<line>-R<n>` (the next `n` for that line) and push the tag from that branch.
-4. `.github/workflows/moodle-release.yml` publishes the tag. Only filter_ally 5.1 and 5.2 check the version order first, and only rule 1, so step 2 is the main check before release.
+A release publishes to the public Moodle Marketplace and can't be withdrawn. Releases come only from `MOODLE_<line>_STABLE`. An agent asked to release does every step below, one line at a time, and **stops for the person's explicit go-ahead before pushing each tag**.
 
-When several lines are released together, tag the newest line first. Release the three plugins together when their dependencies move.
+1. **What ships.** `git fetch origin --tags`, then `git log --oneline <last AY-<line>-R tag>..origin/MOODLE_<line>_STABLE`. Nothing listed: nothing to release. Release a sibling plugin too only when a dependency minimum moves.
+2. **Bump** in a pull request into `MOODLE_<line>_STABLE`: `$plugin->version` +1 (rule 1) and `$plugin->release` +1 in its last part (`5.2.3` → `5.2.4`). Nothing else changes in version.php.
+3. **Before tagging**, on the merged tip `<sha>`:
+   - `.github/scripts/check-version-order.sh <line>` prints `OK`.
+   - CI passed on `<sha>`, or `<sha>` has the same tree (`git rev-parse <sha>^{tree}`) as a pull request head whose CI passed. Only filter_ally runs tests in CI.
+   - The sibling versions that `dependencies` need are on the Marketplace.
+   - The next unused tag number: `git ls-remote --tags origin 'AY-<line>-*'`.
+4. **Tag**, after the go-ahead: `git tag AY-<line>-R<n> <sha>`, then `git push origin AY-<line>-R<n>`. `<sha>` must still be the branch tip.
+5. **Watch the run**: `gh run list --workflow moodle-release.yml --branch AY-<line>-R<n>`, then `gh run watch <id> --exit-status`. Success is `OK — pushed from MOODLE_<line>_STABLE` from `guard`, and `Response HTTP Status: 201` from the upload, with `version`, `releaseName` and `moodleVersions` matching version.php.
+6. **Confirm** about 10 minutes later on `https://marketplace.moodle.com/plugins/<component>/versions`: the line shows `<release> (<version>)`. Only then is it released.
 
-## Working across branches
+If it fails:
+- `guard` fails: the tag is not on a stable branch tip. Delete it (`git push origin :refs/tags/<tag>`, `git tag -d <tag>`) and tag the right commit.
+- The upload is not `201`: the log prints the response body. `401` or `403` means `MOODLE_MARKETPLACE_TOKEN` is missing or expired, and a person must replace it.
+- Never re-run a job that got `201`, and never delete a published tag.
 
-- A fix that goes to several lines needs one pull request per `MOODLE_*_STABLE` branch, each with its own version bump that follows rule 3. Never copy one branch's version.php to another branch.
-- Read the target branch's version.php before you write a new number. The numbers differ on every branch, and so do the dates.
-- `supported`, `requires` and the dependency minimums also differ per line, so a cherry-pick that touches version.php needs fixing by hand.
+## This repo: filter_ally
+
+A text filter that adds Ally's UI (score indicator, alternative formats, image cover) around teacher files and rich content. It installs at `public/filter/ally` and uses `tool_ally` classes directly.
+
+### Commands
+
+Run from the Moodle root:
+
+```bash
+vendor/bin/phpunit --group filter_ally
+vendor/bin/phpunit --filter <test> public/filter/ally/tests/filter_test.php
+php public/admin/tool/behat/cli/run.php --tags=@suite_ally   # all three plugins
+cd public/filter/ally && npx grunt amd                       # amd/build is committed: rebuild after editing amd/src
+vendor/bin/phpcs --standard=public/filter/ally/phpcs.xml public/filter/ally
+```
+
+`.github/workflows/moodle-ci.yml` is the only test CI for all three plugins. It also installs `mod_hsuforum` and `theme_snap`; put `skip-openlms` in the commit message or the pull request's title or body to skip them. `.travis.yml` is dead.
+
+### How it works
+
+Placeholders reach the page by two routes. Knowing which one owns a module is the key to debugging.
+
+1. **PHP, for filtered text.** `classes/text_filter.php::filter()` finds `<a>` and `<img>` pointing at `pluginfile.php`, hashes the path to a `pathnamehash`, and wraps the element with `templates/wrapper.mustache`. A file missing from the per-file-area key cache is treated as not teacher-authored. Glossary attachments are left to JS, and lesson content goes through `verify_and_fix_if_applied()`.
+2. **JS, for content the filter never sees** (resource, assign, folder, forum, glossary, lesson). `classes/local/entity_mapper.php` builds maps, and `setup()` writes them into the page footer as `ally_module_maps`, `ally_section_maps` and `ally_annotation_maps`, not as AMD arguments, which are size-limited. `amd/src/main.js` applies them. `filter_ally_get_module_maps` refreshes them over AJAX after `filterContentUpdated`, which is what makes lazy-loaded content (Snap theme) work.
+
+- The CSS hides every placeholder until Ally's remote script adds `.ally-active`. A wrapper with no icon usually means that script didn't load, not that the filter failed.
+- `amd/src/selectors.js` switches folder selectors at Moodle 5.2 (`2026032700`). Follow that pattern for differences between Moodle versions.
+- `classes/local/jwthelper.php` signs an HS256 JWT with `tool_ally`'s secret. The secret never reaches JS.
+- `entity_mapper` stops the filter re-entering itself while it builds annotation maps (MDL-67405).
+
+### Debugging
+
+- `?allytestmode=1` on a course page shows the placeholders with a red border, without Ally.
+- Type `ally_module_maps` in the browser console on a course page: populated means the PHP side worked, `{}` means no eligible files, `undefined` means it never ran.
+- `$CFG->filter_ally_disable_check_pagetype` runs the JS outside courses, `$CFG->filter_ally_enable_setup_debuger` logs setup calls, and `define('ALLY_OMITCACHE', true)` bypasses the file key cache.
+
+### Conventions
+
+- Tests use PHP 8 attributes, `#[Group('filter_ally')]` and `#[Group('ally')]`. Behat features carry `@suite_ally`; custom steps are in `tests/behat/behat_filter_ally.php`.
+- `vendor/` (`firebase/php-jwt` 3.0.0) is committed.
