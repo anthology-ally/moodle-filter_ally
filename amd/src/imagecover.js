@@ -28,7 +28,8 @@ import Util from 'filter_ally/util';
 /**
  * Whether an element with the given computed style is the containing block of its absolutely positioned
  * descendants: it is positioned, or it establishes one through a transform (including the individual translate,
- * rotate and scale properties), perspective, filter, containment or will-change.
+ * rotate and scale properties), perspective, filter, containment (including content-visibility) or
+ * will-change.
  * @param {CSSStyleDeclaration} style
  * @returns {boolean}
  */
@@ -44,6 +45,7 @@ const createsContainingBlock = (style) => {
         isSet(style.filter) ||
         isSet(style.backdropFilter) ||
         /\b(layout|paint|strict|content)\b/.test(style.contain || '') ||
+        /^(auto|hidden)$/.test(style.contentVisibility || '') ||
         /\b(transform|translate|rotate|scale|perspective|filter)\b/.test(style.willChange || '');
 };
 
