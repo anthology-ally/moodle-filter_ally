@@ -566,12 +566,17 @@ class ElementBoundsTracker {
      * Whether an element with the given computed style is the containing block of its absolutely positioned
      * descendants: it is positioned, or it establishes one through a transform (including the individual translate,
      * rotate and scale properties), perspective, filter, containment (including content-visibility) or
-     * will-change.
+     * will-change. An element that generates no box (display: contents) never is one.
      * @param {CSSStyleDeclaration} style
      * @returns {boolean}
      */
     createsContainingBlock(style) {
+        if (style.display === 'contents') {
+            return false;
+        }
+
         const isSet = (value) => value !== undefined && value !== '' && value !== 'none';
+        const willChange = (style.willChange || '').split(',').map((name) => name.trim());
 
         return style.position !== 'static' ||
             isSet(style.transform) ||
@@ -583,7 +588,7 @@ class ElementBoundsTracker {
             isSet(style.backdropFilter) ||
             /\b(layout|paint|strict|content)\b/.test(style.contain || '') ||
             /^(auto|hidden)$/.test(style.contentVisibility || '') ||
-            /\b(transform|translate|rotate|scale|perspective|filter)\b/.test(style.willChange || '');
+            willChange.some((name) => ['transform', 'translate', 'rotate', 'scale', 'perspective', 'filter'].includes(name));
     }
 
     /**
