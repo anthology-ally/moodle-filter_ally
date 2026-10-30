@@ -27,8 +27,8 @@ import Util from 'filter_ally/util';
 
 /**
  * Whether an element with the given computed style is the containing block of its absolutely positioned
- * descendants: it is positioned, or it establishes one through a transform, perspective, filter, containment
- * or will-change.
+ * descendants: it is positioned, or it establishes one through a transform (including the individual translate,
+ * rotate and scale properties), perspective, filter, containment or will-change.
  * @param {CSSStyleDeclaration} style
  * @returns {boolean}
  */
@@ -37,11 +37,14 @@ const createsContainingBlock = (style) => {
 
     return style.position !== 'static' ||
         isSet(style.transform) ||
+        isSet(style.translate) ||
+        isSet(style.rotate) ||
+        isSet(style.scale) ||
         isSet(style.perspective) ||
         isSet(style.filter) ||
         isSet(style.backdropFilter) ||
         /\b(layout|paint|strict|content)\b/.test(style.contain || '') ||
-        /\b(transform|perspective|filter)\b/.test(style.willChange || '');
+        /\b(transform|translate|rotate|scale|perspective|filter)\b/.test(style.willChange || '');
 };
 
 /**
@@ -49,13 +52,14 @@ const createsContainingBlock = (style) => {
  *
  * This is not the offsetParent of the image: a static td, th or table is the offsetParent of an image inside a
  * table cell, but it never is the containing block of an absolutely positioned element.
- * Returns null when the containing block is the initial one (page origin).
+ * The root element is a candidate too, as it is the containing block when it is positioned. Returns null when
+ * the containing block is the initial one (page origin).
  * @param {Element} element
  * @returns {Element|null}
  */
 const getContainingBlock = (element) => {
     let ancestor = element.parentElement;
-    while (ancestor && ancestor !== document.documentElement) {
+    while (ancestor) {
         if (createsContainingBlock(window.getComputedStyle(ancestor))) {
             return ancestor;
         }
@@ -63,6 +67,37 @@ const getContainingBlock = (element) => {
     }
 
     return null;
+};
+
+/**
+ * Position of an element's top left corner relative to the containing block of an absolutely positioned element,
+ * which is what the top and left of that element are measured from.
+ *
+ * The scroll position is not added when the containing block is the root element, because the offset of an
+ * element is already relative to the document.
+ * @param {jQuery} $target The element whose position is measured.
+ * @param {Element} absoluteElement The absolutely positioned element that is placed at that position.
+ * @returns {{top: number, left: number}}
+ */
+const getPositionInContainingBlock = ($target, absoluteElement) => {
+    const offset = $target.offset();
+    const containingBlock = getContainingBlock(absoluteElement);
+    if (!containingBlock) {
+        return {top: offset.top, left: offset.left};
+    }
+
+    const $containingBlock = $(containingBlock);
+    const blockOffset = $containingBlock.offset();
+    const borderTop = parseFloat($containingBlock.css('borderTopWidth')) || 0;
+    const borderLeft = parseFloat($containingBlock.css('borderLeftWidth')) || 0;
+    const isRoot = containingBlock === document.documentElement;
+    const scrollTop = isRoot ? 0 : containingBlock.scrollTop;
+    const scrollLeft = isRoot ? 0 : containingBlock.scrollLeft;
+
+    return {
+        top: offset.top - blockOffset.top - borderTop + scrollTop,
+        left: offset.left - blockOffset.left - borderLeft + scrollLeft
+    };
 };
 
 class ImageCover {
@@ -87,18 +122,7 @@ class ImageCover {
                 $(cover)
                     .css('width', width + 'px')
                     .css('height', height + 'px');
-                const imgOffset = $(img).offset();
-                const containingBlock = getContainingBlock($(cover)[0]);
-                let topPos = imgOffset.top;
-                let leftPos = imgOffset.left;
-                if (containingBlock) {
-                    const $containingBlock = $(containingBlock);
-                    const blockOffset = $containingBlock.offset();
-                    topPos = topPos - blockOffset.top - (parseFloat($containingBlock.css('borderTopWidth')) || 0) +
-                        containingBlock.scrollTop;
-                    leftPos = leftPos - blockOffset.left - (parseFloat($containingBlock.css('borderLeftWidth')) || 0) +
-                        containingBlock.scrollLeft;
-                }
+                const {top: topPos, left: leftPos} = getPositionInContainingBlock($(img), $(cover)[0]);
                 $(cover)
                     .css('top', topPos + 'px')
                     .css('left', leftPos + 'px');
