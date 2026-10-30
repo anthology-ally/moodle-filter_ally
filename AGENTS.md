@@ -14,11 +14,11 @@ Moodle offers any higher `$plugin->version` as an update and refuses to install 
 `MOODLE_501_STABLE` and older are no longer supported: no version bumps, no tags. `master` is not a release line.
 
 1. **Version = frozen date + two digits.** Each release adds 1 to the last two digits: `2026110200`, `2026110201`, up to `99`. Never change the date and never use today's date: that let an older line outrank a newer one (filter_ally issue 109). The version line says so: `// 20261102 = frozen line date YYYYMMDD - do not modify!` This follows https://moodledev.io/docs/apis/commonfiles/version.php.
-2. **A new line** gets a date later than every existing line. The first commit on its branch sets version.php to `<date>00` with that comment and `supported`.
+2. **A new line** gets a date later than every existing line. The first commit on its branch sets version.php to `<date>00` with that comment and `supported`, and sets `requires` to that Moodle version's branch date from core's `public/version.php` (Moodle 5.3 = `2026100500`).
 3. **`$plugin->supported = [<line>, <line>]`**. The Marketplace lists the version under these Moodle versions only.
 4. **`$plugin->release`** changes with every tagged version (`5.2.3` → `5.2.4`). A version number that was published is never reused.
 5. **`$plugin->dependencies`** never exceed what the sibling plugin has released on the same line.
-6. **`$plugin->requires`** stays as it is in a version bump. Change it only in its own pull request that says why.
+6. **`$plugin->requires`** is the oldest Moodle a build installs on, and the only Moodle check Moodle enforces: `supported` only shows a warning. It stays as it is in a version bump. Change it only in its own pull request that says why.
 
 Before you push a version.php change, run `.github/scripts/check-version-order.sh <line>`. The `Version order` workflow runs the same check on every pull request, and a `FAIL` blocks the merge.
 
