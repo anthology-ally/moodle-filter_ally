@@ -46,7 +46,7 @@ const createsContainingBlock = (style) => {
     return style.position !== 'static' ||
         isSet(style.filter) ||
         isSet(style.backdropFilter) ||
-        willChange.includes('filter') ||
+        willChange.some((name) => ['filter', 'backdrop-filter'].includes(name)) ||
         (!isInline && (
             isSet(style.transform) ||
             isSet(style.translate) ||
