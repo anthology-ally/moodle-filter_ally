@@ -26,8 +26,8 @@ defined('MOODLE_INTERNAL') || die();
 
 /** @var stdClass $plugin */
 $plugin->component    = 'filter_ally';
-$plugin->release      = '5.0.1';
-$plugin->version      = 2026032525; // Sub version is bumped to 25 to avoid conflicts with backports in MOODLE_405.
+$plugin->release      = '5.0.2';
+$plugin->version      = 2026102125; // Sub version is bumped to 25 to avoid conflicts with backports in MOODLE_405.
 $plugin->requires     = 2025041400;
 $plugin->maturity     = MATURITY_STABLE;
 $plugin->supported    = [
