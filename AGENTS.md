@@ -20,13 +20,13 @@ Moodle offers any higher `$plugin->version` as an update and refuses to install 
 5. **`$plugin->dependencies`** never exceed what the sibling plugin has released on the same line.
 6. **`$plugin->requires`** is the oldest Moodle a build installs on, and the only Moodle check Moodle enforces: `supported` only shows a warning. It stays as it is in a version bump. Change it only in its own pull request that says why.
 
-Before you push a version.php change, run `.github/scripts/check-version-order.sh <line>`. The `Version order` workflow runs the same check on every pull request, and a `FAIL` blocks the merge.
+Before you push a version.php change, run `.github/scripts/check-version-order.sh <line>`. On a pull request into `MOODLE_*_STABLE` that changes version.php, the `Version order` workflow runs the same check and a `FAIL` fails it. On any other pull request it only reports.
 
 ## Branches
 
 - A fix that isn't specific to one Moodle version goes to `master` first. Then `git cherry-pick -x` it onto each supported `MOODLE_*_STABLE` branch: one pull request per branch, each with its own version bump. A fix for one Moodle version only goes straight to that branch.
 - Never copy version.php between branches. The date, `supported`, `requires` and dependency minimums differ per line, so a cherry-pick that touches version.php needs fixing by hand.
-- filter_ally's CI checks out the branch with the same name in tool_ally and report_allylti, or else that line's `MOODLE_<line>_STABLE`. For a change across repos, push the branches to tool_ally and report_allylti first.
+- filter_ally's CI checks out tool_ally and report_allylti at the branch with the same name, else `MOODLE_<line>_STABLE`, else `MOODLE_<line>_WIP`, and fails if none exists. For a change across repos, push the branches to tool_ally and report_allylti first.
 
 ## Releasing
 
@@ -66,14 +66,18 @@ vendor/bin/phpcs --standard=public/filter/ally/phpcs.xml public/filter/ally
 
 `.github/workflows/moodle-ci.yml` is the only test CI for all three plugins. It also installs `mod_hsuforum` and `theme_snap`; put `skip-openlms` in the commit message or the pull request's title or body to skip them. `.travis.yml` is dead.
 
+CI fails on any warning: `codechecker --max-warnings 0`, `grunt --max-lint-warnings 0` and `phpunit --fail-on-warning`. `mod_hsuforum` and `theme_snap` come from their `MOODLE_<line>_CITRICITY` branch.
+
 ### How it works
 
 Placeholders reach the page by two routes. Knowing which one owns a module is the key to debugging.
 
 1. **PHP, for filtered text.** `classes/text_filter.php::filter()` finds `<a>` and `<img>` pointing at `pluginfile.php`, hashes the path to a `pathnamehash`, and wraps the element with `templates/wrapper.mustache`. A file missing from the per-file-area key cache is treated as not teacher-authored. Glossary attachments are left to JS, and lesson content goes through `verify_and_fix_if_applied()`.
-2. **JS, for content the filter never sees** (resource, assign, folder, forum, glossary, lesson). `classes/local/entity_mapper.php` builds maps, and `setup()` writes them into the page footer as `ally_module_maps`, `ally_section_maps` and `ally_annotation_maps`, not as AMD arguments, which are size-limited. `amd/src/main.js` applies them. `filter_ally_get_module_maps` refreshes them over AJAX after `filterContentUpdated`, which is what makes lazy-loaded content (Snap theme) work.
+2. **JS, for content the filter never sees** (resource, assign, folder, forum, glossary, lesson). `classes/local/entity_mapper.php` builds maps, and `setup()` writes them into the page footer as `ally_module_maps`, `ally_section_maps` and `ally_annotation_maps`, not as AMD arguments, which are size-limited. `amd/src/main.js` applies them. `filter_ally_get_module_maps` refreshes them over AJAX after `filterContentUpdated`, which is what makes lazy-loaded content (Snap theme) work. That refresh waits 1 second after the last event and is ignored in the first 3 seconds after the page loads.
 
 - The CSS hides every placeholder until Ally's remote script adds `.ally-active`. A wrapper with no icon usually means that script didn't load, not that the filter failed.
+- In `filter()`, a link whose only child is an image of the same file is removed, and the template adds it back as `.ally-image-link`. Each wrapped tag is marked `#P#` so a repeated URL isn't wrapped twice; the marker is removed at the end.
+- `apply_content_annotation()` adds `data-ally-richcontent` to rich content. That is how Ally tells rich content apart from files.
 - `amd/src/selectors.js` switches folder selectors at Moodle 5.2 (`2026032700`). Follow that pattern for differences between Moodle versions.
 - `classes/local/jwthelper.php` signs an HS256 JWT with `tool_ally`'s secret. The secret never reaches JS.
 - `entity_mapper` stops the filter re-entering itself while it builds annotation maps (MDL-67405).
