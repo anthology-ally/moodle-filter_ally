@@ -10,6 +10,8 @@ jobs:
   # pushed from any branch would publish to the public marketplace.
   guard:
     runs-on: ubuntu-latest
+    outputs:
+      notes: ${{ steps.notes.outputs.notes }}
     steps:
       # fetch-depth: 0 makes actions/checkout fetch every branch and tag, so
       # the --contains fallback below can see remote branches on a tag push.
@@ -42,7 +44,23 @@ jobs:
 
           echo "OK — tag is on:${BRANCHES}"
 
-  # Moodle HQ's official reusable workflow (revision 2026082501). Pinned to a
+      # The Marketplace shows these notes on the version's page and its API
+      # cannot change them later, so a missing or stale section stops the release.
+      - name: CHANGES.md must start with this version's section
+        id: notes
+        run: |
+          VERSION=$(sed -n 's/^\$plugin->version *= *\([0-9]*\).*/\1/p' version.php)
+          HEADING=$(grep -m1 '^## ' CHANGES.md 2>/dev/null || true)
+          if [[ -z "$VERSION" || "$HEADING" != *"($VERSION)"* ]]; then
+            echo "::error::CHANGES.md must start with '## <release> ($VERSION)'; found '${HEADING:-nothing}'"
+            exit 1
+          fi
+          # The first "## " section only: the release being tagged.
+          NOTES=$(awk '/^## /{n++} n==1' CHANGES.md)
+          DELIM="notes-$(openssl rand -hex 16)"
+          { echo "notes<<$DELIM"; echo "$NOTES"; echo "$DELIM"; } >> "$GITHUB_OUTPUT"
+
+  # Moodle HQ's official reusable workflow (revision 2026101401). Pinned to a
   # commit SHA on purpose: the repo has no version tags, and @main would let
   # upstream change our release process without notice. Update deliberately.
   #
@@ -52,6 +70,8 @@ jobs:
   # would publish the branch tip labelled with the tag.
   release-to-marketplace:
     needs: guard
-    uses: moodlehq/moodle-plugin-release/.github/workflows/moodle-release.yml@3d279fa8fa0bba1f870281ad6816327c857131d8
+    uses: moodlehq/moodle-plugin-release/.github/workflows/moodle-release.yml@7c56bd9ce7b0a3125459924e7bd08570d41b9aa3
+    with:
+      release_notes: ${{ needs.guard.outputs.notes }}
     secrets:
       MOODLE_MARKETPLACE_TOKEN: ${{ secrets.MOODLE_MARKETPLACE_TOKEN }}
