@@ -7,17 +7,20 @@
 #
 # Usage, from the plugin repository root:
 #   .github/scripts/check-version-order.sh              # branch tips as pushed
-#   .github/scripts/check-version-order.sh 501          # this checkout's version.php as 501
-#   .github/scripts/check-version-order.sh 501 FILE     # FILE as the 501 version.php
+#   .github/scripts/check-version-order.sh 502          # this checkout's version.php as 502
+#   .github/scripts/check-version-order.sh 502 FILE     # FILE as the 502 version.php
+#
+# A line whose version.php carries "// YYYYMMDD = frozen line date" must keep
+# that date: the version starts with it, and it matches the line's last release.
 #
 # With LINE given, only problems that involve LINE fail; others are warnings.
-# MIN_LINE (default 500) is the oldest line still supported.
+# MIN_LINE (default 502) is the oldest line still supported.
 # SKIP_FETCH=1 uses the refs already fetched.
 # REPORT_ONLY=1 prints every problem as a warning and exits 0.
 
 set -u
 
-MIN_LINE=${MIN_LINE:-500}
+MIN_LINE=${MIN_LINE:-502}
 OVERRIDE_LINE=${1:-}
 OVERRIDE_FILE=${2:-version.php}
 
@@ -33,6 +36,11 @@ version_php() {
   else
     git show "$ref:version.php" 2>/dev/null
   fi
+}
+
+# The date in "$plugin->version = N; // YYYYMMDD = frozen line date", if any.
+frozen() {
+  sed -n 's/^\$plugin->version *= *[0-9]*; *\/\/ *\([0-9]\{8\}\) = frozen line date.*/\1/p' | head -1
 }
 
 field() {
@@ -68,16 +76,18 @@ for LINE in $LINES; do
   TIP_PHP=$(version_php "$LINE" "origin/MOODLE_${LINE}_STABLE")
   TIP=$(echo "$TIP_PHP" | field version)
   REL=$(echo "$TIP_PHP" | field release)
+  FROZEN=$(echo "$TIP_PHP" | frozen)
   SUP=$(echo "$TIP_PHP" | supported)
   TAG=$(git tag -l "AY-${LINE}-R*" | sort -t R -k2,2n | tail -1)
-  TAG_VER=""; TAG_REL=""
+  TAG_VER=""; TAG_REL=""; TAG_FROZEN=""
   if [[ -n "$TAG" ]]; then
     TAG_PHP=$(git show "refs/tags/$TAG:version.php" 2>/dev/null)
     TAG_VER=$(echo "$TAG_PHP" | field version)
     TAG_REL=$(echo "$TAG_PHP" | field release)
+    TAG_FROZEN=$(echo "$TAG_PHP" | frozen)
   fi
   printf '%-6s %-12s %-8s %-10s | %-11s %-12s %s\n' "$LINE" "$TIP" "$REL" "${SUP:--}" "${TAG:--}" "${TAG_VER:--}" "${TAG_REL:--}"
-  ROWS="$ROWS$LINE|$TIP|$REL|$SUP|$TAG|$TAG_VER|$TAG_REL
+  ROWS="$ROWS$LINE|$TIP|$REL|$SUP|$TAG|$TAG_VER|$TAG_REL|$FROZEN|$TAG_FROZEN
 "
 done
 echo
@@ -96,7 +106,7 @@ fail() {
   fi
 }
 
-while IFS='|' read -r LINE TIP REL SUP TAG TAG_VER TAG_REL; do
+while IFS='|' read -r LINE TIP REL SUP TAG TAG_VER TAG_REL FROZEN TAG_FROZEN; do
   [[ -z "$LINE" ]] && continue
   B="MOODLE_${LINE}_STABLE"
 
@@ -104,6 +114,13 @@ while IFS='|' read -r LINE TIP REL SUP TAG TAG_VER TAG_REL; do
   is_version "$TIP" || { fail "$LINE" "$B: \$plugin->version '$TIP' is not a number"; continue; }
   if [[ -n "$TAG_VER" ]] && ! is_version "$TAG_VER"; then
     fail "$LINE" "$TAG: \$plugin->version '$TAG_VER' is not a number"; continue
+  fi
+
+  if [[ -n "$FROZEN" && "${TIP:0:8}" != "$FROZEN" ]]; then
+    fail "$LINE" "$B: \$plugin->version $TIP does not start with the line's frozen date $FROZEN"
+  fi
+  if [[ -n "$FROZEN" && -n "$TAG_FROZEN" && "$FROZEN" != "$TAG_FROZEN" ]]; then
+    fail "$LINE" "$B: frozen date changed from $TAG_FROZEN ($TAG) to $FROZEN; a line's date never changes"
   fi
 
   if [[ -z "$SUP" ]]; then
