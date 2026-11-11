@@ -21,9 +21,7 @@ needs doing. Example, indented so the workflow ignores it (write yours without t
 ## 5.0.3 (2026102126)
 
 ### Fixed
-- Fixed an issue where the accessibility score indicator for images inside a table appeared
-  away from its image, near the left edge of the page, and could overlap other indicators.
-  Each indicator now sits next to its image.
+- Fixed an issue where the accessibility score indicator for images inside a table appeared away from its image, near the left edge of the page, and could overlap other indicators. Each indicator now sits next to its image.
 
 ### Upgrade notes
 - No database changes and no new settings.
