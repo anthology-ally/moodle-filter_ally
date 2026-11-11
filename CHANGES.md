@@ -7,7 +7,7 @@ first `## ` section to the Moodle Marketplace, so every version bump PR adds one
 Write for a Moodle admin deciding whether to upgrade: what changed, and whether anything
 needs doing. Example, indented so the workflow ignores it (write yours without the indent):
 
-    ## 5.2.3 (2026110200)
+    ## X.Y.Z (YYYYMMDDXX)
 
     ### Fixed
     - AB#nnnnnn: Ally feedback icons on images inside tables sit next to the image again.
