@@ -26,14 +26,14 @@ Before you push a version.php change, run `.github/scripts/check-version-order.s
 
 - A fix that isn't specific to one Moodle version goes to `master` first. Then `git cherry-pick -x` it onto each supported `MOODLE_*_STABLE` branch: one pull request per branch, each with its own version bump. A fix for one Moodle version only goes straight to that branch.
 - Never copy version.php between branches. The date, `supported`, `requires` and dependency minimums differ per line, so a cherry-pick that touches version.php needs fixing by hand.
-- filter_ally's CI checks out tool_ally and report_allylti at the branch with the same name, else `MOODLE_<line>_STABLE`, else `MOODLE_<line>_WIP`, and fails if none exists. For a change across repos, push the branches to tool_ally and report_allylti first.
+- filter_ally's CI checks out tool_ally and report_allylti at the branch with the same name, else `MOODLE_<line>_STABLE`, else `MOODLE_<line>_WIP`, and fails if none exists. For a change across repos, push the branches to tool_ally and report_allylti first. Exception: on `MOODLE_502_STABLE` CI skips the same-name step and always tests against the siblings' `MOODLE_502_STABLE` (else `_WIP`), so a 5.2 pull request that needs a sibling change passes CI only after that change is merged.
 
 ## Releasing
 
 A release publishes to the public Moodle Marketplace and can't be withdrawn. Releases come only from `MOODLE_<line>_STABLE`. An agent asked to release does every step below, one line at a time, and **stops for the person's explicit go-ahead before pushing each tag**.
 
 1. **What ships.** `git fetch origin --tags`, then `git log --oneline <last AY-<line>-R tag>..origin/MOODLE_<line>_STABLE`. Nothing listed: nothing to release. Release a sibling plugin too only when a dependency minimum moves.
-2. **Bump** in a pull request into `MOODLE_<line>_STABLE`: `$plugin->version` +1 (rule 1) and `$plugin->release` +1 in its last part (`5.2.3` → `5.2.4`). Nothing else changes in version.php.
+2. **Bump** in a pull request into `MOODLE_<line>_STABLE`: `$plugin->version` +1 (rule 1) and `$plugin->release` +1 in its last part (`5.2.3` → `5.2.4`). Nothing else changes in version.php. The same pull request adds a `## <release> (<version>)` section on top of CHANGES.md, or `guard` fails the release: one line per bullet, because the Marketplace turns every newline into a line break, and no AB# ticket numbers.
 3. **Before tagging**, on the merged tip `<sha>`:
    - `.github/scripts/check-version-order.sh <line>` prints `OK`.
    - CI passed on `<sha>`, or `<sha>` has the same tree (`git rev-parse <sha>^{tree}`) as a pull request head whose CI passed. Only filter_ally runs tests in CI.
