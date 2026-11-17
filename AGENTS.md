@@ -66,6 +66,8 @@ vendor/bin/phpcs --standard=public/filter/ally/phpcs.xml public/filter/ally
 
 `.github/workflows/moodle-ci.yml` is the only test CI for all three plugins. It also installs `mod_hsuforum` and `theme_snap`; put `skip-openlms` in the commit message or the pull request's title or body to skip them. `.travis.yml` is dead.
 
+Keep `"`, `` ` `` and `$` out of commit messages. The `skip-openlms` step pastes the message into a double-quoted shell string in `moodle-ci.yml`, so any of them breaks CI.
+
 CI fails on any warning: `codechecker --max-warnings 0`, `grunt --max-lint-warnings 0` and `phpunit --fail-on-warning`. `mod_hsuforum` and `theme_snap` come from their `MOODLE_<line>_CITRICITY` branch.
 
 ### How it works
