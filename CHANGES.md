@@ -17,3 +17,11 @@ needs doing. Example, indented so the workflow ignores it (write yours without t
 
     ### Upgrade notes
     - No database changes and no new settings.
+
+## 5.3.0 (2026110300)
+
+### Added
+- Support for Moodle 5.3. This version requires Moodle 5.3.
+
+### Upgrade notes
+- Requires Moodle 5.3. No database changes and no new settings.
