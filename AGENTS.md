@@ -24,16 +24,16 @@ Before you push a version.php change, run `.github/scripts/check-version-order.s
 
 ## Branches
 
-- A fix that isn't specific to one Moodle version goes to `master` first. Then `git cherry-pick -x` it onto each supported `MOODLE_*_STABLE` branch: one pull request per branch, each with its own version bump. A fix for one Moodle version only goes straight to that branch. The next `MOODLE_*_STABLE` branch is cut from `master`, so a fix that skips `master` is missing from the next Moodle line. `git cherry -v origin/master origin/MOODLE_<line>_STABLE` lists the stable commits with no identical change on `master`. Most are version bumps and per-line chores; any fix in the list must also go to `master`.
+- A fix that isn't specific to one Moodle version goes to `master` first. Then `git cherry-pick -x` it onto each supported `MOODLE_*_STABLE` branch: one pull request per branch, each with its own version bump. A fix for one Moodle version only goes straight to that branch. The next `MOODLE_*_STABLE` branch is cut from `master`, so a fix that skips `master` is missing from the next Moodle line. `git cherry -v origin/master origin/MOODLE_<line>_STABLE` marks each stable commit `+` (no equivalent change on `master`) or `-` (already there). Only `+` lines can be missing fixes. Most are version bumps and per-line chores, and a fix whose cherry-pick needed hand edits shows `+` even when it is on `master`, so check each `+` fix by eye.
 - Never copy version.php between branches. The date, `supported`, `requires` and dependency minimums differ per line, so a cherry-pick that touches version.php needs fixing by hand.
-- filter_ally's CI checks out tool_ally and report_allylti at the branch with the same name, else `MOODLE_<line>_STABLE`, else `MOODLE_<line>_WIP`, and fails if none exists. For a change across repos, push the branches to tool_ally and report_allylti first.
+- filter_ally's CI checks out tool_ally and report_allylti at the branch with the same name, else `MOODLE_<line>_STABLE`, else `MOODLE_<line>_WIP`, and fails if none exists. For a change across repos, push the branches to tool_ally and report_allylti first. Exception: on `MOODLE_502_STABLE` CI skips the same-name step and always tests against the siblings' `MOODLE_502_STABLE` (else `_WIP`), so a 5.2 pull request that needs a sibling change passes CI only after that change is merged.
 - Commit messages and pull request titles start with the Azure DevOps ticket: `AB#<id>: <description>`.
 
 ## Testing
 
 - `--group ally` (PHPUnit) and `@suite_ally` (Behat) cover all three plugins. They check that Ally's placeholders are injected, never that a score shows, so green tests don't prove that Ally works.
 - The end-to-end suite is `anthology-ally/ally-test`, run by Jenkins. It drives shared hosted sites and some specs change live content, so agree the target site with QA first.
-- No automated test covers course backup and restore, the scheduled tasks, or `cli/autoconfig.php`. Check them by hand when a change touches them.
+- PHPUnit covers parts of the scheduled tasks, of backup and restore, and of auto-configuration (tool_ally's `file_updates_task_test.php`, `event_handlers_test.php`, `auto_config_test.php`). Nothing runs real cron, a real course rollover or the `cli/autoconfig.php` script end to end, so check those by hand when a change touches them.
 
 ## Moodle 5.3
 
@@ -50,7 +50,7 @@ Moodle 5.3 turns some deprecated APIs into errors. Code and tests for 5.3 follow
 A release publishes to the public Moodle Marketplace and can't be withdrawn. Releases come only from `MOODLE_<line>_STABLE`. An agent asked to release does every step below, one line at a time, and **stops for the person's explicit go-ahead before pushing each tag**.
 
 1. **What ships.** `git fetch origin --tags`, then `git log --oneline <last AY-<line>-R tag>..origin/MOODLE_<line>_STABLE`. Nothing listed: nothing to release. Release a sibling plugin too only when a dependency minimum moves. **First release on a new line** (no `AY-<line>-*` tag yet): the whole branch ships. Release all three plugins together, so a site on that Moodle finds a supported version of each on the Marketplace.
-2. **Bump and notes** in a pull request into `MOODLE_<line>_STABLE`: `$plugin->version` +1 (rule 1) and `$plugin->release` +1 in its last part (`5.2.3` → `5.2.4`). Nothing else changes in version.php. In the same pull request, add `## <release> (<version>)` at the top of CHANGES.md: what a Moodle admin will notice, with no ticket numbers. The release workflow stops without it. A new line's first release skips the bump (rule 2 already set `<date>00`) but still needs the section.
+2. **Bump and notes** in a pull request into `MOODLE_<line>_STABLE`: `$plugin->version` +1 (rule 1) and `$plugin->release` +1 in its last part (`5.2.3` → `5.2.4`). Nothing else changes in version.php. In the same pull request, add `## <release> (<version>)` at the top of CHANGES.md: what a Moodle admin will notice, one line per bullet (the Marketplace turns every newline into a line break), with no ticket numbers. The release workflow stops without it. A new line's first release skips the bump (rule 2 already set `<date>00`) but still needs the section.
 3. **Before tagging**, on the merged tip `<sha>`:
    - `.github/scripts/check-version-order.sh <line>` prints `OK`.
    - `grep -m1 '^## ' CHANGES.md` prints `## <release> (<version>)`, both as in version.php.
@@ -61,7 +61,7 @@ A release publishes to the public Moodle Marketplace and can't be withdrawn. Rel
 5. **Watch the run**: `gh run list --workflow moodle-release.yml --branch AY-<line>-R<n>`, then `gh run watch <id> --exit-status`. Success is `OK — pushed from MOODLE_<line>_STABLE` from `guard`, and `Response HTTP Status: 201` from the upload, with `version`, `releaseName` and `moodleVersions` matching version.php.
 6. **Confirm** about 10 minutes later on `https://marketplace.moodle.com/plugins/<component>/versions`: the line shows `<release> (<version>)`. Only then is it released.
 
-Only an `AY*` tag push starts a release. Pushing or creating a branch never does. `moodle-release.yml` pins Moodle HQ's `moodle-plugin-release` workflow to a commit SHA. Update the pin on purpose, in all three repos together. Never add `workflow_dispatch`: upstream zips `HEAD`, so a manual run from a branch would publish the branch tip under the tag's name.
+Only an `AY*` tag push starts a release. Pushing or creating a branch never does. `moodle-release.yml` pins Moodle HQ's `moodle-plugin-release` workflow to a commit SHA. Update the pin on purpose, in all three repos together. Don't add `workflow_dispatch`. A release is always a tag pushed from a stable branch, which is what `guard` checks, and without a tag the pinned upstream stops with *No tag name provided!*.
 
 If it fails:
 - No run appears: the tag doesn't start with `AY`, or a branch was pushed instead of a tag.
@@ -69,7 +69,7 @@ If it fails:
 - `guard` fails with *CHANGES.md must start with …*: delete the tag the same way, add or fix the section in a pull request, then tag the new tip.
 - `accessexception`: the stable branch has the old moodle.org workflow. Copy the current `moodle-release.yml` from `master`. A new `MOODLE_*_STABLE` branch must start with the current workflow.
 - The upload is not `201`: the log prints the response body. `401` or `403` means `MOODLE_MARKETPLACE_TOKEN` is missing or expired, and a person must replace it: on the Marketplace, signed in as the Blackboard Ally maintainer account, *Account → Security → new API token*. The token is shown once, for 60 seconds. Set it with `gh secret set MOODLE_MARKETPLACE_TOKEN` in all three repos.
-- Once the cause is fixed, use **Re-run jobs** on the original tag-push run. Never re-run a job that got `201`, and never delete a published tag.
+- **Re-run jobs** reuses the original commit and workflow file. Use it only when the fix is outside the repo, such as a replaced token or a GitHub outage. A fix to the workflow or to any tracked file needs a pull request and then a new tag on the new tip: if nothing was uploaded, delete the failed tag first as above. Never re-run a job that got `201`, and never delete a published tag.
 
 ## This repo: filter_ally
 
