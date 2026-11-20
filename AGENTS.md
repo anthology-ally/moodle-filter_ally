@@ -24,18 +24,36 @@ Before you push a version.php change, run `.github/scripts/check-version-order.s
 
 ## Branches
 
-- A fix that isn't specific to one Moodle version goes to `master` first. Then `git cherry-pick -x` it onto each supported `MOODLE_*_STABLE` branch: one pull request per branch, each with its own version bump. A fix for one Moodle version only goes straight to that branch.
+- A fix that isn't specific to one Moodle version goes to `master` first. Then `git cherry-pick -x` it onto each supported `MOODLE_*_STABLE` branch: one pull request per branch, each with its own version bump. A fix for one Moodle version only goes straight to that branch. The next `MOODLE_*_STABLE` branch is cut from `master`, so a fix that skips `master` is missing from the next Moodle line. `git cherry -v origin/master origin/MOODLE_<line>_STABLE` marks each stable commit `+` (no equivalent change on `master`) or `-` (already there). Only `+` lines can be missing fixes. Most are version bumps and per-line chores, and a fix whose cherry-pick needed hand edits shows `+` even when it is on `master`, so check each `+` fix by eye.
 - Never copy version.php between branches. The date, `supported`, `requires` and dependency minimums differ per line, so a cherry-pick that touches version.php needs fixing by hand.
-- filter_ally's CI checks out tool_ally and report_allylti at the branch with the same name, else `MOODLE_<line>_STABLE`, else `MOODLE_<line>_WIP`, and fails if none exists. For a change across repos, push the branches to tool_ally and report_allylti first.
+- filter_ally's CI checks out tool_ally and report_allylti at the branch with the same name, else `MOODLE_<line>_STABLE`, else `MOODLE_<line>_WIP`, and fails if none exists. For a change across repos, push the branches to tool_ally and report_allylti first. Exception: on `MOODLE_502_STABLE` CI skips the same-name step and always tests against the siblings' `MOODLE_502_STABLE` (else `_WIP`), so a 5.2 pull request that needs a sibling change passes CI only after that change is merged.
+- Commit messages and pull request titles start with the Azure DevOps ticket: `AB#<id>: <description>`.
+
+## Testing
+
+- `--group ally` (PHPUnit) and `@suite_ally` (Behat) cover all three plugins. They check that Ally's placeholders are injected, never that a score shows, so green tests don't prove that Ally works.
+- The end-to-end suite is `anthology-ally/ally-test`, run by Jenkins. It drives shared hosted sites and some specs change live content, so agree the target site with QA first.
+- PHPUnit covers parts of the scheduled tasks, of backup and restore, and of auto-configuration (tool_ally's `file_updates_task_test.php`, `event_handlers_test.php`, `auto_config_test.php`). Nothing runs real cron, a real course rollover or the `cli/autoconfig.php` script end to end, so check those by hand when a change touches them.
+
+## Moodle 5.3
+
+Moodle 5.3 turns some deprecated APIs into errors. Code and tests for 5.3 follow these rules:
+
+- Use `\core_external\util::format_string()`, `::format_text()` and `::generate_token()`. The `externallib.php` functions (`external_format_string()`, `external_generate_token()`, …) throw `coding_exception`. `generate_token()` takes the service record, not its id.
+- Use the `core_external\…` class names (`\core_external\external_api`, `\core_external\external_single_structure`, …). The legacy names print a deprecation notice, and `instanceof` never matches them because it doesn't autoload.
+- Use `\core\user::update_user()`, not `user_update_user()`. It exists only on 5.3 and later, so it is not for the `MOODLE_502_STABLE` branch.
+- Behat: the Classic theme is gone, and React renders the navigation, with no `role="menuitem"` and no `ul.more-nav`. Core's `should exist in current page administration` step fails there. Use steps such as `I navigate to "<item>" in current page administration`.
+- Moodle 5.3 needs MariaDB 11.4 or PostgreSQL 17 or later, in CI as well.
 
 ## Releasing
 
 A release publishes to the public Moodle Marketplace and can't be withdrawn. Releases come only from `MOODLE_<line>_STABLE`. An agent asked to release does every step below, one line at a time, and **stops for the person's explicit go-ahead before pushing each tag**.
 
-1. **What ships.** `git fetch origin --tags`, then `git log --oneline <last AY-<line>-R tag>..origin/MOODLE_<line>_STABLE`. Nothing listed: nothing to release. Release a sibling plugin too only when a dependency minimum moves.
-2. **Bump** in a pull request into `MOODLE_<line>_STABLE`: `$plugin->version` +1 (rule 1) and `$plugin->release` +1 in its last part (`5.2.3` → `5.2.4`). Nothing else changes in version.php.
+1. **What ships.** `git fetch origin --tags`, then `git log --oneline <last AY-<line>-R tag>..origin/MOODLE_<line>_STABLE`. Nothing listed: nothing to release. Release a sibling plugin too only when a dependency minimum moves. **First release on a new line** (no `AY-<line>-*` tag yet): the whole branch ships. Release all three plugins together, so a site on that Moodle finds a supported version of each on the Marketplace.
+2. **Bump and notes** in a pull request into `MOODLE_<line>_STABLE`: `$plugin->version` +1 (rule 1) and `$plugin->release` +1 in its last part (`5.2.3` → `5.2.4`). Nothing else changes in version.php. In the same pull request, add `## <release> (<version>)` at the top of CHANGES.md: what a Moodle admin will notice, one line per bullet (the Marketplace turns every newline into a line break), with no ticket numbers. The release workflow stops without it. A new line's first release skips the bump (rule 2 already set `<date>00`) but still needs the section.
 3. **Before tagging**, on the merged tip `<sha>`:
    - `.github/scripts/check-version-order.sh <line>` prints `OK`.
+   - `grep -m1 '^## ' CHANGES.md` prints `## <release> (<version>)`, both as in version.php.
    - CI passed on `<sha>`, or `<sha>` has the same tree (`git rev-parse <sha>^{tree}`) as a pull request head whose CI passed. Only filter_ally runs tests in CI.
    - The sibling versions that `dependencies` need are on the Marketplace.
    - The next unused tag number: `git ls-remote --tags origin 'AY-<line>-*'`.
@@ -43,10 +61,15 @@ A release publishes to the public Moodle Marketplace and can't be withdrawn. Rel
 5. **Watch the run**: `gh run list --workflow moodle-release.yml --branch AY-<line>-R<n>`, then `gh run watch <id> --exit-status`. Success is `OK — pushed from MOODLE_<line>_STABLE` from `guard`, and `Response HTTP Status: 201` from the upload, with `version`, `releaseName` and `moodleVersions` matching version.php.
 6. **Confirm** about 10 minutes later on `https://marketplace.moodle.com/plugins/<component>/versions`: the line shows `<release> (<version>)`. Only then is it released.
 
+Only an `AY*` tag push starts a release. Pushing or creating a branch never does. `moodle-release.yml` pins Moodle HQ's `moodle-plugin-release` workflow to a commit SHA. Update the pin on purpose, in all three repos together. Don't add `workflow_dispatch`. A release is always a tag pushed from a stable branch, which is what `guard` checks, and without a tag the pinned upstream stops with *No tag name provided!*.
+
 If it fails:
+- No run appears: the tag doesn't start with `AY`, or a branch was pushed instead of a tag.
 - `guard` fails: the tag is not on a stable branch tip. Delete it (`git push origin :refs/tags/<tag>`, `git tag -d <tag>`) and tag the right commit.
-- The upload is not `201`: the log prints the response body. `401` or `403` means `MOODLE_MARKETPLACE_TOKEN` is missing or expired, and a person must replace it.
-- Never re-run a job that got `201`, and never delete a published tag.
+- `guard` fails with *CHANGES.md must start with …*: delete the tag the same way, add or fix the section in a pull request, then tag the new tip.
+- `accessexception`: the stable branch has the old moodle.org workflow. Copy the current `moodle-release.yml` from `master`. A new `MOODLE_*_STABLE` branch must start with the current workflow.
+- The upload is not `201`: the log prints the response body. `401` or `403` means `MOODLE_MARKETPLACE_TOKEN` is missing or expired, and a person must replace it: on the Marketplace, signed in as the Blackboard Ally maintainer account, *Account → Security → new API token*. The token is shown once, for 60 seconds. Set it with `gh secret set MOODLE_MARKETPLACE_TOKEN` in all three repos.
+- **Re-run jobs** reuses the original commit and workflow file. Use it only when the fix is outside the repo, such as a replaced token or a GitHub outage. A fix to the workflow or to any tracked file needs a pull request and then a new tag on the new tip: if nothing was uploaded, delete the failed tag first as above. Never re-run a job that got `201`, and never delete a published tag.
 
 ## This repo: filter_ally
 
@@ -83,6 +106,8 @@ Placeholders reach the page by two routes. Knowing which one owns a module is th
 - `amd/src/selectors.js` switches folder selectors at Moodle 5.2 (`2026032700`). Follow that pattern for differences between Moodle versions.
 - `classes/local/jwthelper.php` signs an HS256 JWT with `tool_ally`'s secret. The secret never reaches JS.
 - `entity_mapper` stops the filter re-entering itself while it builds annotation maps (MDL-67405).
+- **Snap theme.** `styles_snap.css`, and Snap branches in `amd/src/main.js` and `amd/src/imagecover.js`, special-case Open LMS's Snap theme. A visual fix often needs a second fix for Snap.
+- **Performance.** The filter runs on nearly every page, for every user, and filter_ally declares no caches (`tool_ally` has four in `db/caches.php`). When a site slows down after Ally is installed, start here.
 
 ### Debugging
 
